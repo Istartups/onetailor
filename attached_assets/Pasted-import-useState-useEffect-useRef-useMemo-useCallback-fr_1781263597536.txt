@@ -1,0 +1,747 @@
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import {
+  Palette, Download, Printer, ShieldCheck, Users, ChevronRight,
+  User, MapPin, Banknote, Quote, Ruler, Share2, AlertCircle
+} from "lucide-react";
+import { useAppStore } from "@/store/useAppStore";
+import { useLocation } from "wouter";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Button } from "@/components/ui/button";
+import { getDeviceId } from "@/lib/utils";
+import html2canvas from "html2canvas";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  gender: string;
+}
+
+interface MeasurementRecord {
+  id: number;
+  customerId: number;
+  label: string;
+  category: string;
+  values: string;
+  unit?: string;
+  createdAt: string;
+}
+
+type Step = "select_customer" | "select_record" | "customize";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DEFAULT_GLOBAL_NOTE = "All measurements are in the recorded unit. Please confirm before cutting.";
+
+const THEMES = [
+  { id: "dark",    label: "Classic Dark",   bg: "bg-slate-900",  text: "text-white",      border: "border-white/10",  accent: "text-amber-400" },
+  { id: "light",   label: "Clean Light",    bg: "bg-white",      text: "text-slate-900",  border: "border-slate-200", accent: "text-indigo-600" },
+  { id: "gold",    label: "Gold Luxury",    bg: "bg-amber-950",  text: "text-amber-50",   border: "border-amber-700/40", accent: "text-amber-400" },
+  { id: "indigo",  label: "Indigo Pro",     bg: "bg-indigo-950", text: "text-indigo-50",  border: "border-indigo-700/40", accent: "text-indigo-300" },
+  { id: "emerald", label: "Emerald Fresh",  bg: "bg-emerald-950",text: "text-emerald-50", border: "border-emerald-700/40", accent: "text-emerald-300" },
+];
+
+const IMAGE_FIELDS = ["image", "styleimage", "photo", "designimage", "referenceimage"];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function parseMeasurements(raw: string): Record<string, string> {
+  if (!raw) return {};
+  try {
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (typeof parsed === "object" && parsed !== null) return parsed as Record<string, string>;
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function MeasurementCardGenerator() {
+  const [, setLocation] = useLocation();
+
+  const appLogo         = useAppStore((s) => s.appLogo);
+  const appName         = useAppStore((s) => s.appName);
+  const businessProfile = useAppStore((s) => s.businessProfile);
+
+  const [step, setStep]                       = useState<Step>("select_customer");
+  const [customers, setCustomers]             = useState<Customer[]>([]);
+  const [records, setRecords]                 = useState<MeasurementRecord[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedRecord, setSelectedRecord]   = useState<MeasurementRecord | null>(null);
+  const [theme, setTheme]                     = useState(THEMES[0]);
+  const [customNote, setCustomNote]           = useState("");
+  const [loading, setLoading]                 = useState(false);
+  const [search, setSearch]                   = useState("");
+  const [error, setError]                     = useState<string>("");
+  const [loadingCustomers, setLoadingCustomers] = useState(true);
+  const [loadingRecords, setLoadingRecords] = useState(false);
+
+  const cardRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // ── BrandKit Validation ───────────────────────────────────────────────────
+  const isBrandKitComplete = useMemo(() => {
+    return !!(appLogo && businessProfile?.name);
+  }, [appLogo, businessProfile?.name]);
+
+  // ── Fetch customers on mount ───────────────────────────────────────────────
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      
+      try {
+        setLoadingCustomers(true);
+        const deviceId = getDeviceId();
+        const response = await fetch(`/api/tailoring/customers?deviceId=${deviceId}`, {
+          signal: controller.signal
+        });
+        const data = await response.json();
+        setCustomers(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setError("Failed to load customers");
+          setCustomers([]);
+        }
+      } finally {
+        setLoadingCustomers(false);
+      }
+    };
+
+    fetchCustomers();
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // ── Fetch records when customer chosen ────────────────────────────────────
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    
+    const fetchRecords = async () => {
+      const controller = new AbortController();
+      
+      try {
+        setLoadingRecords(true);
+        const response = await fetch(`/api/tailoring/measurements/${selectedCustomer.id}`, {
+          signal: controller.signal
+        });
+        const data = await response.json();
+        setRecords(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setError("Failed to load measurements");
+          setRecords([]);
+        }
+      } finally {
+        setLoadingRecords(false);
+      }
+    };
+
+    fetchRecords();
+    
+    return () => {
+      controller.abort();
+    };
+  }, [selectedCustomer]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleSelectCustomer = (c: Customer) => {
+    setSelectedCustomer(c);
+    setSelectedRecord(null);
+    setStep("select_record");
+    setError("");
+  };
+
+  const handleSelectRecord = (r: MeasurementRecord) => {
+    setSelectedRecord(r);
+    setStep("customize");
+    setError("");
+  };
+
+  // ── Generate canvas with better error handling ────────────────────────────
+  const generateCardBlob = useCallback(async (): Promise<Blob> => {
+    if (!cardRef.current) throw new Error("Card not ready");
+    
+    // Wait for images to load
+    const images = cardRef.current.querySelectorAll('img');
+    await Promise.all(Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve; // Continue even if image fails
+      });
+    }));
+    
+    // Small delay for fonts
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const canvas = await html2canvas(cardRef.current, {
+      scale: 2.5,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: theme.bg.includes('white') ? '#ffffff' : '#0f172a',
+      logging: false,
+      removeContainer: true,
+      onclone: (clonedDoc, element) => {
+        // Ensure cloned images have proper styling
+        const clonedImages = element.querySelectorAll('img');
+        clonedImages.forEach(img => {
+          if (img.style) img.style.display = 'block';
+        });
+      }
+    });
+    
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Failed to generate image")), "image/png", 1.0);
+    });
+  }, [theme.bg]);
+
+  // ── Save to Device (Fixed) ─────────────────────────────────────────────────
+  const handleDownload = async () => {
+    if (!cardRef.current) {
+      setError("Card not ready. Please wait.");
+      return;
+    }
+    
+    setLoading(true);
+    setError("");
+    
+    try {
+      const blob = await generateCardBlob();
+      const url = URL.createObjectURL(blob);
+      const filename = `${selectedCustomer?.name.replace(/\s+/g, "-").toLowerCase() || "client"}-measurement-card.png`;
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (err) {
+      console.error("Download error:", err);
+      setError("Failed to save image. Please try again or use Print.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Print Card (Fixed with proper styles) ──────────────────────────────────
+  const handlePrint = () => {
+    if (!cardRef.current) return;
+    
+    // Get the current card HTML with theme styles
+    const cardHtml = cardRef.current.outerHTML;
+    const themeClasses = `${theme.bg} ${theme.text} ${theme.border}`;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      setError("Pop-up blocked. Please allow pop-ups for this site.");
+      return;
+    }
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Measurement Card - ${selectedCustomer?.name}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            background: ${theme.bg.includes('white') ? '#ffffff' : '#0f172a'}; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh;
+            padding: 20px;
+          }
+          @media print {
+            body { 
+              padding: 0; 
+              margin: 0;
+              background: white;
+            }
+            .no-print { display: none; }
+            .print-card {
+              box-shadow: none;
+              border: 1px solid #ddd;
+            }
+          }
+          .print-card {
+            max-width: 600px;
+            margin: 0 auto;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-card ${themeClasses}" style="padding: 2rem; border-radius: 1rem;">
+          ${cardHtml}
+        </div>
+        <script>
+          window.onload = () => {
+            setTimeout(() => {
+              window.print();
+              setTimeout(() => window.close(), 500);
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+  };
+
+  // ── Share Card with customer (Fixed) ───────────────────────────────────────
+  const [sharing, setSharing] = useState(false);
+  
+  const handleShareToCustomer = async () => {
+    if (!selectedCustomer?.phone) {
+      setError("Customer phone number not available for sharing.");
+      return;
+    }
+    
+    setSharing(true);
+    setError("");
+    
+    const predefinedMessage = `Hello ${selectedCustomer.name} 👋\n\nHere is your measurement card from ${businessProfile?.name || appName}.\n\nPlease review all measurements before cutting. If you have any questions, feel free to contact us.\n\nThank you for choosing us! ✨`;
+    
+    try {
+      // Try to share with image first (modern browsers)
+      const blob = await generateCardBlob();
+      const file = new File([blob], "measurement-card.png", { type: "image/png" });
+      
+      const shareData = {
+        title: `${selectedCustomer.name} - Measurement Card`,
+        text: predefinedMessage,
+        files: [file]
+      };
+      
+      if (navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: WhatsApp direct with message only
+        const formattedPhone = selectedCustomer.phone.replace(/\D/g, '');
+        const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(predefinedMessage + "\n\n*Card image saved to your device.*")}`;
+        window.open(whatsappUrl, '_blank');
+        
+        // Also trigger download so user can attach manually
+        await handleDownload();
+      }
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        // Final fallback: Just open WhatsApp with message and remind to download
+        const formattedPhone = selectedCustomer.phone.replace(/\D/g, '');
+        const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(predefinedMessage + "\n\n⚠️ Please download the attached image from your device gallery.")}`;
+        window.open(whatsappUrl, '_blank');
+        
+        // Auto download for manual attachment
+        await handleDownload();
+      }
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  // ── Navigation ─────────────────────────────────────────────────────────────
+  const onBack = () => {
+    if (step === "customize")      return setStep("select_record");
+    if (step === "select_record")  return setStep("select_customer");
+    setLocation("/all-tools");
+    setError("");
+  };
+
+  // ── Memoized filtered customers ───────────────────────────────────────────
+  const filteredCustomers = useMemo(() => 
+    customers.filter(c =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.phone.includes(search)
+    ), [customers, search]
+  );
+
+  // ── Memoized measurement entries ──────────────────────────────────────────
+  const measurementData = useMemo(() => {
+    if (!selectedRecord) return { entries: [], previewImageUrl: null };
+    
+    const allEntries = Object.entries(parseMeasurements(selectedRecord.values));
+    
+    let previewImageUrl: string | null = null;
+    for (const [k, v] of allEntries) {
+      if (IMAGE_FIELDS.includes(k.toLowerCase()) && typeof v === "string" && 
+          (v.startsWith("http") || v.startsWith("data:image"))) {
+        previewImageUrl = v;
+        break;
+      }
+    }
+    
+    const entries = allEntries.filter(([k, v]) => {
+      if (IMAGE_FIELDS.includes(k.toLowerCase())) return false;
+      if (typeof v === "string" && (v.startsWith("http://") || v.startsWith("https://") || v.startsWith("data:image"))) return false;
+      return true;
+    });
+    
+    return { entries, previewImageUrl };
+  }, [selectedRecord]);
+
+  const { entries, previewImageUrl } = measurementData;
+
+  // ── Social links ──────────────────────────────────────────────────────────
+  const socials = businessProfile?.socials;
+  const socialLine = [
+    socials?.instagram ? `Instagram: @${socials.instagram}` : null,
+    socials?.whatsapp  ? `WhatsApp: ${socials.whatsapp}` : null,
+    socials?.facebook  ? `Facebook: ${socials.facebook}` : null,
+    socials?.tiktok    ? `TikTok: @${socials.tiktok}` : null,
+    socials?.youtube   ? `YouTube: ${socials.youtube}` : null,
+  ].filter(Boolean).join(" | ");
+
+  // ── Unit display helper ────────────────────────────────────────────────────
+  const getUnitSymbol = (unit?: string) => {
+    if (unit === 'CM') return 'cm';
+    if (unit === 'INCH') return '"';
+    return selectedRecord?.unit || '';
+  };
+
+  // ── BrandKit Missing Guard ─────────────────────────────────────────────────
+  if (!isBrandKitComplete && step !== "select_customer") {
+    return (
+      <div className="max-w-xl mx-auto pb-24 relative min-h-screen">
+        <PageHeader title="Brand Kit Required" onBack={() => setStep("select_customer")} />
+        <div className="px-4 py-20">
+          <div className="text-center bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-2xl p-8">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-bold mb-2">Complete Your Brand Kit First</h3>
+            <p className="text-muted-foreground mb-6">
+              Please add your business logo and name in Settings before generating measurement cards.
+            </p>
+            <Button onClick={() => setLocation("/settings")} className="w-full">
+              Go to Brand Settings
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="max-w-xl mx-auto pb-24 relative min-h-screen">
+
+      <PageHeader
+        title={step === "select_customer" ? "Select Client" : step === "select_record" ? "Select Measurement" : "Card Preview"}
+        subtitle={step === "select_customer" ? "Choose a client to generate their card" : ""}
+        onBack={onBack}
+      />
+
+      {error && (
+        <div className="mx-4 mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-sm flex items-center gap-2">
+          <AlertCircle size={16} />
+          {error}
+        </div>
+      )}
+
+      <div className="px-4 py-4 space-y-6">
+
+        {/* STEP 1: SELECT CUSTOMER */}
+        {step === "select_customer" && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="relative">
+              <input
+                placeholder="Search clients..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl bg-card border border-border outline-none focus:border-primary text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-3">
+              {loadingCustomers ? (
+                <div className="text-center py-20">
+                  <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground text-sm">Loading customers...</p>
+                </div>
+              ) : filteredCustomers.length === 0 ? (
+                <div className="text-center py-20 bg-card border border-dashed border-border rounded-3xl">
+                  <Ruler size={40} className="mx-auto text-muted-foreground/20 mb-4" />
+                  <p className="text-muted-foreground text-sm">No customers found</p>
+                  <button onClick={() => setLocation("/customer-measurement")} className="mt-4 text-xs font-bold text-primary">Add your first client</button>
+                </div>
+              ) : filteredCustomers.map(c => (
+                <div
+                  key={c.id}
+                  onClick={() => handleSelectCustomer(c)}
+                  className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                      {c.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">{c.name}</h4>
+                      <p className="text-[10px] text-muted-foreground">{c.phone}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className="text-muted-foreground" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: SELECT RECORD */}
+        {step === "select_record" && selectedCustomer && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <p className="text-xs text-muted-foreground">Client</p>
+                <p className="font-black text-sm">{selectedCustomer.name}</p>
+              </div>
+              <button onClick={() => setStep("select_customer")} className="text-xs font-bold text-primary hover:underline">Change Client</button>
+            </div>
+
+            <div className="space-y-3">
+              {loadingRecords ? (
+                <div className="text-center py-20">
+                  <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground text-sm">Loading measurements...</p>
+                </div>
+              ) : records.map(r => (
+                <div key={r.id} onClick={() => handleSelectRecord(r)} className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]">
+                  <div>
+                    <p className="font-bold text-sm">{r.label}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{r.category}</p>
+                  </div>
+                  <ChevronRight size={16} className="text-muted-foreground" />
+                </div>
+              ))}
+              {!loadingRecords && records.length === 0 && (
+                <div className="text-center py-20 bg-card border border-dashed border-border rounded-3xl">
+                  <p className="text-muted-foreground text-sm">No measurements recorded for this client.</p>
+                  <button onClick={() => setLocation("/customer-measurement")} className="mt-4 text-xs font-bold text-primary">Go to Customer Measurement</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: CUSTOMIZE & GENERATE */}
+        {step === "customize" && selectedCustomer && selectedRecord && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            {/* THEME SELECTOR */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <Palette size={14} className="text-primary" />
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Choose Theme</label>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                {THEMES.map(t => (
+                  <button 
+                    key={t.id} 
+                    onClick={() => setTheme(t)}
+                    className={`shrink-0 px-4 py-2.5 rounded-xl border text-[10px] font-bold transition-all ${theme.id === t.id ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20' : 'bg-card border-border text-muted-foreground'}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* PREVIEW CARD */}
+            <div className="p-1 bg-slate-200 dark:bg-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
+              <div ref={cardRef} className={`w-full ${theme.bg} ${theme.text} p-8 space-y-8 transition-colors relative`}>
+                {/* Branding Background Accent */}
+                <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.03] pointer-events-none">
+                  {appLogo && <img src={appLogo} className="w-full h-full object-contain" alt="" crossOrigin="anonymous" />}
+                </div>
+
+                {/* ── 3-COLUMN HEADER ── */}
+                <div className={`pb-5 border-b ${theme.border}`}>
+                  <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-start">
+
+                    {/* Col 1 — Logo */}
+                    <div className={`w-16 h-16 rounded-2xl overflow-hidden border ${theme.border} bg-white shrink-0 shadow-sm p-1`}>
+                      {appLogo && <img src={appLogo} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />}
+                    </div>
+
+                    {/* Col 2 — Business Info */}
+                    <div className="min-w-0 space-y-1">
+                      <h2 className="text-lg font-black uppercase tracking-tight leading-tight truncate">
+                        {businessProfile?.name || appName}
+                      </h2>
+                      {businessProfile?.phone && (
+                        <p className="text-[10px] font-bold opacity-70 flex items-center gap-1">
+                          <Banknote size={10} className="opacity-50 shrink-0" />
+                          {businessProfile.phone}
+                        </p>
+                      )}
+                      {businessProfile?.address && (
+                        <p className="text-[10px] font-bold opacity-70 flex items-start gap-1">
+                          <MapPin size={10} className="opacity-50 shrink-0 mt-0.5" />
+                          <span className="leading-tight">{businessProfile.address}</span>
+                        </p>
+                      )}
+                      {socialLine && (
+                        <p className="text-[9px] font-bold opacity-50 leading-relaxed pt-0.5">
+                          {socialLine}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Col 3 — Client ID */}
+                    <div className="text-right shrink-0">
+                      <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Client ID</p>
+                      <p className="text-[13px] font-mono font-black mt-0.5">
+                        #OT-{String(selectedCustomer.id).padStart(4, '0')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── MEASUREMENT TITLE ── */}
+                <div className={`py-3 border-b ${theme.border}`}>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-center opacity-80">
+                    {selectedRecord.category} — {selectedRecord.label}
+                  </p>
+                </div>
+
+                {/* ── CLIENT & DATE ROW ── */}
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-0.5">
+                    <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Customer</p>
+                    <h4 className="text-base font-black leading-none">{selectedCustomer.name}</h4>
+                    <p className="text-[11px] font-bold opacity-60">{selectedCustomer.phone}</p>
+                  </div>
+                  <div className="text-right space-y-0.5">
+                    <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Date Generated</p>
+                    <p className="text-[11px] font-bold">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                  </div>
+                </div>
+
+                {/* ── STYLE IMAGE PREVIEW (if any) ── */}
+                {previewImageUrl && (
+                  <div className={`rounded-2xl overflow-hidden border ${theme.border} shadow-sm`}>
+                    <img
+                      src={previewImageUrl}
+                      alt="Style Reference"
+                      className="w-full object-cover max-h-52"
+                      crossOrigin="anonymous"
+                    />
+                    <div className={`px-3 py-1.5 border-t ${theme.border}`}>
+                      <p className="text-[9px] font-black uppercase tracking-widest opacity-40 text-center">Style Reference</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── MEASUREMENTS TABLE ── */}
+                <div className="grid grid-cols-2 gap-x-12 gap-y-3 py-2">
+                  {entries.map(([k, v]) => (
+                    <div key={k} className={`flex justify-between items-baseline border-b ${theme.border} pb-1.5`}>
+                      <span className="text-[10px] font-bold opacity-50 uppercase tracking-tight">{k}</span>
+                      <span className="text-base font-black">
+                        {v as string}{getUnitSymbol(selectedRecord.unit)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Footer */}
+                <div className={`pt-6 border-t ${theme.border} text-center space-y-3`}>
+                  <p className="text-[10px] font-semibold leading-relaxed italic opacity-80 px-4">
+                    {customNote || DEFAULT_GLOBAL_NOTE}
+                  </p>
+                  <div className="flex flex-col items-center gap-1 pt-2">
+                    <p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-30">Generated By {businessProfile?.name || appName}</p>
+                    <p className="text-[7px] font-bold opacity-20 uppercase">{new Date().toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ACTIONS */}
+            <div className="space-y-5">
+               <div>
+                  <div className="flex items-center gap-2 px-1 mb-1.5">
+                    <Quote size={14} className="text-primary" />
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Card Note (Optional)</label>
+                  </div>
+                  <textarea 
+                    placeholder="Enter a custom instruction for this client..." 
+                    value={customNote}
+                    onChange={e => setCustomNote(e.target.value)}
+                    className="w-full text-sm rounded-2xl px-4 py-3 bg-card border border-border focus:border-primary/50 outline-none min-h-[80px]"
+                  />
+               </div>
+               
+               <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleDownload}
+                    disabled={loading}
+                    className="h-14 bg-primary text-primary-foreground rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Saving...</>
+                    ) : (
+                      <><Download size={18} /> Save To Device</>
+                    )}
+                  </button>
+                  <button
+                    onClick={handlePrint}
+                    className="h-14 bg-card border border-border rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-muted transition-colors active:scale-[0.98]"
+                  >
+                    <Printer size={18} /> Print Card
+                  </button>
+               </div>
+
+               {/* Share to Customer Button - Always show since it falls back to WhatsApp */}
+               <button
+                 onClick={handleShareToCustomer}
+                 disabled={sharing}
+                 className="w-full h-14 bg-green-500/10 border border-green-500/30 text-green-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-green-500/20 transition-colors active:scale-[0.98] disabled:opacity-50"
+               >
+                 {sharing ? (
+                   <><span className="w-4 h-4 border-2 border-green-400/40 border-t-green-400 rounded-full animate-spin" /> Preparing...</>
+                 ) : (
+                   <><Share2 size={18} /> Share with {selectedCustomer.name}</>
+                 )}
+               </button>
+
+               <Button
+                 onClick={() => setLocation("/invite")}
+                 variant="outline"
+                 className="w-full h-14 rounded-2xl border-primary/20 bg-primary/5 hover:bg-primary/10 font-bold text-primary transition-all"
+               >
+                 <Users className="w-5 h-5 mr-2" />
+                 Invite Another Tailor
+               </Button>
+
+               <div className="flex flex-col gap-3 items-center pt-2">
+                 <button onClick={() => setStep("select_record")} className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">Back to Records</button>
+                 <div className="flex items-center gap-2 opacity-30">
+                   <div className="h-px w-8 bg-muted-foreground" />
+                   <ShieldCheck size={12} />
+                   <div className="h-px w-8 bg-muted-foreground" />
+                 </div>
+               </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
