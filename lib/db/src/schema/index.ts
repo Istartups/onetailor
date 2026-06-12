@@ -246,3 +246,16 @@ export const followUpTasksTable = pgTable("follow_up_tasks", {
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const tailorNotesTable = pgTable("tailor_notes", {
+  id: serial("id").primaryKey(),
+  deviceId: text("device_id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  customerId: integer("customer_id"),    // null = general note
+  tags: text("tags"),                    // comma-separated tag string
+  isPinned: boolean("is_pinned").notNull().default(false),
+  isArchived: boolean("is_archived").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});

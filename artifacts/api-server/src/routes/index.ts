@@ -8,6 +8,7 @@ import tailoringRouter from "./tailoring";
 import notificationRouter from "./notification";
 import authRouter from "./auth";
 import crmRouter from "./crm";
+import notesRouter from "./notes";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(userRouter);
 router.use(tailoringRouter);
 router.use(notificationRouter);
 router.use(crmRouter);
+router.use(notesRouter);
 
 export default router;

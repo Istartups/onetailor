@@ -383,6 +383,21 @@ async function startServer() {
       )
     `);
 
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS tailor_notes (
+        id SERIAL PRIMARY KEY,
+        device_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        customer_id INTEGER,
+        tags TEXT,
+        is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+        is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
     // CRM columns on existing tables
     const crmUserColumns = [
       { name: "whatsapp_number",   type: "TEXT" },

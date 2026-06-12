@@ -4,7 +4,7 @@ import {
   ChevronRight, Contact, Plus, LayoutGrid, CheckCircle2,
   Phone, Mail, MapPin, Crown, ShieldCheck,
   ChevronDown, ChevronUp, MessageCircle, ExternalLink,
-  Layers, RefreshCw, SlidersHorizontal
+  Layers, RefreshCw, SlidersHorizontal, NotebookPen, Pin, Archive, RotateCcw, ChevronLeft
 } from "lucide-react";
 import { SYSTEM_TEMPLATES_META } from "@/lib/measurement-data";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -75,6 +75,15 @@ export default function CustomerMeasurement() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [measurements, setMeasurements]   = useState<Measurement[]>([]);
 
+  // ── Detail tab ──
+  const [detailTab, setDetailTab] = useState<"measurements" | "notes">("measurements");
+
+  // ── Customer notes ──
+  interface CustomerNote { id: number; title: string; content: string; tags: string | null; isPinned: boolean; isArchived: boolean; updatedAt: string; }
+  const [customerNotes, setCustomerNotes] = useState<CustomerNote[]>([]);
+  const [noteForm, setNoteForm] = useState({ show: false, title: "", content: "", tags: "" });
+  const [noteSaving, setNoteSaving] = useState(false);
+
   // ── Client form ──
   const [customerForm, setCustomerForm] = useState({
     name: "", phone: "", gender: "male" as Gender, email: "", address: "", notes: ""
@@ -117,6 +126,64 @@ export default function CustomerMeasurement() {
       if (res.ok) setMeasurements(await res.json());
     } catch (e) { console.error(e); }
   };
+
+  const fetchCustomerNotes = async (customerId: number) => {
+    try {
+      const res = await fetch(`/api/notes?deviceId=${getDeviceId()}&customerId=${customerId}&archived=false`);
+      if (res.ok) setCustomerNotes(await res.json());
+    } catch { /* silent */ }
+  };
+
+  const saveCustomerNote = async () => {
+    if (!selectedCustomer || !noteForm.title.trim() || !noteForm.content.trim()) return;
+    setNoteSaving(true);
+    try {
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deviceId: getDeviceId(),
+          title: noteForm.title.trim(),
+          content: noteForm.content.trim(),
+          tags: noteForm.tags.trim() || undefined,
+          customerId: selectedCustomer.id,
+        }),
+      });
+      if (res.ok) {
+        setNoteForm({ show: false, title: "", content: "", tags: "" });
+        await fetchCustomerNotes(selectedCustomer.id);
+        toast({ title: "Note saved" });
+      }
+    } catch { /* silent */ }
+    finally { setNoteSaving(false); }
+  };
+
+  const deleteCustomerNote = async (noteId: number) => {
+    if (!confirm("Delete this note?")) return;
+    try {
+      await fetch(`/api/notes/${noteId}?deviceId=${getDeviceId()}`, { method: "DELETE" });
+      setCustomerNotes(prev => prev.filter(n => n.id !== noteId));
+      toast({ title: "Note deleted" });
+    } catch { /* silent */ }
+  };
+
+  const toggleNotePin = async (note: { id: number; isPinned: boolean }) => {
+    try {
+      await fetch(`/api/notes/${note.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deviceId: getDeviceId(), isPinned: !note.isPinned }),
+      });
+      if (selectedCustomer) await fetchCustomerNotes(selectedCustomer.id);
+    } catch { /* silent */ }
+  };
+
+  // Fetch notes when customer detail opens
+  useEffect(() => {
+    if (view === "client_detail" && selectedCustomer) {
+      fetchCustomerNotes(selectedCustomer.id);
+    }
+  }, [view, selectedCustomer?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── URL param deep-link (from Home "Add Measurement" shortcut) ────────────
   useEffect(() => {
@@ -640,7 +707,124 @@ export default function CustomerMeasurement() {
               </div>
             </div>
 
-            {/* Measurement records */}
+            {/* Detail tab strip */}
+            <div className="flex bg-muted/50 rounded-2xl p-1 gap-1">
+              <button
+                onClick={() => setDetailTab("measurements")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all ${detailTab === "measurements" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Ruler size={13} /> Measurements
+              </button>
+              <button
+                onClick={() => setDetailTab("notes")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all ${detailTab === "notes" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <NotebookPen size={13} /> Notes {customerNotes.length > 0 && <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-black">{customerNotes.length}</span>}
+              </button>
+            </div>
+
+            {/* ── NOTES TAB ────────────────────────────────────────────────── */}
+            {detailTab === "notes" && (
+              <div className="space-y-3 animate-in fade-in duration-200">
+                {/* Add note form */}
+                {noteForm.show ? (
+                  <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <NotebookPen size={14} className="text-teal-500" />
+                      <span className="text-sm font-black">New Note for {selectedCustomer.name}</span>
+                    </div>
+                    <input
+                      placeholder="Title..."
+                      value={noteForm.title}
+                      onChange={e => setNoteForm(f => ({ ...f, title: e.target.value }))}
+                      className="w-full text-sm rounded-xl px-4 py-3 bg-muted/50 border border-border outline-none focus:border-primary/50 transition-all"
+                      autoFocus
+                    />
+                    <textarea
+                      placeholder="Note content..."
+                      value={noteForm.content}
+                      onChange={e => setNoteForm(f => ({ ...f, content: e.target.value }))}
+                      rows={4}
+                      className="w-full text-sm rounded-xl px-4 py-3 bg-muted/50 border border-border outline-none focus:border-primary/50 transition-all resize-none"
+                    />
+                    <input
+                      placeholder="Tags (comma-separated, optional)..."
+                      value={noteForm.tags}
+                      onChange={e => setNoteForm(f => ({ ...f, tags: e.target.value }))}
+                      className="w-full text-sm rounded-xl px-4 py-2.5 bg-muted/50 border border-border outline-none focus:border-primary/50 transition-all"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setNoteForm({ show: false, title: "", content: "", tags: "" })}
+                        className="py-3 rounded-xl border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={saveCustomerNote}
+                        disabled={noteSaving || !noteForm.title.trim() || !noteForm.content.trim()}
+                        className="py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-50 active:scale-[0.98] transition-all"
+                      >
+                        {noteSaving ? "Saving..." : "Save Note"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setNoteForm(f => ({ ...f, show: true }))}
+                    className="w-full py-3.5 rounded-2xl border-2 border-dashed border-teal-500/30 hover:border-teal-500/60 text-teal-600 font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Plus size={15} /> Add Note
+                  </button>
+                )}
+
+                {/* Notes list */}
+                {customerNotes.length === 0 && !noteForm.show ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <NotebookPen size={28} className="mx-auto opacity-20 mb-3" />
+                    <p className="text-xs">No notes for this customer yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {[...customerNotes].sort((a, b) => Number(b.isPinned) - Number(a.isPinned)).map(note => (
+                      <div key={note.id} className={`bg-card border rounded-2xl p-3.5 group ${note.isPinned ? "border-primary/25" : "border-border"}`}>
+                        {note.isPinned && <div className="h-0.5 w-full bg-gradient-to-r from-primary/50 to-transparent rounded mb-2.5 -mt-3.5 -mx-3.5" style={{ width: "calc(100% + 1.75rem)" }} />}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              {note.isPinned && <Pin size={10} className="text-primary shrink-0" />}
+                              <p className="text-sm font-bold truncate">{note.title}</p>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">{note.content}</p>
+                            {note.tags && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {note.tags.split(",").filter(Boolean).map(t => (
+                                  <span key={t} className="px-1.5 py-0.5 bg-muted rounded-full text-[9px] font-bold text-muted-foreground">{t.trim()}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => toggleNotePin(note)} className={`p-1.5 rounded-lg transition-colors ${note.isPinned ? "text-primary" : "text-muted-foreground hover:text-foreground"}`} title={note.isPinned ? "Unpin" : "Pin"}>
+                              <Pin size={11} />
+                            </button>
+                            <button onClick={() => deleteCustomerNote(note.id)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors" title="Delete">
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground/40 mt-2">
+                          {(() => { const d = (Date.now() - new Date(note.updatedAt).getTime()) / 1000; if (d < 60) return "just now"; if (d < 3600) return `${Math.floor(d / 60)}m ago`; if (d < 86400) return `${Math.floor(d / 3600)}h ago`; return new Date(note.updatedAt).toLocaleDateString(); })()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── MEASUREMENTS TAB ─────────────────────────────────────────── */}
+            {detailTab === "measurements" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <h3 className="font-bold flex items-center gap-2 text-sm uppercase tracking-widest text-muted-foreground">
@@ -747,6 +931,7 @@ export default function CustomerMeasurement() {
                 ))
               )}
             </div>
+            )} {/* end detailTab === "measurements" */}
 
             <button
               onClick={() => handleDeleteCustomer(selectedCustomer.id)}

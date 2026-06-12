@@ -30,6 +30,7 @@ const MeasurementCardGenerator    = lazy(() => import("@/pages/MeasurementCardGe
 const FabricColorMatcher          = lazy(() => import("@/pages/FabricColorMatcher"));
 const InviteTailors               = lazy(() => import("@/pages/InviteTailors"));
 const Account                     = lazy(() => import("@/pages/Account"));
+const TailorNotes                 = lazy(() => import("@/pages/TailorNotes"));
 const NotFound                    = lazy(() => import("@/pages/not-found"));
 
 function LoadingFallback() {
@@ -76,6 +77,7 @@ function Router() {
         <Route path="/color-matcher"      component={FabricColorMatcher} />
         <Route path="/invite"             component={InviteTailors} />
         <Route path="/account"            component={Account} />
+        <Route path="/notes"              component={TailorNotes} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

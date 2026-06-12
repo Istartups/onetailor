@@ -16,6 +16,7 @@ import {
 } from "@workspace/db";
 import { eq, desc, and, gte, lte, isNotNull, sql, or, like, isNull, lt } from "drizzle-orm";
 import { authenticateCRM, requireAdminRole, type CRMRequest } from "../middlewares/auth";
+import { sendCallMeBotAlert } from "../lib/callmebot";
 
 const router = Router();
 const JWT_SECRET = process.env["JWT_SECRET"] || "onetailor-admin-secret-key-123";
@@ -68,6 +69,22 @@ function scoreLabel(score: number): string {
   return "cold";
 }
 
+// ─── CallMeBot helper: load settings and fire alert ──────────────────────────
+
+async function fireCallMeBotAlert(message: string): Promise<void> {
+  try {
+    const [settings] = await db.select({
+      callmebotPhone: paymentSettingsTable.callmebotPhone,
+      callmebotApiKey: paymentSettingsTable.callmebotApiKey,
+    }).from(paymentSettingsTable).where(eq(paymentSettingsTable.id, 1)).limit(1);
+
+    if (!settings?.callmebotPhone || !settings?.callmebotApiKey) return;
+    await sendCallMeBotAlert(settings.callmebotPhone, settings.callmebotApiKey, message);
+  } catch (err) {
+    console.warn("[CallMeBot] Failed to fire alert:", err);
+  }
+}
+
 // ─── Track tool event from PWA (public) ──────────────────────────────────────
 
 router.post("/crm/events", async (req, res) => {
@@ -75,10 +92,21 @@ router.post("/crm/events", async (req, res) => {
     const { deviceId, toolId, eventType = "view" } = req.body;
     if (!deviceId || !toolId) return void res.status(400).json({ message: "Missing deviceId or toolId" });
 
-    const [user] = await db.select({ id: usersTable.id, toolsViewed: usersTable.toolsViewed, toolsUsedList: usersTable.toolsUsedList })
-      .from(usersTable).where(eq(usersTable.deviceId, deviceId)).limit(1);
+    const [user] = await db.select({
+      id: usersTable.id,
+      email: usersTable.email,
+      businessName: usersTable.businessName,
+      phone: usersTable.phone,
+      totalUsageCount: usersTable.totalUsageCount,
+      toolsViewed: usersTable.toolsViewed,
+      toolsUsedList: usersTable.toolsUsedList,
+      leadScore: usersTable.leadScore,
+      createdAt: usersTable.createdAt,
+    }).from(usersTable).where(eq(usersTable.deviceId, deviceId)).limit(1);
 
     if (!user) return void res.json({ ok: true });
+
+    const prevScore = user.leadScore || 0;
 
     const toolsViewed: string[] = [];
     try { toolsViewed.push(...JSON.parse(user.toolsViewed || "[]")); } catch {}
@@ -88,10 +116,29 @@ router.post("/crm/events", async (req, res) => {
     try { toolsUsedList.push(...JSON.parse(user.toolsUsedList || "[]")); } catch {}
     if (eventType === "use" && !toolsUsedList.includes(toolId)) toolsUsedList.push(toolId);
 
+    const newScore = computeLeadScore({
+      createdAt: user.createdAt,
+      totalUsageCount: user.totalUsageCount,
+      businessName: user.businessName,
+      phone: user.phone,
+      email: user.email,
+      toolsViewed: JSON.stringify(toolsViewed),
+      toolsUsedList: JSON.stringify(toolsUsedList),
+    });
+
     await db.update(usersTable).set({
       toolsViewed: JSON.stringify(toolsViewed),
       toolsUsedList: JSON.stringify(toolsUsedList),
+      leadScore: newScore,
     }).where(eq(usersTable.id, user.id));
+
+    // Fire CallMeBot alert when lead crosses into hot territory for the first time
+    if (prevScore < 70 && newScore >= 70) {
+      const label = user.email || user.businessName || user.phone || `User #${user.id}`;
+      const daysSince = Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000);
+      const msg = `🔥 New HOT Lead!\n\nName: ${label}\nLead Score: ${newScore}\nDays Since Registration: ${daysSince}\n\nFollow up now on OneTailor CRM.`;
+      fireCallMeBotAlert(msg).catch(() => {});
+    }
 
     return void res.json({ ok: true });
   } catch (err) {
@@ -656,14 +703,22 @@ router.post("/crm/generate-tasks", authenticateCRM as any, requireAdminRole as a
       followup24hEnabled: paymentSettingsTable.followup24hEnabled,
       followup48hEnabled: paymentSettingsTable.followup48hEnabled,
       followup72hEnabled: paymentSettingsTable.followup72hEnabled,
+      callmebotPhone: paymentSettingsTable.callmebotPhone,
+      callmebotApiKey: paymentSettingsTable.callmebotApiKey,
     }).from(paymentSettingsTable).where(eq(paymentSettingsTable.id, 1)).limit(1);
 
     const now = new Date();
-    const leads = await db.select({ id: usersTable.id, createdAt: usersTable.createdAt })
-      .from(usersTable)
-      .where(and(isNotNull(usersTable.passwordHash), eq(usersTable.isPremium, false)));
+    const leads = await db.select({
+      id: usersTable.id,
+      email: usersTable.email,
+      businessName: usersTable.businessName,
+      phone: usersTable.phone,
+      createdAt: usersTable.createdAt,
+    }).from(usersTable).where(and(isNotNull(usersTable.passwordHash), eq(usersTable.isPremium, false)));
 
     let created = 0;
+    const newlyCreatedAlerts: string[] = [];
+
     for (const lead of leads) {
       const hoursOld = (now.getTime() - new Date(lead.createdAt).getTime()) / 3600000;
 
@@ -693,11 +748,35 @@ router.post("/crm/generate-tasks", authenticateCRM as any, requireAdminRole as a
             status: "pending",
           });
           created++;
+          const label = lead.email || lead.businessName || lead.phone || `Lead #${lead.id}`;
+          newlyCreatedAlerts.push(`⏰ ${tt.type} Follow-Up Task\nLead: ${label}\nRegistered: ${Math.round(hoursOld)}h ago`);
         }
       }
     }
 
-    return void res.json({ created, message: `Generated ${created} follow-up tasks` });
+    // Send overdue-task alert if CallMeBot is configured and tasks were created
+    if (newlyCreatedAlerts.length > 0 && settings?.callmebotPhone && settings?.callmebotApiKey) {
+      const msg = `📋 OneTailor: ${newlyCreatedAlerts.length} new follow-up task(s) generated.\n\n${newlyCreatedAlerts.slice(0, 5).join("\n\n")}${newlyCreatedAlerts.length > 5 ? `\n\n...and ${newlyCreatedAlerts.length - 5} more.` : ""}`;
+      sendCallMeBotAlert(settings.callmebotPhone, settings.callmebotApiKey, msg).catch(() => {});
+    }
+
+    // Also check for already-pending overdue tasks and alert
+    const overdueTasks = await db.select({
+      id: followUpTasksTable.id,
+      userId: followUpTasksTable.userId,
+      taskType: followUpTasksTable.taskType,
+      triggerAt: followUpTasksTable.triggerAt,
+    }).from(followUpTasksTable).where(and(
+      eq(followUpTasksTable.status, "pending"),
+      lt(followUpTasksTable.triggerAt, now),
+    ));
+
+    if (overdueTasks.length > 0 && settings?.callmebotPhone && settings?.callmebotApiKey) {
+      const msg = `⚠️ OneTailor: ${overdueTasks.length} overdue follow-up task(s) need attention!\n\nLog in to the CRM to review and action them now.`;
+      sendCallMeBotAlert(settings.callmebotPhone, settings.callmebotApiKey, msg).catch(() => {});
+    }
+
+    return void res.json({ created, overdue: overdueTasks.length, message: `Generated ${created} follow-up tasks. ${overdueTasks.length} task(s) overdue.` });
   } catch (err) {
     console.error("Generate tasks error:", err);
     return void res.status(500).json({ message: "Internal server error" });

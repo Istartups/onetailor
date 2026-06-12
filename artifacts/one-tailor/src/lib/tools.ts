@@ -1,7 +1,7 @@
 import {
   Ruler, Calculator,
   CalendarClock, ScanLine, Shirt,
-  Tag, Palette, Users, LayoutGrid, Layers
+  Tag, Palette, Users, LayoutGrid, Layers, NotebookPen
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -36,6 +36,19 @@ export const ALL_TOOLS: Tool[] = [
     borderColor: "rgba(59,130,246,0.18)",
     glow: "rgba(59,130,246,0.04)",
     popular: true,
+  },
+  {
+    id: "tailor-notes",
+    path: "/notes",
+    name: "Tailor Notes",
+    description: "Quick notes for tailoring work. Attach to customers or keep standalone.",
+    category: "clients",
+    icon: NotebookPen,
+    iconBg: "rgba(20,184,166,0.12)",
+    iconColor: "hsl(173,80%,40%)",
+    borderColor: "rgba(20,184,166,0.18)",
+    glow: "rgba(20,184,166,0.04)",
+    isNew: true,
   },
   {
     id: "measurement-templates",
