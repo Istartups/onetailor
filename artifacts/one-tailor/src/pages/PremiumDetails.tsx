@@ -8,12 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 const PREMIUM_FEATURES = [
-  { title: "Unlimited Client Database",  desc: "Save and access all your customers and their full measurement history — no limits.",                 icon: Users },
-  { title: "Professional Branding",      desc: "Auto-extract brand colours from your logo and generate custom-themed business cards.",               icon: Palette },
-  { title: "Smart Media Suite",          desc: "Access high-quality before/after tools, flyer resizers, and watermarking for your work.",            icon: Zap },
-  { title: "Advanced Video Tools",       desc: "Resize, compress, and format videos for WhatsApp, Instagram, and TikTok in seconds.",                icon: Video },
-  { title: "Financial Dashboard",        desc: "Track profit margins, fabric costs, and expenses to grow your business confidently.",                 icon: ShieldCheck },
-  { title: "Multi-Device Access",        desc: "Log in with your email on any phone or tablet and your data is always there.",                       icon: Database },
+  { title: "Unlimited Client Database",  desc: "Store unlimited customers and their complete measurement history — no cap, ever.",                   icon: Users },
+  { title: "Cloud Backup & Restore",     desc: "Export all your customers, measurements, and notes as a backup file you can restore anytime.",       icon: Database },
+  { title: "Multi-Device Access",        desc: "Log in with your email on any phone or tablet and your full data is always synced and waiting.",      icon: Smartphone },
+  { title: "Custom Measurement Templates", desc: "Create and save your own measurement templates for any garment type your workshop handles.",       icon: Zap },
+  { title: "Professional BrandKit",      desc: "Set your business logo, colours, and name — every receipt and card reflects your brand.",            icon: Palette },
+  { title: "Push Notification Alerts",   desc: "Receive important updates and announcements directly on your device even when the app is closed.",   icon: ShieldCheck },
+  { title: "Priority Support",           desc: "Get dedicated help from the OneTailor team whenever you need assistance or have questions.",          icon: LogIn },
 ];
 
 interface PaymentSettings {

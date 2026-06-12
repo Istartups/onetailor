@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, tailoringCustomersTable, tailoringMeasurementsTable, usersTable } from "@workspace/db";
-import { eq, and, desc, or, ilike } from "drizzle-orm";
+import { eq, and, desc, or, ilike, sql } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -53,10 +53,13 @@ router.post("/tailoring/customers", async (req, res) => {
         .returning();
       res.json(updated);
     } else {
-      // Create
+      // Create — increment usage count
       const [created] = await db.insert(tailoringCustomersTable)
         .values({ userId: user.id, name, phone, gender, email, address, notes })
         .returning();
+      await db.update(usersTable)
+        .set({ totalUsageCount: user.totalUsageCount + 1 })
+        .where(eq(usersTable.id, user.id));
       res.json(created);
     }
   } catch (error) {
@@ -154,7 +157,7 @@ router.post("/tailoring/measurements", async (req, res) => {
         .where(eq(tailoringMeasurementsTable.id, id))
         .returning();
     } else {
-      // Insert new record
+      // Insert new record — increment usage count on owner
       [result] = await db.insert(tailoringMeasurementsTable)
         .values({
           customerId,
@@ -164,6 +167,15 @@ router.post("/tailoring/measurements", async (req, res) => {
           isCustom: isCustom || false
         })
         .returning();
+
+      // Increment usage for the user who owns this customer
+      const [customer] = await db.select({ userId: tailoringCustomersTable.userId })
+        .from(tailoringCustomersTable).where(eq(tailoringCustomersTable.id, customerId)).limit(1);
+      if (customer?.userId) {
+        await db.execute(
+          sql`UPDATE users SET total_usage_count = total_usage_count + 1 WHERE id = ${customer.userId}`
+        );
+      }
     }
 
     // Update customer's updatedAt timestamp

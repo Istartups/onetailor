@@ -418,10 +418,28 @@ async function startServer() {
       { name: "followup_24h_enabled",   type: "BOOLEAN DEFAULT TRUE" },
       { name: "followup_48h_enabled",   type: "BOOLEAN DEFAULT TRUE" },
       { name: "followup_72h_enabled",   type: "BOOLEAN DEFAULT FALSE" },
+      // PWA branding assets (base64 data URLs stored server-side)
+      { name: "pwa_logo_data",          type: "TEXT" },
+      { name: "pwa_favicon_data",       type: "TEXT" },
+      { name: "pwa_splash_data",        type: "TEXT" },
     ];
     for (const col of crmSettingsColumns) {
       try { await db.execute(sql.raw(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`)); } catch {}
     }
+
+    // ─── Login Audit Logs Table ───────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS login_audit_logs (
+        id SERIAL PRIMARY KEY,
+        actor_type TEXT NOT NULL DEFAULT 'admin',
+        username TEXT NOT NULL,
+        ip_address TEXT,
+        user_agent TEXT,
+        success BOOLEAN NOT NULL DEFAULT true,
+        failure_reason TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
 
     logger.info("Database tables verified.");
 

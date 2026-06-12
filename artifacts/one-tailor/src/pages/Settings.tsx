@@ -15,6 +15,157 @@ const APP_VERSION = "2.0.0";
 
 type SettingsTab = "general" | "brandkit" | "backup" | "appearance" | "about";
 
+// ─── Backup Tab Component ─────────────────────────────────────────────────────
+
+function BackupTab({ isPremium, toast }: { isPremium: boolean; toast: any }) {
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const importRef = useRef<HTMLInputElement>(null);
+  const clearData = useAppStore((s) => s.clearData);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const deviceId = localStorage.getItem("onetailor_device_id") || "";
+      const storeRaw = localStorage.getItem("onetailor-storage") || "{}";
+      let storeData: any = {};
+      try { storeData = JSON.parse(storeRaw); } catch {}
+
+      // Fetch customers and measurements from API
+      let customers: any[] = [];
+      let measurements: any[] = [];
+      try {
+        const [cRes, mRes] = await Promise.all([
+          fetch(`/api/tailoring/customers?deviceId=${deviceId}`),
+          fetch(`/api/tailoring/measurements?deviceId=${deviceId}`)
+        ]);
+        if (cRes.ok) customers = await cRes.json();
+        if (mRes.ok) measurements = await mRes.json();
+      } catch {}
+
+      const backup = {
+        version: APP_VERSION,
+        exportedAt: new Date().toISOString(),
+        store: storeData,
+        customers,
+        measurements,
+      };
+
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `onetailor-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Backup Exported", description: "Your data has been downloaded as a JSON file." });
+    } catch {
+      toast({ title: "Export Failed", description: "Could not export data.", variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImport = async (file: File) => {
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+
+      if (!backup.store && !backup.customers) {
+        toast({ title: "Invalid File", description: "This file doesn't appear to be a valid backup.", variant: "destructive" });
+        return;
+      }
+
+      // Restore Zustand store
+      if (backup.store) {
+        localStorage.setItem("onetailor-storage", JSON.stringify(backup.store));
+      }
+
+      toast({
+        title: "Backup Imported",
+        description: "App data restored. Reload the app to apply all changes.",
+      });
+
+      setTimeout(() => window.location.reload(), 1500);
+    } catch {
+      toast({ title: "Import Failed", description: "Could not read backup file.", variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleClearData = () => {
+    if (!showClearConfirm) { setShowClearConfirm(true); return; }
+    clearData();
+    setShowClearConfirm(false);
+    toast({ title: "Data Cleared", description: "All local data has been removed." });
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="bg-card border border-border rounded-3xl p-6 space-y-4">
+        <div className="w-16 h-16 rounded-full bg-muted mx-auto flex items-center justify-center text-muted-foreground">
+          <Database size={32} />
+        </div>
+        <div className="space-y-1 text-center">
+          <h3 className="font-bold">Data Backup &amp; Restore</h3>
+          <p className="text-xs text-muted-foreground px-4">Export your settings, clients, and measurements as a JSON file. Import a backup to restore everything.</p>
+        </div>
+        {!isPremium && (
+          <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+            <p className="text-[10px] font-bold text-primary text-center">👑 Premium users get cloud backup and priority support!</p>
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center justify-center gap-2 py-3.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+          >
+            {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            {exporting ? "Exporting..." : "Export Backup"}
+          </button>
+          <button
+            onClick={() => importRef.current?.click()}
+            disabled={importing}
+            className="flex items-center justify-center gap-2 py-3.5 bg-muted hover:bg-muted/80 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+          >
+            {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            {importing ? "Importing..." : "Import Backup"}
+          </button>
+          <input
+            ref={importRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleImport(f); e.target.value = ""; }}
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground text-center pt-1">Backup includes: brand settings, client profiles &amp; measurements.</p>
+      </div>
+
+      <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-6">
+        <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-4 ml-1">Danger Zone</p>
+        <button
+          onClick={handleClearData}
+          className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${showClearConfirm ? "bg-red-500 text-white" : "bg-red-500/10 text-red-500"}`}
+        >
+          <div className="flex items-center gap-3">
+            <Trash2 size={18} />
+            <div className="text-left">
+              <p className="text-xs font-black uppercase tracking-widest">{showClearConfirm ? "TAP TO CONFIRM" : "CLEAR ALL DATA"}</p>
+            </div>
+          </div>
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function compressImageToBase64(file: File, maxSize = 256): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -369,7 +520,12 @@ export default function Settings() {
                         type="tel" 
                         placeholder="e.g. +234..." 
                         value={brandForm.phone} 
-                        onChange={e => setBrandForm({...brandForm, phone: e.target.value})} 
+                        onChange={e => setBrandForm({...brandForm, phone: e.target.value.replace(/[^0-9+\-() ]/g, "")})}
+                        onKeyDown={e => {
+                          const allowed = ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Enter","+","-","(",")"," "];
+                          if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault();
+                        }}
+                        maxLength={20}
                         className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-muted/30 border border-border outline-none focus:border-primary font-bold text-sm"
                       />
                     </div>
@@ -630,26 +786,11 @@ export default function Settings() {
 
         {/* 4. BACKUP TAB */}
         {activeTab === "backup" && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-             <div className="bg-card border border-border rounded-3xl p-6 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-muted mx-auto flex items-center justify-center text-muted-foreground">
-                   <Database size={32} />
-                </div>
-                <div className="space-y-1">
-                   <h3 className="font-bold">Data Management</h3>
-                   <p className="text-xs text-muted-foreground px-4">Import or export your client database and settings</p>
-                </div>
-                {!isPremium && (
-                   <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                      <p className="text-[10px] font-bold text-primary">👑 Premium users get automatic cloud backup and priority support!</p>
-                   </div>
-                )}
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                   <button className="flex items-center justify-center gap-2 py-3 bg-muted hover:bg-muted/80 rounded-xl text-xs font-bold transition-all"><Download size={14} /> Export</button>
-                   <button className="flex items-center justify-center gap-2 py-3 bg-muted hover:bg-muted/80 rounded-xl text-xs font-bold transition-all"><Upload size={14} /> Import</button>
-                </div>
-             </div>
+          <BackupTab isPremium={isPremium} toast={toast} />
+        )}
 
+        {activeTab === "backup_old_placeholder" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
              <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-6">
                 <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-4 ml-1">Danger Zone</p>
                 <button 

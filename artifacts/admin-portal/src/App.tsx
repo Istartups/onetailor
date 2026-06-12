@@ -13,6 +13,7 @@ import Broadcast from "./pages/Broadcast";
 import DeployGuide from "./pages/DeployGuide";
 import Accounts from "./pages/Accounts";
 import CRM from "./pages/CRM";
+import SystemLogs from "./pages/SystemLogs";
 import { Toaster } from "./components/ui/toaster";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -72,6 +73,9 @@ export default function App() {
         </Route>
         <Route path="/broadcast">
           <PrivateRoute><Dashboard><Broadcast /></Dashboard></PrivateRoute>
+        </Route>
+        <Route path="/logs">
+          <PrivateRoute><Dashboard><SystemLogs /></Dashboard></PrivateRoute>
         </Route>
         <Route path="/deploy-guide">
           <PrivateRoute><Dashboard><DeployGuide /></Dashboard></PrivateRoute>

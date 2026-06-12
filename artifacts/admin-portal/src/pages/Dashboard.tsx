@@ -13,7 +13,8 @@ import {
   BookOpen,
   Bell,
   Users,
-  MessageSquare
+  MessageSquare,
+  ScrollText
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
     { label: "Payment Settings",icon: Settings,         href: "/payment-settings" },
     { label: "Broadcast",       icon: Bell,             href: "/broadcast" },
     { label: "System Settings", icon: Settings,         href: "/settings" },
+    { label: "System Logs",     icon: ScrollText,       href: "/logs" },
     { label: "Deploy Guide",    icon: BookOpen,         href: "/deploy-guide" },
   ];
 

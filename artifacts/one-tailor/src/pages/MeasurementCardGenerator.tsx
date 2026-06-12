@@ -1,105 +1,110 @@
 import { useState, useEffect, useRef } from "react";
-import { 
-  Layout, Download, Share2, Printer, Check, X, Palette, 
-  ChevronRight, Building2, User, Hash, Calendar, Copy,
-  CreditCard, Banknote, ShieldCheck, Crown, Quote, MapPin,
-  Users
+import {
+  Palette, Download, Printer, ShieldCheck, Users, ChevronRight,
+  User, MapPin, Banknote, Quote, Ruler, RotateCcw
 } from "lucide-react";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { useAppStore } from "@/store/useAppStore";
-import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Button } from "@/components/ui/button";
 import { getDeviceId } from "@/lib/utils";
 import html2canvas from "html2canvas";
-import { Button } from "@/components/ui/button";
 
-// --- Themes ---
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  gender: string;
+}
+
+interface MeasurementRecord {
+  id: number;
+  customerId: number;
+  label: string;
+  category: string;
+  values: string;
+  unit?: string;
+  createdAt: string;
+}
+
+type Step = "select_customer" | "select_record" | "customize";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DEFAULT_GLOBAL_NOTE =
+  "All measurements are in the recorded unit. Please confirm before cutting.";
 
 const THEMES = [
-  { id: "classic", label: "Classic White", bg: "bg-white", text: "text-slate-900", accent: "bg-slate-100", border: "border-slate-200" },
-  { id: "tailor-blue", label: "Tailor Blue", bg: "bg-[#0f172a]", text: "text-white", accent: "bg-blue-500/10", border: "border-blue-500/20" },
-  { id: "luxury-gold", label: "Luxury Gold", bg: "bg-black", text: "text-[#d4a020]", accent: "bg-[#d4a020]/10", border: "border-[#d4a020]/30" },
-  { id: "corporate", label: "Corporate", bg: "bg-[#f1f5f9]", text: "text-[#1e293b]", accent: "bg-blue-600/10", border: "border-blue-600/20" },
-  { id: "traditional", label: "Traditional", bg: "bg-[#fdfcf0]", text: "text-[#5d4037]", accent: "bg-[#5d4037]/10", border: "border-[#5d4037]/20" },
+  { id: "dark",    label: "Classic Dark",   bg: "bg-slate-900",  text: "text-white",      border: "border-white/10",  accent: "text-amber-400" },
+  { id: "light",   label: "Clean Light",    bg: "bg-white",      text: "text-slate-900",  border: "border-slate-200", accent: "text-indigo-600" },
+  { id: "gold",    label: "Gold Luxury",    bg: "bg-amber-950",  text: "text-amber-50",   border: "border-amber-700/40", accent: "text-amber-400" },
+  { id: "indigo",  label: "Indigo Pro",     bg: "bg-indigo-950", text: "text-indigo-50",  border: "border-indigo-700/40", accent: "text-indigo-300" },
+  { id: "emerald", label: "Emerald Fresh",  bg: "bg-emerald-950",text: "text-emerald-50", border: "border-emerald-700/40", accent: "text-emerald-300" },
 ];
 
-const DEFAULT_GLOBAL_NOTE = "Measurements remain valid until updated. Please present this card for your next order.";
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function parseMeasurements(raw: string): Record<string, string> {
+  try {
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (typeof parsed === "object" && parsed !== null) return parsed as Record<string, string>;
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MeasurementCardGenerator() {
-  const { toast } = useToast();
-  const [location, setLocation] = useLocation();
-  const searchParams = new URLSearchParams(location.split("?")[1]);
-  const initialCustomerId = searchParams.get("customerId");
+  const [, setLocation] = useLocation();
 
-  const businessProfile = useAppStore(s => s.businessProfile);
-  const appLogo = useAppStore(s => s.appLogo);
-  const appName = useAppStore(s => s.appName);
-  const incrementUsage = useAppStore(s => s.incrementUsage);
+  const appLogo         = useAppStore((s) => s.appLogo);
+  const appName         = useAppStore((s) => s.appName);
+  const businessProfile = useAppStore((s) => s.businessProfile);
 
-  // Check if brand kit is complete
-  const isProfileComplete = businessProfile && 
-    businessProfile.name && 
-    businessProfile.phone && 
-    businessProfile.address;
+  const [step, setStep]                       = useState<Step>("select_customer");
+  const [customers, setCustomers]             = useState<Customer[]>([]);
+  const [records, setRecords]                 = useState<MeasurementRecord[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedRecord, setSelectedRecord]   = useState<MeasurementRecord | null>(null);
+  const [theme, setTheme]                     = useState(THEMES[0]);
+  const [customNote, setCustomNote]           = useState("");
+  const [loading, setLoading]                 = useState(false);
+  const [search, setSearch]                   = useState("");
 
-  useEffect(() => {
-    if (!isProfileComplete) {
-      toast({
-        title: "Profile Incomplete",
-        description: "Please complete your business profile (Brand Kit) before generating cards.",
-        variant: "destructive"
-      });
-      setLocation("/settings"); // Redirect to settings, not upgrade
-    }
-  }, [isProfileComplete, setLocation, toast]);
-
-  // UI State
-  const [step, setStep] = useState<"select_customer" | "select_record" | "customize">("select_customer");
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [theme, setTheme] = useState(THEMES[1]);
-  const [customNote, setCustomNote] = useState("");
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Data State
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [records, setRecords] = useState<any[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
-
+  // ── Fetch customers on mount ───────────────────────────────────────────────
   useEffect(() => {
-    fetchCustomers();
-    if (initialCustomerId) {
-      handleSelectCustomerById(parseInt(initialCustomerId));
-    }
-  }, [searchQuery]);
+    const deviceId = getDeviceId();
+    fetch(`/api/tailoring/customers?deviceId=${deviceId}`)
+      .then(r => r.json())
+      .then(data => Array.isArray(data) ? setCustomers(data) : setCustomers([]))
+      .catch(() => setCustomers([]));
+  }, []);
 
-  const fetchCustomers = async () => {
-    try {
-      const res = await fetch(`/api/tailoring/customers?deviceId=${getDeviceId()}&search=${encodeURIComponent(searchQuery)}`);
-      if (res.ok) setCustomers(await res.json());
-    } catch (e) { console.error(e); }
+  // ── Fetch records when customer chosen ────────────────────────────────────
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    fetch(`/api/tailoring/measurements?customerId=${selectedCustomer.id}`)
+      .then(r => r.json())
+      .then(data => Array.isArray(data) ? setRecords(data) : setRecords([]))
+      .catch(() => setRecords([]));
+  }, [selectedCustomer]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleSelectCustomer = (c: Customer) => {
+    setSelectedCustomer(c);
+    setSelectedRecord(null);
+    setStep("select_record");
   };
 
-  const handleSelectCustomerById = async (id: number) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/tailoring/customers?deviceId=${getDeviceId()}`);
-      const list = await res.json();
-      const found = list.find((c: any) => c.id === id);
-      if (found) {
-        setSelectedCustomer(found);
-        const recRes = await fetch(`/api/tailoring/measurements/${id}`);
-        const recList = await recRes.json();
-        setRecords(recList);
-        setStep("select_record");
-      }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
-
-  const handleSelectRecord = (rec: any) => {
-    setSelectedRecord(rec);
+  const handleSelectRecord = (r: MeasurementRecord) => {
+    setSelectedRecord(r);
     setStep("customize");
   };
 
@@ -107,102 +112,96 @@ export default function MeasurementCardGenerator() {
     if (!cardRef.current) return;
     setLoading(true);
     try {
-      const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true });
+      const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
       const link = document.createElement("a");
+      link.download = `${selectedCustomer?.name || "client"}-measurements.png`;
       link.href = canvas.toDataURL("image/png");
-      link.download = `${selectedCustomer.name}-${selectedRecord.category}.png`;
       link.click();
-      await incrementUsage();
-      toast({ title: "Downloaded", description: "Card saved to your device." });
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to generate image.", variant: "destructive" });
+    } catch (err) {
+      console.error("Download error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const parseMeasurements = (valStr: string) => {
-    try {
-      let parsed = JSON.parse(valStr);
-      if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-      return parsed || {};
-    } catch (e) {
-      return {};
-    }
+  const onBack = () => {
+    if (step === "customize")      return setStep("select_record");
+    if (step === "select_record")  return setStep("select_customer");
+    setLocation("/all-tools");
   };
 
-  const inp = "w-full text-sm rounded-xl px-4 py-3 bg-card border border-border focus:border-primary/50 outline-none transition-all";
+  const filteredCustomers = customers.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.phone.includes(search)
+  );
+
+  const entries = selectedRecord ? Object.entries(parseMeasurements(selectedRecord.values)) : [];
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-xl mx-auto pb-24">
-      <PageHeader 
-        title="Card Generator" 
-        subtitle="Create professional cards" 
-        backPath="/customer-measurement"
+    <div className="max-w-xl mx-auto pb-24 relative min-h-screen">
+
+      <PageHeader
+        title={step === "select_customer" ? "Select Client" : step === "select_record" ? "Select Measurement" : "Card Preview"}
+        subtitle={step === "select_customer" ? "Choose a client to generate their card" : ""}
+        onBack={onBack}
       />
 
       <div className="px-4 py-4 space-y-6">
-        {/* PROGRESS STEPS */}
-        <div className="flex justify-between items-center px-6">
-          {["Client", "Record", "Card"].map((s, i) => (
-            <div key={s} className="flex flex-col items-center gap-1">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black border-2 transition-all ${
-                (i === 0 && step !== "select_customer") || (i === 1 && step === "customize") ? "bg-primary border-primary text-primary-foreground" : 
-                (i === 0 && step === "select_customer") || (i === 1 && step === "select_record") || (i === 2 && step === "customize") ? "border-primary text-primary" : "border-muted text-muted-foreground"
-              }`}>
-                {i + 1}
-              </div>
-              <span className="text-[9px] font-bold uppercase tracking-tighter">{s}</span>
-            </div>
-          ))}
-        </div>
 
         {/* STEP 1: SELECT CUSTOMER */}
         {step === "select_customer" && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-in fade-in duration-300">
             <div className="relative">
-              <Hash size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input 
-                placeholder="Search customer..." 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className={`${inp} pl-11`}
+              <input
+                placeholder="Search clients..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl bg-card border border-border outline-none focus:border-primary text-sm font-medium"
               />
             </div>
 
             <div className="space-y-3">
-              {customers.length === 0 ? (
+              {filteredCustomers.length === 0 ? (
                 <div className="text-center py-20 bg-card border border-dashed border-border rounded-3xl">
-                  <User size={40} className="mx-auto text-muted-foreground/20 mb-4" />
+                  <Ruler size={40} className="mx-auto text-muted-foreground/20 mb-4" />
                   <p className="text-muted-foreground text-sm">No customers found</p>
+                  <button onClick={() => setLocation("/customer-measurement")} className="mt-4 text-xs font-bold text-primary">Add your first client</button>
                 </div>
-              ) : (
-                customers.map(c => (
-                  <div key={c.id} onClick={() => handleSelectCustomerById(c.id)} className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">{c.name.charAt(0).toUpperCase()}</div>
-                      <div>
-                        <p className="font-bold text-sm">{c.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{c.phone}</p>
-                      </div>
+              ) : filteredCustomers.map(c => (
+                <div
+                  key={c.id}
+                  onClick={() => handleSelectCustomer(c)}
+                  className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                      {c.name.charAt(0).toUpperCase()}
                     </div>
-                    <ChevronRight size={16} className="text-muted-foreground" />
+                    <div>
+                      <h4 className="font-bold text-sm">{c.name}</h4>
+                      <p className="text-[10px] text-muted-foreground">{c.phone}</p>
+                    </div>
                   </div>
-                ))
-              )}
+                  <ChevronRight size={16} className="text-muted-foreground" />
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* STEP 2: SELECT RECORD */}
-        {step === "select_record" && (
+        {step === "select_record" && selectedCustomer && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex items-center justify-between px-1">
               <div>
-                <h3 className="font-bold text-sm">{selectedCustomer?.name}</h3>
-                <p className="text-[10px] text-muted-foreground">Select a record to continue</p>
+                <p className="text-xs text-muted-foreground">Client</p>
+                <p className="font-black text-sm">{selectedCustomer.name}</p>
               </div>
-              <button onClick={() => setStep("select_customer")} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Change Client</button>
+              <button onClick={() => setStep("select_customer")} className="text-xs font-bold text-primary hover:underline">Change Client</button>
             </div>
 
             <div className="space-y-3">
@@ -296,7 +295,7 @@ export default function MeasurementCardGenerator() {
 
                 {/* Measurements Table */}
                 <div className="grid grid-cols-2 gap-x-12 gap-y-3 py-2">
-                  {Object.entries(parseMeasurements(selectedRecord.values)).map(([k, v]) => (
+                  {entries.map(([k, v]) => (
                     <div key={k} className={`flex justify-between items-baseline border-b ${theme.border} pb-1.5`}>
                       <span className="text-[10px] font-bold opacity-50 uppercase tracking-tight">{k}</span>
                       <span className="text-base font-black">

@@ -11,12 +11,20 @@ self.addEventListener('push', (event) => {
 
   try {
     const data = event.data.json();
-    const options = {
+
+    const actions: { action: string; title: string }[] = [];
+    if (data.ctaText && data.ctaUrl) {
+      actions.push({ action: 'cta', title: data.ctaText });
+    }
+
+    const options: NotificationOptions = {
       body: data.body,
       icon: data.icon || '/onetailor-logo.png',
       badge: '/favicon.svg',
+      actions,
       data: {
-        url: data.url || '/'
+        url: data.url || '/',
+        ctaUrl: data.ctaUrl || null,
       }
     };
 
@@ -32,20 +40,25 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
+  const notifData = event.notification.data || {};
+  let targetUrl: string;
+
+  if ((event as any).action === 'cta' && notifData.ctaUrl) {
+    targetUrl = notifData.ctaUrl;
+  } else {
+    targetUrl = notifData.url || '/';
+  }
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      const url = event.notification.data.url;
-      
-      // If a window is already open with the URL, focus it
       for (const client of clientList) {
-        if (client.url === url && 'focus' in client) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          (client as any).navigate?.(targetUrl);
           return (client as any).focus();
         }
       }
-      
-      // Otherwise open a new window
       if (self.clients.openWindow) {
-        return self.clients.openWindow(url);
+        return self.clients.openWindow(targetUrl);
       }
     })
   );

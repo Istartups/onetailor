@@ -1,0 +1,420 @@
+ONETAILOR TOOLKIT + ADMIN PORTAL – FIXES, PREMIUM UPDATE & PWA IMPROVEMENTS
+
+IMPORTANT:
+
+This is a surgical update.
+
+Do NOT redesign architecture.
+
+Do NOT remove existing working functionality.
+
+Do NOT refactor unrelated systems.
+
+Only implement exactly what is requested below.
+
+Priority = Stability + Fixing broken systems.
+
+==================================================
+
+1. UPDATE PREMIUM UNLOCK PAGE
+   ==================================================
+
+Update the "What You Get" section on the Premium Unlock page.
+
+Replace with benefits matching actual premium access.
+
+New premium benefits should include:
+
+✓ Unlimited Customer Records
+
+✓ Unlimited Measurement Records
+
+✓ Unlimited Tailor Notes
+
+✓ Save and Reuse Measurement Templates
+
+✓ Advanced Pricing Tools
+
+✓ Fabric Requirement Calculator
+
+✓ Fabric Color Matcher
+
+✓ PDF Measurement Card Export
+
+✓ Google Drive Cloud Backup
+
+✓ Never Lose Your Measurements Even If You Change Device
+
+✓ Future Premium Tools Included Automatically
+
+The premium page should accurately reflect what premium users receive.
+
+==================================================
+2. GOOGLE DRIVE CLOUD BACKUP
+============================
+
+Add premium feature:
+
+Google Drive Cloud Backup
+
+Purpose:
+
+Users should never lose customer and measurement data no matter what happens to their device.
+
+Requirements:
+
+Allow backup of:
+
+* Customers
+* Measurements
+* Notes
+* Templates
+
+Allow restore from backup.
+
+This should become part of premium offering.
+
+==================================================
+3. ADMIN PWA APP BRANDING
+=========================
+
+Currently app branding requires rebuild.
+
+Add dynamic branding control inside Admin.
+
+Allow changing without rebuilding app:
+
+* App Logo
+* Favicon
+* Splash Screen / Flash Screen
+
+Admin should be able to update branding assets directly.
+
+Changes should apply dynamically.
+
+No rebuild required.
+
+==================================================
+4. FIX ADMIN OVERVIEW STATS
+===========================
+
+Current stats are not tracking correctly.
+
+Example:
+
+Total Tool Actions = 0
+
+Even after:
+
+* Adding customer
+* Adding measurement
+* Creating notes
+
+This is incorrect.
+
+Audit analytics tracking system.
+
+Ensure all user actions are counted correctly.
+
+Track actions such as:
+
+* Add Customer
+* Add Measurement
+* Create Note
+* Edit Note
+* Use Pricing Tools
+* Use Fabric Tools
+* Open Tools
+
+==================================================
+
+Current broken stats needing fix:
+
+Total Tool Actions
+
+Community Growth
+
+Users Near Limit
+
+Today Earnings
+
+New Users Today
+
+Activations Today
+
+Disabled Today
+
+Activation Rate
+
+Conversion Rate
+
+Community Shares
+
+Recent Activity
+
+License Activations
+
+Revenue Trend
+
+Useful KPIs
+
+==================================================
+
+Verify all calculations.
+
+Ensure dashboard reflects real data.
+
+==================================================
+5. IMPROVE RECENT ACTIVITY FEED
+===============================
+
+Current activity feed shows:
+
+New user registered
+
+New user registered
+
+This is too generic.
+
+Improve system.
+
+If user has:
+
+* Name
+  OR
+* Business Name from BrandKit
+
+Use actual identity.
+
+Examples:
+
+Ahmed Fashion registered
+
+Divine Stitches created measurement
+
+Grace Fashion activated premium
+
+Tailor activity feed should feel real.
+
+==================================================
+6. BRANDKIT PHONE VALIDATION
+============================
+
+Inside BrandKit:
+
+Field:
+
+Business Phone
+
+Currently accepts any text.
+
+Fix validation.
+
+Allow only phone number input.
+
+Requirements:
+
+* Numbers only
+* Prevent letters
+* Prevent invalid characters
+
+Valid examples:
+
+08012345678
+
++2348012345678
+
+==================================================
+7. MEASUREMENT CARD PDF EXPORT
+==============================
+
+Add feature:
+
+Measurement Card PDF Export
+
+Purpose:
+
+Tailors should be able to generate printable or shareable measurement sheet directly from a customer measurement record.
+
+Location:
+
+Inside customer measurement record.
+
+Requirements:
+
+Export as PDF.
+
+Include:
+
+* Customer Name
+* Business Name
+* Measurement Date
+* Measurement Unit
+* All measurement values
+
+Use cases:
+
+* Print for workshop
+* Share with customer
+* Keep offline copy
+
+Must generate clean professional PDF.
+
+==================================================
+8. FIX ADMIN BROADCAST PUSH NOTIFICATION
+========================================
+
+Current issue:
+
+Admin sends broadcast.
+
+System says:
+
+Notification sent to 0 device
+
+Problem:
+
+Push notification system is not registering installed devices properly.
+
+Example:
+
+App installed on PC.
+
+Still shows:
+
+0 devices
+
+==================================================
+
+Audit push notification system.
+
+Check:
+
+* Service Worker Registration
+* Push Subscription
+* Device Registration
+* Subscription Storage
+* Token Saving
+
+Ensure installed PWA devices are properly registered.
+
+Admin broadcast should reach actual installed devices.
+
+Fix zero device issue.
+
+==================================================
+9. ADD CTA TO BROADCAST NOTIFICATIONS
+=====================================
+
+Enhance Admin Broadcast system.
+
+Currently only sends title + message.
+
+Add:
+
+CTA Button Text
+
+CTA URL
+
+==================================================
+
+Example:
+
+Title:
+
+Unlock Premium
+
+Message:
+
+Get unlimited measurements today
+
+CTA Text:
+
+Upgrade Now
+
+CTA URL:
+
+https://domain.com/premium
+
+==================================================
+
+When user clicks notification:
+
+Open CTA URL.
+
+==================================================
+10. DEPLOYMENT LOGGING SYSTEM
+=============================
+
+Add place to inspect deployment/runtime logs.
+
+Need internal system logs.
+
+Track:
+
+* Server Start
+* API Errors
+* Push Notification Errors
+* Payment Errors
+* Authentication Errors
+* System Failures
+
+Create:
+
+Admin → System Logs
+
+This helps debug deployment problems.
+
+==================================================
+11. LOGIN AUDIT LOGS
+====================
+
+Track login activity for:
+
+Admin Login
+
+Agent Login
+
+==================================================
+
+Store:
+
+* Username
+* Login Time
+* IP Address
+* Device Info
+* Browser
+* Successful Login
+* Failed Login Attempt
+
+Admin should be able to review access logs.
+
+==================================================
+FINAL INSTRUCTION
+=================
+
+Do NOT redesign system.
+
+Do NOT refactor unrelated code.
+
+Fix broken analytics and PWA systems surgically.
+
+Preserve existing functionality.
+
+Priority order:
+
+1. Fix analytics and dashboard stats
+
+2. Fix push notifications showing 0 devices
+
+3. Fix broken KPI calculations
+
+4. Add premium feature updates
+
+5. Add PDF export
+
+6. Add dynamic PWA branding
+
+7. Add deployment and login logs
+
+No regressions allowed.

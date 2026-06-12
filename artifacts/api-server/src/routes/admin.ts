@@ -98,14 +98,39 @@ router.get("/admin/stats", authenticateAdmin as any, async (req, res) => {
         eq(usersTable.isPremium, false)
       ));
 
-    // 6. Recent Activity
+    // 6. Recent Activity — with user names
     const recentActivity = await db.execute(sql`
-      (SELECT 'License activated' as text, activated_at as date, 'check' as type FROM ${licenseActivationsTable} ORDER BY activated_at DESC LIMIT 2)
+      (
+        SELECT
+          CONCAT('License activated: ', COALESCE(u.business_name, l.customer_name, 'Unknown')) as text,
+          la.activated_at as date,
+          'check' as type
+        FROM ${licenseActivationsTable} la
+        LEFT JOIN ${licensesTable} l ON la.license_id = l.id
+        LEFT JOIN ${usersTable} u ON l.user_id = u.id
+        ORDER BY la.activated_at DESC LIMIT 2
+      )
       UNION ALL
-      (SELECT 'New user registered' as text, created_at as date, 'user' as type FROM ${usersTable} ORDER BY created_at DESC LIMIT 2)
+      (
+        SELECT
+          CONCAT('New user registered: ', COALESCE(u.business_name, u.email, 'Unknown')) as text,
+          u.created_at as date,
+          'user' as type
+        FROM ${usersTable} u
+        ORDER BY u.created_at DESC LIMIT 2
+      )
       UNION ALL
-      (SELECT 'Payment received' as text, created_at as date, 'payment' as type FROM ${paymentsTable} WHERE status = 'success' ORDER BY created_at DESC LIMIT 2)
-      ORDER BY date DESC LIMIT 5
+      (
+        SELECT
+          CONCAT('Payment received: ', COALESCE(u.business_name, u.email, 'Unknown')) as text,
+          p.created_at as date,
+          'payment' as type
+        FROM ${paymentsTable} p
+        LEFT JOIN ${usersTable} u ON p.user_id = u.id
+        WHERE p.status = 'success'
+        ORDER BY p.created_at DESC LIMIT 2
+      )
+      ORDER BY date DESC LIMIT 8
     `);
 
     const totalAct = Number(activations?.count || 0);
@@ -178,6 +203,8 @@ router.post("/admin/reset-database", authenticateAdmin as any, async (req, res) 
 
 router.post("/admin/login", async (req, res) => {
   const { username, password } = req.body;
+  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+  const ua = req.headers["user-agent"] || "unknown";
 
   if (!username || !password) {
     res.status(400).json({ message: "Username and password are required" });
@@ -190,6 +217,8 @@ router.post("/admin/login", async (req, res) => {
 
     if (!admin) {
       console.log("Admin not found in DB");
+      // Log failed attempt
+      try { await db.execute(sql`INSERT INTO login_audit_logs (actor_type, username, ip_address, user_agent, success, failure_reason) VALUES ('admin', ${username}, ${ip}, ${ua}, false, 'User not found')`); } catch {}
       const existingAdmins = await db.select().from(adminsTable).limit(1);
       if (existingAdmins.length === 0) {
         res.status(401).json({ message: "No admin found. Use /api/admin/setup to create the first admin." });
@@ -202,15 +231,57 @@ router.post("/admin/login", async (req, res) => {
     console.log("Comparing passwords...");
     if (!bcrypt.compareSync(password, admin.passwordHash)) {
       console.log("Password mismatch");
+      try { await db.execute(sql`INSERT INTO login_audit_logs (actor_type, username, ip_address, user_agent, success, failure_reason) VALUES ('admin', ${username}, ${ip}, ${ua}, false, 'Wrong password')`); } catch {}
       res.status(401).json({ message: "Invalid credentials" });
       return;
     }
+
+    // Log successful login
+    try { await db.execute(sql`INSERT INTO login_audit_logs (actor_type, username, ip_address, user_agent, success) VALUES ('admin', ${username}, ${ip}, ${ua}, true)`); } catch {}
 
     console.log("Login successful, generating token");
     const token = jwt.sign({ adminId: admin.id }, JWT_SECRET, { expiresIn: "24h" });
     res.json({ token });
   } catch (error) {
     console.error("Login error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ─── GET /admin/system-logs ────────────────────────────────────────────────────
+router.get("/admin/system-logs", authenticateAdmin as any, async (req, res) => {
+  const { type = "all", limit = "50", offset = "0" } = req.query as Record<string, string>;
+  try {
+    let rows: any[] = [];
+    if (type === "login" || type === "all") {
+      const loginRows = await db.execute(sql`
+        SELECT id, actor_type, username, ip_address, user_agent, success, failure_reason, created_at,
+               'login' as log_type
+        FROM login_audit_logs
+        ORDER BY created_at DESC
+        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+      `);
+      rows = [...rows, ...loginRows.rows];
+    }
+    if (type === "audit" || type === "all") {
+      const auditRows = await db.execute(sql`
+        SELECT al.id, 'admin' as actor_type, ad.username, NULL as ip_address, NULL as user_agent,
+               true as success, NULL as failure_reason, al.created_at,
+               'audit' as log_type,
+               al.action, al.entity_type, al.details
+        FROM audit_logs al
+        LEFT JOIN admins ad ON al.admin_id = ad.id
+        ORDER BY al.created_at DESC
+        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+      `);
+      rows = [...rows, ...auditRows.rows];
+    }
+    // Sort combined results by date
+    rows.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    rows = rows.slice(0, parseInt(limit));
+    res.json({ logs: rows });
+  } catch (error) {
+    console.error("System logs error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });

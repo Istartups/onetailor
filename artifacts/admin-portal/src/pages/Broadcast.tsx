@@ -20,6 +20,8 @@ export default function Broadcast() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("/");
+  const [ctaText, setCtaText] = useState("");
+  const [ctaUrl, setCtaUrl] = useState("");
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
 
@@ -32,7 +34,7 @@ export default function Broadcast() {
       const res = await authFetch("/api/admin/notifications/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, body, url }),
+        body: JSON.stringify({ title, body, url, ctaText: ctaText || null, ctaUrl: ctaUrl || null }),
       });
 
       const data = await res.json();
@@ -41,6 +43,8 @@ export default function Broadcast() {
         setTitle("");
         setBody("");
         setUrl("/");
+        setCtaText("");
+        setCtaUrl("");
       } else {
         toast({ variant: "destructive", title: "Failed", description: data.message });
       }
@@ -98,6 +102,30 @@ export default function Broadcast() {
                     onChange={(e) => setUrl(e.target.value)}
                     className="h-12 rounded-xl bg-muted/20"
                   />
+                </div>
+                <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4 space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Call-to-Action Button (Optional)</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground px-1">Button Label</label>
+                      <Input
+                        placeholder="e.g. Upgrade Now"
+                        value={ctaText}
+                        onChange={(e) => setCtaText(e.target.value)}
+                        className="h-11 rounded-xl bg-muted/20"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground px-1">Button URL</label>
+                      <Input
+                        placeholder="e.g. /pre-unlock"
+                        value={ctaUrl}
+                        onChange={(e) => setCtaUrl(e.target.value)}
+                        className="h-11 rounded-xl bg-muted/20"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Adds an action button users can tap directly from the notification.</p>
                 </div>
                 <Button 
                   type="submit" 

@@ -539,6 +539,7 @@ router.put("/payment-info", authenticateAdmin as any, async (req, res) => {
       "pwaName", "pwaShortName", "pwaDescription",
       "pwaThemeColor", "pwaBackgroundColor",
       "price2Device", "price3Device", "price5Device",
+      "pwaLogoData", "pwaFaviconData", "pwaSplashData",
     ];
 
     for (const key of allowedFields) {

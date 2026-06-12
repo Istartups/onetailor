@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { authFetch } from "@/lib/authFetch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -37,10 +37,16 @@ import {
   Palette,
   ShieldAlert,
   RefreshCw,
-  Smartphone
+  Smartphone,
+  ImageIcon,
+  Upload,
+  X
 } from "lucide-react";
 
 interface PaymentInfo {
+  pwaLogoData?: string;
+  pwaFaviconData?: string;
+  pwaSplashData?: string;
   price: string;
   price2Device: string;
   price3Device: string;
@@ -108,10 +114,33 @@ export default function Settings() {
     pwaDescription: "",
     pwaThemeColor: "#6D28D9",
     pwaBackgroundColor: "#ffffff",
+    pwaLogoData: "",
+    pwaFaviconData: "",
+    pwaSplashData: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  const logoFileRef    = useRef<HTMLInputElement>(null);
+  const faviconFileRef = useRef<HTMLInputElement>(null);
+  const splashFileRef  = useRef<HTMLInputElement>(null);
+
+  const compressImage = (file: File, maxPx: number): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = img.width * s; c.height = img.height * s;
+        c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/png", 0.9));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+      img.src = url;
+    });
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -142,6 +171,9 @@ export default function Settings() {
           pwaDescription: data.pwaDescription || "",
           pwaThemeColor: data.pwaThemeColor || "#6D28D9",
           pwaBackgroundColor: data.pwaBackgroundColor || "#ffffff",
+          pwaLogoData: data.pwaLogoData || "",
+          pwaFaviconData: data.pwaFaviconData || "",
+          pwaSplashData: data.pwaSplashData || "",
         });
       }
     } catch (error) {
@@ -585,6 +617,98 @@ export default function Settings() {
                   <div className="rounded-2xl bg-primary/5 border border-primary/10 p-4 text-xs text-muted-foreground">
                     <span className="font-bold text-primary">Live manifest URL: </span>
                     <code className="font-mono">/api/pwa-manifest</code> — browsers fetch this dynamically on each install.
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ── Branding Assets ─────────────────────────────────── */}
+              <Card className="rounded-3xl border-border bg-card overflow-hidden">
+                <CardHeader className="px-6 pt-6 pb-2">
+                  <CardTitle className="text-base font-black flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-primary" /> Branding Assets
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">Upload a logo, favicon, and splash screen for the PWA. These override the defaults for all users.</p>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  {/* App Logo */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">App Logo (512×512 recommended)</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+                        {settings.pwaLogoData
+                          ? <img src={settings.pwaLogoData} className="w-full h-full object-contain" />
+                          : <ImageIcon className="w-8 h-8 text-muted-foreground/30" />}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => logoFileRef.current?.click()} className="rounded-xl h-9 font-bold">
+                          <Upload className="w-4 h-4 mr-2" /> Upload Logo
+                        </Button>
+                        {settings.pwaLogoData && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setSettings({...settings, pwaLogoData: ""})} className="rounded-xl h-9 text-destructive hover:text-destructive font-bold">
+                            <X className="w-4 h-4 mr-2" /> Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <input ref={logoFileRef} type="file" accept="image/*" className="hidden" onChange={async e => {
+                      const f = e.target.files?.[0]; if (!f) return;
+                      try { setSettings({...settings, pwaLogoData: await compressImage(f, 512)}); } catch {}
+                      e.target.value = "";
+                    }} />
+                  </div>
+
+                  {/* Favicon */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Favicon (32×32 or 64×64)</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+                        {settings.pwaFaviconData
+                          ? <img src={settings.pwaFaviconData} className="w-full h-full object-contain" />
+                          : <ImageIcon className="w-6 h-6 text-muted-foreground/30" />}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => faviconFileRef.current?.click()} className="rounded-xl h-9 font-bold">
+                          <Upload className="w-4 h-4 mr-2" /> Upload Favicon
+                        </Button>
+                        {settings.pwaFaviconData && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setSettings({...settings, pwaFaviconData: ""})} className="rounded-xl h-9 text-destructive hover:text-destructive font-bold">
+                            <X className="w-4 h-4 mr-2" /> Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <input ref={faviconFileRef} type="file" accept="image/*" className="hidden" onChange={async e => {
+                      const f = e.target.files?.[0]; if (!f) return;
+                      try { setSettings({...settings, pwaFaviconData: await compressImage(f, 64)}); } catch {}
+                      e.target.value = "";
+                    }} />
+                  </div>
+
+                  {/* Splash Screen */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Splash Screen (1080×1920 recommended)</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-20 rounded-xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+                        {settings.pwaSplashData
+                          ? <img src={settings.pwaSplashData} className="w-full h-full object-cover" />
+                          : <ImageIcon className="w-5 h-8 text-muted-foreground/30" />}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => splashFileRef.current?.click()} className="rounded-xl h-9 font-bold">
+                          <Upload className="w-4 h-4 mr-2" /> Upload Splash
+                        </Button>
+                        {settings.pwaSplashData && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setSettings({...settings, pwaSplashData: ""})} className="rounded-xl h-9 text-destructive hover:text-destructive font-bold">
+                            <X className="w-4 h-4 mr-2" /> Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <input ref={splashFileRef} type="file" accept="image/*" className="hidden" onChange={async e => {
+                      const f = e.target.files?.[0]; if (!f) return;
+                      try { setSettings({...settings, pwaSplashData: await compressImage(f, 1920)}); } catch {}
+                      e.target.value = "";
+                    }} />
                   </div>
                 </CardContent>
               </Card>

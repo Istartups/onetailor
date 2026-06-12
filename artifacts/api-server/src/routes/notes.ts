@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
+import { usersTable } from "@workspace/db/schema";
 
 const router = Router();
 
@@ -150,6 +151,13 @@ router.post("/notes", async (req, res) => {
       VALUES (${deviceId}, ${title}, ${content}, ${customerId || null}, ${tags || null}, ${isPinned}, ${imageData || null})
       RETURNING *
     `);
+
+    // Increment tool usage count for the device
+    try {
+      await db.update(usersTable)
+        .set({ totalUsageCount: sql`COALESCE(total_usage_count, 0) + 1` })
+        .where(eq(usersTable.deviceId, deviceId));
+    } catch { /* non-fatal */ }
 
     return void res.json(result.rows[0]);
   } catch (err) {

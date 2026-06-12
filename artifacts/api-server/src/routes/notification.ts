@@ -73,7 +73,7 @@ router.post("/notifications/subscribe", async (req, res) => {
 
 // Send Broadcast Notification
 router.post("/admin/notifications/broadcast", authenticateAdmin as any, async (req, res) => {
-  const { title, body, url, icon } = req.body;
+  const { title, body, url, icon, ctaText, ctaUrl } = req.body;
 
   if (!title || !body) {
     res.status(400).json({ message: "Title and body are required" });
@@ -87,7 +87,9 @@ router.post("/admin/notifications/broadcast", authenticateAdmin as any, async (r
       title,
       body,
       url: url || "/",
-      icon: icon || "/onetailor-logo.png"
+      icon: icon || "/onetailor-logo.png",
+      ctaText: ctaText || null,
+      ctaUrl: ctaUrl || null,
     });
 
     const sendPromises = subscriptions.map(async (sub: typeof subscriptions[number]) => {
