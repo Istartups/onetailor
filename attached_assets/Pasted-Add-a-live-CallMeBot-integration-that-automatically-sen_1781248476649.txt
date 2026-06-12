@@ -1,0 +1,619 @@
+Add a live CallMeBot integration that automatically sends WhatsApp alerts to the follow-up agent's phone number when a new hot lead registers or a task becomes overdue.
+
+and conclude any feature or enhancement to lock it so we dont need more continous unending feature suggetsion
+
+FEATURE REQUEST: LEAD CRM, FOLLOW-UP AGENT & CONVERSION ENGINE
+
+IMPORTANT:
+
+This is an enhancement to the existing platform.
+
+Do NOT modify working authentication, payments, subscriptions, licensing, favorites, recent tools, analytics, or admin functionality unless required for integration.
+
+The objective is to turn pre-unlock users into a structured lead pipeline that can be manually and later automatically followed up for conversion.
+
+==================================================
+
+1. RECENTLY USED TOOLS
+   ==================================================
+
+Add a "Recently Used" section to the Home Dashboard.
+
+Requirements:
+
+* Track every tool opened by a user.
+* Display last 4 tools used.
+* Most recent appears first.
+* One click reopens the tool.
+* Persist per user account.
+* Hide section if no tools have been used.
+
+Example:
+
+Recently Used
+
+* Measurement Checker
+* Fabric Requirement
+* Price Smartly
+* Card Generator
+
+==================================================
+2. PRE-UNLOCK LEAD CAPTURE
+==========================
+
+Store and display ALL information entered by users before they unlock or subscribe.
+
+Admin should be able to see:
+
+* Full Name
+* Phone Number
+* WhatsApp Number
+* Email
+* Business Name
+* Business Type
+* City
+* Registration Date
+* Last Activity Date
+* Tools Opened
+* Tools Used
+* Upgrade Attempts
+* Conversion Status
+* Subscription Status
+
+No lead data should be discarded.
+
+==================================================
+3. LEAD SCORING SYSTEM
+======================
+
+Create a simple automatic lead score system.
+
+Scoring Rules:
+
+Registered = +10
+
+Opened 1 Tool = +5
+
+Opened 3 Tools = +15
+
+Used Client Management = +10
+
+Returned Next Day = +15
+
+Visited Pricing Page = +20
+
+Started Upgrade Process = +30
+
+Score Categories:
+
+0 - 30 = Cold Lead
+
+31 - 60 = Warm Lead
+
+61 - 100 = Hot Lead
+
+Display:
+
+* Lead Score
+* Lead Category
+* Priority Badge
+
+Allow sorting by highest score first.
+
+==================================================
+4. LEAD MANAGEMENT FILTERS
+==========================
+
+Add filters:
+
+* Today
+* Yesterday
+* Last 7 Days
+* Last 30 Days
+* Custom Date Range
+
+Allow sorting by:
+
+* Lead Score
+* Registration Date
+* Last Activity
+* Conversion Status
+
+==================================================
+5. FOLLOW-UP CRM
+================
+
+Create a Mini CRM for lead management.
+
+Fields:
+
+* Lead Name
+* Phone
+* WhatsApp
+* Email
+* Business Name
+* Lead Score
+* Lead Category
+* Registration Date
+* Last Activity
+* Assigned Agent
+* Status
+* Notes
+
+Statuses:
+
+* New
+* Contacted
+* Interested
+* Follow-Up Needed
+* Converted
+* Not Interested
+
+==================================================
+6. FOLLOW-UP AGENT ROLE
+=======================
+
+Create a restricted role:
+
+FOLLOW_UP_AGENT
+
+Can Access:
+
+* Leads
+* Lead Details
+* Notes
+* Follow-Up Activities
+* Templates
+* Assigned Leads
+
+Cannot Access:
+
+* Payments
+* Licenses
+* Settings
+* Users
+* Admin Controls
+* System Configuration
+
+This role should function as a dedicated sales/follow-up dashboard.
+
+==================================================
+7. LEAD TIMELINE
+================
+
+Every lead should have a timeline.
+
+Examples:
+
+12 Jun
+Lead Registered
+
+13 Jun
+Opened Measurement Checker
+
+14 Jun
+Visited Pricing Page
+
+14 Jun
+WhatsApp Follow-Up Sent
+
+15 Jun
+Phone Call Completed
+
+16 Jun
+Converted
+
+Maintain complete interaction history.
+
+==================================================
+8. COMMUNICATION CENTER
+=======================
+
+For every lead provide one-click actions:
+
+* WhatsApp
+* SMS
+* Email
+* Call
+
+Buttons should be visible directly on the lead profile.
+
+==================================================
+9. PREDEFINED FOLLOW-UP TEMPLATES
+=================================
+
+Create editable communication templates.
+
+Admin can:
+
+* Add Template
+* Edit Template
+* Delete Template
+* Assign Template To Stage
+
+Templates should support variables:
+
+{{name}}
+{{business_name}}
+{{tool_used}}
+
+==================================================
+10. WHATSAPP TEMPLATES
+======================
+
+Stage: New Lead
+
+"Hello {{name}}, thank you for joining OneTailor Toolkit. We noticed you recently signed up. If you need help getting started or unlocking more tools, simply reply to this message and we will assist you."
+
+---
+
+Stage: Warm Lead
+
+"Hello {{name}}, we noticed you've been exploring OneTailor Toolkit. Many tailors use it to improve measurements, fabric planning and pricing. We'd love to help you unlock the full experience."
+
+---
+
+Stage: Hot Lead
+
+"Hello {{name}}, you're very close to unlocking the full benefits of OneTailor Toolkit. Based on your activity, we believe the premium tools can help you save time and avoid costly mistakes. Would you like assistance completing your upgrade?"
+
+==================================================
+11. EMAIL TEMPLATES
+===================
+
+Create matching templates for:
+
+* New Leads
+* Warm Leads
+* Hot Leads
+* Upgrade Reminder
+* Conversion Follow-Up
+
+==================================================
+12. CALL SCRIPTS
+================
+
+For every lead stage provide a call script.
+
+The Follow-Up Agent should be able to click:
+
+"View Call Script"
+
+Example:
+
+HOT LEAD SCRIPT
+
+"Hello {{name}}, this is {{agent_name}} from OneTailor Toolkit.
+
+I noticed you've been using some of our tools recently and wanted to check if you had any questions about unlocking the full toolkit.
+
+Which tailoring challenge are you currently facing most often: measurements, fabric estimation or pricing?"
+
+Admin can edit scripts.
+
+==================================================
+13. AUTOMATED FOLLOW-UP TASKS
+=============================
+
+Generate follow-up tasks automatically.
+
+Rules:
+
+After 24 Hours:
+Create Follow-Up Task
+
+After 48 Hours:
+Create Second Follow-Up Task
+
+After 72 Hours:
+Create Final Follow-Up Task
+
+Tasks appear in Agent Dashboard.
+
+==================================================
+14. CALLMEBOT PREPARATION
+=========================
+
+Prepare notification integration layer.
+
+Do NOT hardcode API credentials.
+
+Create provider configuration settings.
+
+Future integration target:
+
+https://www.callmebot.com/blog/free-api-whatsapp-messages/
+
+Goal:
+
+Send lead alerts to assigned Follow-Up Agent.
+
+Examples:
+
+New Hot Lead
+
+Name: John Doe
+Lead Score: 85
+Days Since Registration: 2
+
+Admin can configure:
+
+* 24 Hour Alerts
+* 48 Hour Alerts
+* 72 Hour Alerts
+
+==================================================
+15. DASHBOARDS
+==============
+
+ADMIN DASHBOARD
+
+Show:
+
+* Total Leads
+* New Leads Today
+* Hot Leads
+* Warm Leads
+* Cold Leads
+* Pending Follow-Ups
+* Converted Leads
+* Conversion Rate
+
+---
+
+FOLLOW-UP AGENT DASHBOARD
+
+Show:
+
+* Assigned Leads
+* New Leads
+* Hot Leads
+* Follow-Ups Due Today
+* Overdue Follow-Ups
+* Recently Converted Leads
+
+==================================================
+GOAL
+====
+
+Transform pre-unlock registrations into a structured lead management and conversion system.
+
+The platform should function as both:
+
+1. A toolkit for tailors.
+2. A lead-generation and conversion engine.
+
+Every lead should be visible, scored, prioritized, tracked, and followable by a dedicated Follow-Up Agent while preparing the platform for future WhatsApp automation.
+
+
+FEATURE REQUEST: TAILOR NOTES TOOL
+
+IMPORTANT:
+
+This is a new tool for OneTailor Toolkit.
+
+Do NOT turn this into a task manager, CRM, project manager, calendar, or order management system.
+
+The goal is to provide a simple note-taking tool that tailors can use daily, either independently or linked to a customer.
+
+==================================================
+NEW TOOL
+========
+
+Tool Name:
+Tailor Notes
+
+Category:
+👥 Clients
+
+Description:
+Create quick notes for tailoring work and optionally attach them to customers.
+
+==================================================
+CORE FUNCTIONALITY
+==================
+
+Users can:
+
+✓ Create Note
+✓ Edit Note
+✓ Delete Note
+✓ Search Notes
+✓ Pin Important Notes
+✓ Archive Notes
+✓ View Recent Notes
+
+==================================================
+NOTE TYPES
+==========
+
+Support two note types:
+
+1. General Note
+
+Standalone note not attached to any customer.
+
+Examples:
+
+* Buy black zipper
+* Check fabric supplier
+* New senator collar idea
+* Market price update
+
+---
+
+2. Client Note
+
+Attached to a specific customer.
+
+Examples:
+
+* Customer prefers loose fit
+* Add extra allowance
+* Use hidden zip
+* Use reference photo from WhatsApp
+
+==================================================
+NOTE FIELDS
+===========
+
+Required Fields:
+
+* Note Title
+* Note Content
+
+Optional Fields:
+
+* Customer
+* Tags
+
+System Fields:
+
+* Created Date
+* Last Updated
+* Created By
+* Pinned Status
+* Archived Status
+
+==================================================
+CLIENT INTEGRATION
+==================
+
+When creating a note:
+
+Optional:
+
+Attach To Customer
+
+Dropdown:
+
+Select Customer
+
+If customer is selected:
+
+* Note appears inside customer profile
+* Note appears in Tailor Notes
+* Note is searchable from both locations
+
+==================================================
+CUSTOMER PROFILE
+================
+
+Add Notes tab to customer profile.
+
+Example:
+
+Customer Details
+Measurements
+Notes
+
+Inside Notes tab:
+
+* View Customer Notes
+* Add New Note
+* Edit Note
+* Delete Note
+
+==================================================
+SEARCH
+======
+
+Allow searching by:
+
+* Note Title
+* Note Content
+* Customer Name
+* Tags
+
+==================================================
+FILTERS
+=======
+
+Filters:
+
+All Notes
+
+General Notes
+
+Client Notes
+
+Pinned Notes
+
+Archived Notes
+
+==================================================
+RECENT NOTES
+============
+
+Show recent notes section.
+
+Display latest notes first.
+
+==================================================
+PINNED NOTES
+============
+
+Allow users to pin important notes.
+
+Pinned notes appear at top of notes list.
+
+==================================================
+DASHBOARD WIDGET
+================
+
+Add optional dashboard widget:
+
+Recent Notes
+
+Show latest 3-5 notes.
+
+Quick access to open note.
+
+==================================================
+USER EXPERIENCE
+===============
+
+The tool should feel lightweight and fast.
+
+Primary use case:
+
+Tailor quickly records information they do not want to forget.
+
+Examples:
+
+Customer instructions
+
+Fabric reminders
+
+Supplier information
+
+Ideas and observations
+
+Special measurement instructions
+
+==================================================
+DO NOT ADD
+==========
+
+Do NOT add:
+
+* Tasks
+* To-do lists
+* Reminders
+* Calendars
+* Orders
+* Payments
+* Deliveries
+* Production tracking
+* Team collaboration
+
+Keep the tool simple and focused.
+
+==================================================
+GOAL
+====
+
+Create a practical daily-use note tool that helps tailors capture important information and optionally link notes to customers while remaining lightweight and easy to use.
+
+
+
