@@ -93,14 +93,6 @@ export default function CustomerMeasurement() {
   // ── Measurement add sub-step (unit → template → fields) ──
   const [measureAddStep, setMeasureAddStep] = useState<"unit" | "template" | "fields">("unit");
 
-  // ── Template builder form ──
-  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
-  const [templateBuilderForm, setTemplateBuilderForm] = useState({
-    name: "",
-    gender: "both" as "male" | "female" | "both",
-    selectedFields: [] as string[],
-    customFieldInput: "",
-  });
 
   // ─── Data fetching ──────────────────────────────────────────────────────────
 
@@ -332,58 +324,6 @@ export default function CustomerMeasurement() {
     setView("add_measurement");
   };
 
-  // ─── Handlers — Custom Templates ────────────────────────────────────────────
-
-  const handleSaveTemplate = () => {
-    if (!templateBuilderForm.name.trim()) {
-      toast({ title: "Name Required", variant: "destructive" });
-      return;
-    }
-    if (templateBuilderForm.selectedFields.length === 0) {
-      toast({ title: "Select at least one field", variant: "destructive" });
-      return;
-    }
-    if (SYSTEM_TEMPLATES_META[templateBuilderForm.name.trim()]) {
-      toast({ title: "Name conflicts with system template", description: "Choose a different name.", variant: "destructive" });
-      return;
-    }
-    if (customTemplates.some(t => t.name === templateBuilderForm.name.trim())) {
-      toast({ title: "Template name already exists", variant: "destructive" });
-      return;
-    }
-    addCustomTemplate({
-      name: templateBuilderForm.name.trim(),
-      gender: templateBuilderForm.gender,
-      fields: templateBuilderForm.selectedFields,
-    });
-    setTemplateBuilderForm({ name: "", gender: "both", selectedFields: [], customFieldInput: "" });
-    setShowCreateTemplate(false);
-    toast({ title: "Template created", description: `"${templateBuilderForm.name.trim()}" is now available in measurements.` });
-  };
-
-  const toggleBuilderField = (field: string) =>
-    setTemplateBuilderForm(f => ({
-      ...f,
-      selectedFields: f.selectedFields.includes(field)
-        ? f.selectedFields.filter(x => x !== field)
-        : [...f.selectedFields, field]
-    }));
-
-  const handleAddCustomBuilderField = () => {
-    const name = templateBuilderForm.customFieldInput.trim();
-    if (!name) return;
-    if (templateBuilderForm.selectedFields.includes(name)) {
-      toast({ description: "Field already added." });
-      return;
-    }
-    addCustomMeasurementField(name);
-    setTemplateBuilderForm(f => ({
-      ...f,
-      selectedFields: [...f.selectedFields, name],
-      customFieldInput: "",
-    }));
-  };
-
   // ─── Misc helpers ────────────────────────────────────────────────────────────
 
   const resetForms = () => {
@@ -410,8 +350,6 @@ export default function CustomerMeasurement() {
       setView(selectedCustomer ? "client_detail" : "clients");
     } else if (view === "measurement_cards") {
       setView("client_detail");
-    } else if (view === "manage_templates") {
-      setView("clients");
     } else {
       setLocation("/all-tools?cat=clients");
     }
@@ -425,7 +363,6 @@ export default function CustomerMeasurement() {
     add_measurement: "Add Measurement",
     edit_measurement: "Edit Measurement",
     measurement_cards: "Measurement Cards",
-    manage_templates: "Garment Templates",
   }[view] ?? "Clients";
 
   // ─── Gender badge ─────────────────────────────────────────────────────────
@@ -509,7 +446,7 @@ export default function CustomerMeasurement() {
             {/* FABs */}
             <div className="fixed bottom-24 right-6 flex flex-col gap-3 items-end">
               <button
-                onClick={() => setView("manage_templates")}
+                onClick={() => setLocation("/measurement-templates")}
                 className="flex items-center gap-2 bg-card text-foreground border border-border px-4 py-3 rounded-2xl shadow-xl active:scale-95 transition-all"
               >
                 <span className="text-[10px] font-black uppercase tracking-widest">Templates</span>
@@ -886,7 +823,7 @@ export default function CustomerMeasurement() {
                     <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Choose Template</label>
                     <button
                       type="button"
-                      onClick={() => setView("manage_templates")}
+                      onClick={() => setLocation("/measurement-templates")}
                       className="text-[10px] font-bold text-primary flex items-center gap-1"
                     >
                       <SlidersHorizontal size={11} /> Manage
@@ -1122,205 +1059,7 @@ export default function CustomerMeasurement() {
           </form>
         )}
 
-        {/* ── 5. MANAGE TEMPLATES ──────────────────────────────────────────── */}
-        {view === "manage_templates" && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-
-            {/* My custom templates */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Layers size={13} /> My Templates
-                </h3>
-                <button
-                  onClick={() => setShowCreateTemplate(!showCreateTemplate)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
-                >
-                  <Plus size={12} />
-                  {showCreateTemplate ? "Cancel" : "Create Template"}
-                </button>
-              </div>
-
-              {customTemplates.length === 0 && !showCreateTemplate && (
-                <div className="text-center py-12 bg-card border border-dashed border-border rounded-3xl">
-                  <Layers size={32} className="mx-auto text-muted-foreground/20 mb-3" />
-                  <p className="text-xs text-muted-foreground">No custom templates yet</p>
-                  <button
-                    onClick={() => setShowCreateTemplate(true)}
-                    className="mt-3 text-xs font-black text-primary uppercase tracking-widest"
-                  >
-                    Create your first template
-                  </button>
-                </div>
-              )}
-
-              {customTemplates.map(t => (
-                <div key={t.id} className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold">{t.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md ${t.gender === "female" ? "bg-pink-500/10 text-pink-500" : t.gender === "male" ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"}`}>
-                        {t.gender}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">{t.fields.length} fields</span>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1 truncate max-w-[240px]">
-                      {t.fields.slice(0, 6).join(", ")}{t.fields.length > 6 ? "..." : ""}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Delete template "${t.name}"?`)) deleteCustomTemplate(t.id);
-                    }}
-                    className="p-2 rounded-xl hover:bg-red-500/10 text-red-500 transition-all"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Create template form */}
-            {showCreateTemplate && (
-              <div className="bg-card border border-primary/20 rounded-3xl p-6 space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
-                <h4 className="text-sm font-black uppercase tracking-widest text-primary">Create New Template</h4>
-
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1.5 block">Template Name *</label>
-                  <input
-                    placeholder="e.g. Agbada Suit"
-                    value={templateBuilderForm.name}
-                    onChange={e => setTemplateBuilderForm({ ...templateBuilderForm, name: e.target.value })}
-                    className={inp}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1.5 block">Gender</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["male", "female", "both"] as const).map(g => (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => setTemplateBuilderForm({ ...templateBuilderForm, gender: g })}
-                        className={`py-2.5 rounded-xl text-xs font-bold border transition-all capitalize ${templateBuilderForm.gender === g ? "bg-primary/10 border-primary text-primary" : "bg-card border-border text-muted-foreground"}`}
-                      >
-                        {g}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Field selector from library */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 block">
-                    Select Fields ({templateBuilderForm.selectedFields.length} selected)
-                  </label>
-                  {Object.entries(MEASUREMENT_FIELD_LIBRARY).map(([group, fields]) => (
-                    <div key={group}>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 mb-2">{group}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {fields.map(field => {
-                          const selected = templateBuilderForm.selectedFields.includes(field);
-                          return (
-                            <button
-                              key={field}
-                              type="button"
-                              onClick={() => toggleBuilderField(field)}
-                              className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all text-left ${selected ? "bg-primary/10 border-primary text-primary" : "bg-muted/20 border-border text-muted-foreground"}`}
-                            >
-                              <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all ${selected ? "bg-primary border-primary" : "border-border"}`}>
-                                {selected && <Check size={10} className="text-primary-foreground" />}
-                              </div>
-                              {field}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Previously saved custom fields */}
-                  {customMeasurementFields.length > 0 && (
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 mb-2">Your Custom Fields</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {customMeasurementFields.map(field => {
-                          const selected = templateBuilderForm.selectedFields.includes(field);
-                          return (
-                            <button
-                              key={field}
-                              type="button"
-                              onClick={() => toggleBuilderField(field)}
-                              className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all text-left ${selected ? "bg-primary/10 border-primary text-primary" : "bg-amber-500/10 border-amber-500/20 text-amber-600"}`}
-                            >
-                              <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all ${selected ? "bg-primary border-primary" : "border-amber-500/30"}`}>
-                                {selected && <Check size={10} className="text-primary-foreground" />}
-                              </div>
-                              {field}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Add a new custom field inline */}
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 mb-2">Add New Field</p>
-                    <div className="flex gap-2">
-                      <input
-                        placeholder="e.g. Collar Depth"
-                        value={templateBuilderForm.customFieldInput}
-                        onChange={e => setTemplateBuilderForm({ ...templateBuilderForm, customFieldInput: e.target.value })}
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddCustomBuilderField(); } }}
-                        className={`${inp} flex-1 py-2.5 text-xs`}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddCustomBuilderField}
-                        className="px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold active:scale-95 transition-all"
-                      >
-                        Add
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleSaveTemplate}
-                  className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                >
-                  Save Template <CheckCircle2 size={18} />
-                </button>
-              </div>
-            )}
-
-            {/* System templates reference */}
-            <details className="group">
-              <summary className="flex items-center justify-between cursor-pointer px-1 py-2 text-xs font-black uppercase tracking-widest text-muted-foreground list-none">
-                <span>System Templates ({Object.keys(SYSTEM_TEMPLATES_META).length})</span>
-                <ChevronDown size={14} className="group-open:rotate-180 transition-transform" />
-              </summary>
-              <div className="mt-3 space-y-2">
-                {Object.entries(SYSTEM_TEMPLATES_META).map(([name, meta]) => (
-                  <div key={name} className="p-3 bg-muted/20 border border-border rounded-xl flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold">{name}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{meta.fields.length} fields · {meta.gender}</p>
-                    </div>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${meta.gender === "female" ? "bg-pink-500/10 text-pink-500" : meta.gender === "male" ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"}`}>
-                      {meta.gender}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </details>
-          </div>
-        )}
-
-        {/* ── 6. PREMIUM TEASER ────────────────────────────────────────────── */}
+        {/* ── 5. PREMIUM TEASER ────────────────────────────────────────────── */}
         {(view === "clients" || view === "client_detail") && (
           isPremium ? (
             <div className="mt-12 p-6 rounded-3xl bg-primary/5 border border-primary/10 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
