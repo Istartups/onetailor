@@ -3,6 +3,9 @@
 - [License activations stats](license-activations.md) — must insert licenseActivationsTable record whenever a license is created (manual approve, Paystack webhook, Paystack verify) for stats activations count to be non-zero.
 - [Express return void pattern](express-return-void.md) — use `return void res.json(...)` not `return res.json(...)` in Express 5 async route handlers to avoid TS7030 "not all code paths return a value" errors.
 - [Drizzle dynamic query typing](drizzle-dynamic-query.md) — use `let query: any =` for variables that will have `.where()` appended conditionally; Drizzle's inferred types omit `.where` after certain chaining patterns.
+- [Drizzle db.execute returns QueryResult](drizzle-execute-rows.md) — db.execute() returns a pg QueryResult object, NOT an array. Access rows via `((result as any).rows ?? result) as any[]`.
+- [Express body-parser limit](express-body-limit.md) — default limit is 100KB; base64 image uploads (logos, splash) exceed this. Set `express.json({ limit: "20mb" })` in app.ts.
+- [Brand kit overwrite on startup](brand-kit-startup.md) — App.tsx startup fetchSettings must not overwrite appName/appLogo/splashImage from server if businessProfile.name is already set (user's brand kit takes priority).
 - [Shimmed packages type declarations](shimmed-packages.md) — @ffmpeg/ffmpeg, @ffmpeg/util, @xenova/transformers are shimmed; declare modules in `artifacts/one-tailor/src/global.d.ts`.
 - [Xenova shim must export env](xenova-shim-env.md) — xenova-transformers.ts shim must export `env` as a plain object and all classes (AutoModel, AutoProcessor, RawImage) or the PWA build fails.
 - [Admin portal authFetch](admin-authfetch.md) — authFetch in admin portal tries admin_token first, falls back to agent_token. isAdmin()/isAgent() helpers available. Agent redirect goes to /agent-login on 401/403.

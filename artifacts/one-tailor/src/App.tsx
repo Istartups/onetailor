@@ -130,9 +130,11 @@ function App() {
         if (data.user) {
           setUsage(data.user.totalUsageCount, data.globalUsageLimit);
         }
-        if (data.pwaName) setAppName(data.pwaName);
-        if (data.pwaLogoData) setAppLogo(data.pwaLogoData);
-        if (data.pwaSplashData) setSplashImage(data.pwaSplashData);
+        // Only apply server PWA branding if user hasn't saved their own brand kit name
+        const { businessProfile } = useAppStore.getState();
+        if (data.pwaName && !businessProfile?.name) setAppName(data.pwaName);
+        if (data.pwaLogoData && !businessProfile?.name) setAppLogo(data.pwaLogoData);
+        if (data.pwaSplashData && !businessProfile?.name) setSplashImage(data.pwaSplashData);
       } catch (err) {
         console.error("Failed to fetch settings", err);
       }

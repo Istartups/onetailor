@@ -235,7 +235,7 @@ export default function Home() {
             <button onClick={() => setLocation("/pre-unlock")}
               className="flex items-center gap-1.5 rounded-full px-3 py-1.5 active:scale-95 transition-transform"
               style={{ background: "rgba(212,160,32,0.1)", border: "1px solid rgba(212,160,32,0.3)", color: "hsl(43,82%,60%)", fontSize: 11, fontWeight: 700 }}>
-              <ShieldCheck size={12} /> {pendingPremiumRequest ? "⭐ Resume Upgrade" : "⭐ Unlock Pro"}
+              <ShieldCheck size={12} /> {pendingPremiumRequest ? "⭐ Resume Upgrade" : "⭐ Unlock Premium"}
             </button>
           )}
         </div>

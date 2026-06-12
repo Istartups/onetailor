@@ -292,7 +292,7 @@ router.get("/admin/system-logs", authenticateAdmin as any, async (req, res) => {
 router.get("/admin/referral-stats", authenticateAdmin as any, async (req, res) => {
   try {
     // Summary counts
-    const summaryRows = await db.execute(sql`
+    const summaryResult = await db.execute(sql`
       SELECT
         COALESCE(SUM(successful_invites), 0)::integer                                     AS total_referrals,
         COUNT(*) FILTER (WHERE referred_by IS NOT NULL)::integer                          AS referred_users,
@@ -300,7 +300,8 @@ router.get("/admin/referral-stats", authenticateAdmin as any, async (req, res) =
         COUNT(*) FILTER (WHERE referred_by IS NOT NULL AND total_usage_count > 0)::integer AS converted_users
       FROM users
     `);
-    const summary = (summaryRows as any[])[0] ?? {};
+    const summaryRows = ((summaryResult as any).rows ?? summaryResult) as any[];
+    const summary = summaryRows[0] ?? {};
 
     const referredUsers  = Number((summary as any).referred_users  || 0);
     const convertedUsers = Number((summary as any).converted_users || 0);
@@ -324,16 +325,17 @@ router.get("/admin/referral-stats", authenticateAdmin as any, async (req, res) =
       .limit(10);
 
     // Reward tier breakdown
-    const tiers = await db.execute(sql`
-      SELECT referral_reward_level AS tier, COUNT(*) AS count
-      FROM ${usersTable}
+    const tiersResult = await db.execute(sql`
+      SELECT referral_reward_level AS tier, COUNT(*)::integer AS count
+      FROM users
       WHERE successful_invites > 0
       GROUP BY referral_reward_level
       ORDER BY referral_reward_level ASC
     `);
+    const tiers = ((tiersResult as any).rows ?? tiersResult) as any[];
 
     // Daily new referred users — last 7 days
-    const dailyReferred = await db.execute(sql`
+    const dailyResult = await db.execute(sql`
       WITH RECURSIVE days AS (
         SELECT date_trunc('day', now()) AS day
         UNION ALL
@@ -341,14 +343,15 @@ router.get("/admin/referral-stats", authenticateAdmin as any, async (req, res) =
       )
       SELECT
         to_char(days.day, 'Mon DD') AS name,
-        COUNT(u.id)                 AS count
+        COUNT(u.id)::integer        AS count
       FROM days
-      LEFT JOIN ${usersTable} u
+      LEFT JOIN users u
         ON date_trunc('day', u.created_at) = days.day
         AND u.referred_by IS NOT NULL
       GROUP BY days.day, name
       ORDER BY days.day ASC
     `);
+    const dailyReferred = ((dailyResult as any).rows ?? dailyResult) as any[];
 
     return void res.json({
       summary: {
@@ -359,8 +362,8 @@ router.get("/admin/referral-stats", authenticateAdmin as any, async (req, res) =
         conversionRate,
       },
       topInviters,
-      tierBreakdown: (tiers as any[]).map((r: any) => ({ tier: Number(r.tier), count: Number(r.count) })),
-      dailyReferred:  (dailyReferred as any[]).map((r: any) => ({ name: r.name as string, count: Number(r.count) })),
+      tierBreakdown: tiers.map((r: any) => ({ tier: Number(r.tier), count: Number(r.count) })),
+      dailyReferred:  dailyReferred.map((r: any) => ({ name: r.name as string, count: Number(r.count) })),
     });
   } catch (error) {
     console.error("Referral stats error:", error);
