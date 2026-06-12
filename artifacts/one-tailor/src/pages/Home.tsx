@@ -188,13 +188,13 @@ export default function Home() {
   const handleSelectModalCustomer = (c: HomeCustomer) => {
     setShowMeasureModal(false);
     setModalSearch("");
-    handleNavigate(`/customer-measurement?action=new_measurement&customerId=${c.id}`);
+    handleNavigate(`/add-customer?action=new_measurement&customerId=${c.id}`);
   };
 
   const handleAddNewClientFromModal = () => {
     setShowMeasureModal(false);
     setModalSearch("");
-    handleNavigate("/customer-measurement?action=new_client");
+    handleNavigate("/add-customer?action=new_client");
   };
 
   // ───────────────────────────────────────────────────────────────────────────

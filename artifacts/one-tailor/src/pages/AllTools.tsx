@@ -9,9 +9,9 @@ import { useSearch } from "@/hooks/use-search";
 const ORDERED_CATEGORIES: ToolCategory[] = ["clients", "measurements", "fabric", "pricing"];
 
 const CLIENT_SHORTCUTS = [
-  { label: "Database",       icon: Database, path: "/customer-measurement",            bg: "rgba(59,130,246,0.1)",  color: "hsl(217,91%,60%)" },
-  { label: "Add Client",     icon: Plus,     path: "/customer-measurement?action=add", bg: "rgba(59,130,246,0.1)",  color: "hsl(217,91%,60%)" },
-  { label: "Measurement",    icon: Ruler,    path: "/customer-measurement?action=measure", bg: "rgba(59,130,246,0.1)", color: "hsl(217,91%,60%)" },
+  { label: "Database",       icon: Database, path: "/add-customer",            bg: "rgba(59,130,246,0.1)",  color: "hsl(217,91%,60%)" },
+  { label: "Add Client",     icon: Plus,     path: "/add-customer?action=new_client", bg: "rgba(59,130,246,0.1)",  color: "hsl(217,91%,60%)" },
+  { label: "Measurement",    icon: Ruler,    path: "/add-customer?action=measure", bg: "rgba(59,130,246,0.1)", color: "hsl(217,91%,60%)" },
 ];
 
 type FilterTab = ToolCategory | "fav" | "all";

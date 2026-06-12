@@ -26,7 +26,7 @@ export interface Tool {
 export const ALL_TOOLS: Tool[] = [
   {
     id: "customer-measurement",
-    path: "/customer-measurement",
+    path: "/add-customer",
     name: "Client Management",
     description: "Manage your digital customer database.",
     category: "clients",

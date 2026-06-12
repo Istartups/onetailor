@@ -71,7 +71,8 @@ function Router() {
         <Route path="/measurement-checker"  component={MeasurementChecker} />
         <Route path="/fabric-requirement"   component={FabricRequirementCalculator} />
         <Route path="/price-smartly"      component={GarmentPricingAdvisor} />
-        <Route path="/customer-measurement"  component={CustomerMeasurement} />
+        <Route path="/add-customer"          component={CustomerMeasurement} />
+        <Route path="/customer-measurement"><Redirect to="/add-customer" /></Route>
         <Route path="/measurement-templates" component={MeasurementTemplates} />
         <Route path="/measurement-card"   component={MeasurementCardGenerator} />
         <Route path="/color-matcher"      component={FabricColorMatcher} />

@@ -61,6 +61,8 @@ export default function CustomerMeasurement() {
   const proUpgradeLink      = useAppStore(s => s.proUpgradeLink);
   const proUpgradeButtonText = useAppStore(s => s.proUpgradeButtonText);
   const customTemplates          = useAppStore(s => s.customTemplates);
+  const customMeasurementFields  = useAppStore(s => s.customMeasurementFields);
+  const addCustomMeasurementField = useAppStore(s => s.addCustomMeasurementField);
 
   // ── UI state ──
   const [view, setView]               = useState<View>("clients");
@@ -98,6 +100,10 @@ export default function CustomerMeasurement() {
     values: {} as Record<string, string>,
     customFields: [] as { name: string; value: string }[]
   });
+
+  // ── Post-save "add measurement?" modal ──
+  const [showAddMeasurePrompt, setShowAddMeasurePrompt] = useState(false);
+  const [promptCustomer, setPromptCustomer] = useState<Customer | null>(null);
 
   // ── Measurement add sub-step (unit → template → fields) ──
   const [measureAddStep, setMeasureAddStep] = useState<"unit" | "template" | "fields">("unit");
@@ -300,16 +306,28 @@ export default function CustomerMeasurement() {
     }
     setLoading(true);
     try {
+      const isNew = !selectedCustomer;
       const res = await fetch("/api/tailoring/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...customerForm, deviceId: getDeviceId(), id: selectedCustomer?.id })
       });
       if (res.ok) {
+        const saved: Customer = await res.json();
         toast({ title: "Saved", description: "Customer profile saved." });
         await fetchCustomers();
-        setView("clients");
-        resetForms();
+        if (isNew) {
+          // For new customers: show "add measurement?" prompt instead of going to list
+          resetForms();
+          setPromptCustomer(saved);
+          setShowAddMeasurePrompt(true);
+        } else {
+          // For edits: go back to client detail
+          setSelectedCustomer(saved);
+          fetchMeasurements(saved.id);
+          setView("client_detail");
+          resetForms();
+        }
       } else {
         const err = await res.json();
         toast({ title: "Error", description: err.message || "Failed to save.", variant: "destructive" });
@@ -445,6 +463,54 @@ export default function CustomerMeasurement() {
 
   return (
     <div className="max-w-xl mx-auto pb-24 relative min-h-screen">
+
+      {/* ── Post-save "Add Measurement?" prompt ──────────────────────────── */}
+      {showAddMeasurePrompt && promptCustomer && (
+        <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex items-center justify-center p-5 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-border animate-in zoom-in-95 duration-200">
+            <div className="p-6 space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                <CheckCircle2 size={28} className="text-primary" />
+              </div>
+              <div className="text-center space-y-1.5">
+                <h3 className="text-base font-black">Customer Added!</h3>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-bold text-foreground">{promptCustomer.name}</span> has been saved.
+                </p>
+                <p className="text-xs text-muted-foreground pt-1">Would you like to add a measurement record now?</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowAddMeasurePrompt(false);
+                    setPromptCustomer(null);
+                    setView("clients");
+                  }}
+                  className="py-3 rounded-2xl border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    const c = promptCustomer;
+                    setShowAddMeasurePrompt(false);
+                    setPromptCustomer(null);
+                    setSelectedCustomer(c);
+                    fetchMeasurements(c.id);
+                    setMeasurementForm({ id: undefined, label: "Initial Measurement", category: "", unit: "Inches", values: {}, customFields: [] });
+                    setMeasureAddStep("unit");
+                    setView("add_measurement");
+                  }}
+                  className="py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+                >
+                  Add Measurement
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <PageHeader
         title={pageTitle}
         subtitle={view === "clients" ? "Manage your client records" : ""}
@@ -512,13 +578,6 @@ export default function CustomerMeasurement() {
 
             {/* FABs */}
             <div className="fixed bottom-24 right-6 flex flex-col gap-3 items-end">
-              <button
-                onClick={() => setLocation("/measurement-templates")}
-                className="flex items-center gap-2 bg-card text-foreground border border-border px-4 py-3 rounded-2xl shadow-xl active:scale-95 transition-all"
-              >
-                <span className="text-[10px] font-black uppercase tracking-widest">Templates</span>
-                <Layers size={16} />
-              </button>
               <button
                 onClick={() => { resetForms(); setView("add_client"); }}
                 className="flex items-center gap-3 bg-primary text-primary-foreground pl-4 pr-4 py-3.5 rounded-2xl shadow-2xl active:scale-95 transition-all"

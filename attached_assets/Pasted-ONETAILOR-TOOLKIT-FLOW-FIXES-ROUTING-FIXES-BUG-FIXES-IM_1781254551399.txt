@@ -1,0 +1,386 @@
+ONETAILOR TOOLKIT – FLOW FIXES, ROUTING FIXES & BUG FIXES
+
+IMPORTANT:
+
+Do NOT redesign the product.
+
+Do NOT add new features.
+
+Do NOT change working backend logic unless required to fix bugs.
+
+This request is focused on fixing UX flow problems and runtime errors.
+
+==================================================
+
+1. FIX CLIENT MANAGEMENT ROUTE
+   ==================================================
+
+Current issue:
+
+When clicking:
+
+Client Management
+
+it routes to:
+
+/customer-measurement
+
+This is incorrect.
+
+Problem:
+
+The route name suggests measurement creation instead of customer management.
+
+Required fix:
+
+Change Client Management route to something more accurate.
+
+Replace:
+
+/customer-measurement
+
+With:
+
+/add-customer
+
+OR
+
+/customers
+
+Preferred:
+
+/add-customer
+
+because this screen starts with customer creation.
+
+Update:
+
+* Navigation links
+* Router definitions
+* Internal references
+* Deep links
+
+Do NOT break existing customer creation functionality.
+
+==================================================
+2. FIX CUSTOMER CREATION FLOW
+=============================
+
+Current issue:
+
+Adding customer and adding measurement are mixed together in one flow.
+
+This creates confusion.
+
+Problem:
+
+Adding a customer is different from adding a measurement.
+
+A tailor may want to:
+
+* Save customer only
+* Save customer and immediately add measurement
+
+These are separate actions.
+
+Required fix:
+
+Separate customer creation from measurement creation.
+
+New flow:
+
+Step 1:
+
+User clicks:
+
+Client Management
+
+↓
+
+Open Add Customer page
+
+User enters:
+
+* Name
+* Phone
+* Customer details
+
+↓
+
+Click Save Customer
+
+==================================================
+
+After successful save:
+
+Show popup/modal:
+
+Customer added successfully
+
+Would you like to add measurement now?
+
+Buttons:
+
+[ Add Measurement ]
+
+[ Cancel ]
+
+==================================================
+
+If user clicks:
+
+Add Measurement
+
+Automatically continue into measurement flow.
+
+If user clicks:
+
+Cancel
+
+Stay on customer page.
+
+==================================================
+
+Important:
+
+Do NOT force measurement creation during customer creation.
+
+Customer creation must work independently.
+
+==================================================
+3. REMOVE TEMPLATE FROM ADD CUSTOMER PAGE
+=========================================
+
+Current issue:
+
+Measurement Templates are appearing inside Add Customer flow.
+
+Problem:
+
+Templates already exist as a separate tool.
+
+Template selection should NOT appear while adding customer.
+
+Required fix:
+
+Remove Measurement Template selection completely from Add Customer page.
+
+Customer page should ONLY handle:
+
+* Customer creation
+
+No measurement template logic here.
+
+==================================================
+4. MEASUREMENT FLOW SHOULD BE SEPARATE
+======================================
+
+Measurement flow should ONLY begin when user explicitly chooses:
+
+Add Measurement
+
+Flow should be:
+
+Select Customer
+↓
+Select Unit
+↓
+Select Template
+↓
+Enter Measurements
+↓
+Save Measurement
+
+==================================================
+
+Important:
+
+Template selection belongs ONLY inside measurement flow.
+
+NOT inside customer creation flow.
+
+==================================================
+5. FIX MEASUREMENT FLOW ERROR
+=============================
+
+Current issue:
+
+After:
+
+Select Unit
+↓
+Select Template
+
+App crashes.
+
+Console error:
+
+ReferenceError: customMeasurementFields is not defined
+
+Error location:
+
+CustomerMeasurement.tsx:1134:20
+
+==================================================
+
+Required debugging:
+
+Inspect:
+
+CustomerMeasurement.tsx
+
+Find why:
+
+customMeasurementFields
+
+is being referenced before definition.
+
+Possible causes:
+
+* Variable removed during refactor
+* Missing import
+* State variable deleted
+* Variable renamed but references remain
+
+Fix required:
+
+Ensure customMeasurementFields is properly:
+
+* Defined
+  OR
+* Imported
+  OR
+* Initialized safely
+
+Prevent runtime crash.
+
+==================================================
+6. ADD SAFE FALLBACK
+====================
+
+Prevent component crash if variable is missing.
+
+Use safe fallback.
+
+Example:
+
+If customMeasurementFields is undefined:
+
+Use empty array.
+
+Component must never crash.
+
+Example:
+
+customMeasurementFields || []
+
+App must continue functioning.
+
+==================================================
+7. PWA MANIFEST ICON ERROR
+==========================
+
+Current browser error:
+
+Error while trying to use the following icon from the Manifest:
+
+/pwa-192x192.png
+
+Browser says:
+
+Download error or resource isn't a valid image
+
+==================================================
+
+Required fix:
+
+Check:
+
+manifest.json
+
+Verify:
+
+icons array
+
+Example:
+
+{
+"src": "/pwa-192x192.png",
+"sizes": "192x192",
+"type": "image/png"
+}
+
+==================================================
+
+Verify actual file exists.
+
+Check:
+
+public/pwa-192x192.png
+
+Ensure:
+
+* File exists
+* File is valid PNG
+* Not corrupted
+* Correct MIME type
+
+If broken:
+
+Replace with valid PNG file.
+
+==================================================
+8. DO NOT CHANGE CURRENT TOOL STRUCTURE
+=======================================
+
+Keep existing OneTailor Toolkit structure.
+
+Do NOT modify categories.
+
+Do NOT add features.
+
+Keep:
+
+Clients
+
+* Client Management
+* Tailor Notes
+
+Measure
+
+* Measurement Templates
+* Card Generator
+* Measurement Converter
+* Measurement Checker
+
+Fabric
+
+* Fabric Requirement
+* Fabric Color Matcher
+* Delivery Date Calculator
+
+Pricing
+
+* Fabric Cost Estimator
+* Profit Calculator
+* Price Smartly
+
+==================================================
+GOAL
+====
+
+Fix incorrect routing.
+
+Separate customer creation from measurement creation.
+
+Remove template selection from customer creation.
+
+Make measurement flow start only after explicit Add Measurement action.
+
+Fix runtime crash caused by:
+
+customMeasurementFields is not defined
+
+Fix broken PWA manifest icon.
+
+Improve UX without redesigning architecture.
