@@ -1,7 +1,7 @@
 import { 
   Moon, Sun, Trash2, Info, Crown, ChevronRight, Download, Upload,
   Monitor, Palette, Save, ShieldCheck, User, Settings as SettingsIcon, Database, 
-  Smartphone, Mail, Phone, Instagram, Facebook,
+  Smartphone, Mail, Phone, MessageCircle, Instagram, Facebook,
   Pipette, Loader2
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
@@ -342,9 +342,20 @@ export default function Settings() {
   const handleSaveBrandKit = () => {
     const nameVal = validateName(brandForm.name);
     if (!nameVal.valid) { toast({ title: "Invalid Name", description: nameVal.message, variant: "destructive" }); return; }
-    
-    const phoneVal = validatePhone(brandForm.phone);
-    if (!phoneVal.valid) { toast({ title: "Invalid Phone", description: phoneVal.message, variant: "destructive" }); return; }
+
+    // At least one of phone or WhatsApp must be provided
+    if (!brandForm.phone && !brandForm.whatsapp) {
+      toast({ title: "Contact Required", description: "Please enter a Business Phone or WhatsApp number.", variant: "destructive" });
+      return;
+    }
+    if (brandForm.phone) {
+      const phoneVal = validatePhone(brandForm.phone);
+      if (!phoneVal.valid) { toast({ title: "Invalid Phone", description: phoneVal.message, variant: "destructive" }); return; }
+    }
+    if (brandForm.whatsapp) {
+      const waVal = validatePhone(brandForm.whatsapp);
+      if (!waVal.valid) { toast({ title: "Invalid WhatsApp Number", description: waVal.message, variant: "destructive" }); return; }
+    }
 
     if (brandForm.email && !isValidEmail(brandForm.email)) {
       setEmailError("Enter a valid email address");
@@ -523,7 +534,7 @@ export default function Settings() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Business Phone *</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Business Phone</label>
                     <div className="relative">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50" size={16} />
                       <input 
@@ -548,6 +559,36 @@ export default function Settings() {
                       />
                     </div>
                   </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">WhatsApp Number</label>
+                    <div className="relative">
+                      <MessageCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-green-500/70" size={16} />
+                      <input
+                        type="tel"
+                        placeholder="e.g. +2348012345678"
+                        value={brandForm.whatsapp}
+                        onChange={e => {
+                          const cleaned = e.target.value.replace(/[^0-9+]/g, "");
+                          setBrandForm({...brandForm, whatsapp: cleaned});
+                        }}
+                        onKeyDown={e => {
+                          const nav = ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Enter","Home","End"];
+                          if (!nav.includes(e.key) && !/^\d$/.test(e.key) && e.key !== "+") e.preventDefault();
+                        }}
+                        onPaste={e => {
+                          e.preventDefault();
+                          const pasted = e.clipboardData.getData("text").replace(/[^0-9+]/g, "");
+                          setBrandForm({...brandForm, whatsapp: (brandForm.whatsapp + pasted).slice(0, 20)});
+                        }}
+                        maxLength={20}
+                        className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-muted/30 border border-border outline-none focus:border-primary font-bold text-sm"
+                      />
+                    </div>
+                    <p className="text-[9px] text-muted-foreground ml-1">At least Phone or WhatsApp required</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email (Optional)</label>
                     <div className="relative">
@@ -681,6 +722,7 @@ export default function Settings() {
                       />
                     </div>
                   </div>
+                  <p className="text-[9px] text-muted-foreground ml-1">These handles appear as icons on your measurement cards</p>
                 </div>
 
                 {/* Brand Colors (Premium) */}

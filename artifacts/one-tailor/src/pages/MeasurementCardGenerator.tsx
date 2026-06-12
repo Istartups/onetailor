@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Palette, Download, Printer, ShieldCheck, Users, ChevronRight,
-  MapPin, Banknote, Quote, Ruler, Share2, AlertCircle
+  MapPin, Phone, MessageCircle, Quote, Ruler, Share2, AlertCircle,
+  Instagram, Facebook, Youtube
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useLocation } from "wouter";
@@ -86,8 +87,8 @@ export default function MeasurementCardGenerator() {
 
   // ── BrandKit Validation ───────────────────────────────────────────────────
   const isBrandKitComplete = useMemo(() =>
-    !!(appLogo && businessProfile?.name),
-    [appLogo, businessProfile?.name]
+    !!(appLogo && businessProfile?.name && (businessProfile.phone || businessProfile.socials?.whatsapp)),
+    [appLogo, businessProfile?.name, businessProfile?.phone, businessProfile?.socials?.whatsapp]
   );
 
   // ── Fetch customers on mount ───────────────────────────────────────────────
@@ -140,6 +141,8 @@ export default function MeasurementCardGenerator() {
   };
 
   // ── Generate card blob ─────────────────────────────────────────────────────
+  // oklch fix: use a 1×1 canvas to convert any oklch/non-rgb color to rgb,
+  // apply those as inline styles before html2canvas reads the DOM, then restore.
   const generateCardBlob = useCallback(async (): Promise<Blob> => {
     if (!cardRef.current) throw new Error("Card not ready");
 
@@ -150,30 +153,69 @@ export default function MeasurementCardGenerator() {
         ? Promise.resolve()
         : new Promise(res => { img.onload = res; img.onerror = res; })
     ));
+    await new Promise(res => setTimeout(res, 150));
 
-    // Small delay so fonts render
-    await new Promise(res => setTimeout(res, 100));
+    // ── Inline-style all color props so html2canvas sees rgb(), never oklch() ──
+    const cvs = document.createElement("canvas");
+    cvs.width = cvs.height = 1;
+    const cvCtx = cvs.getContext("2d")!;
 
-    const canvas = await html2canvas(cardRef.current, {
-      scale: 2.5,
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: theme.hex,
-      logging: false,
-      removeContainer: true,
-      onclone: (_doc, el) => {
-        el.querySelectorAll("img").forEach(img => {
-          (img as HTMLImageElement).style.display = "block";
-        });
-      },
+    const toRgb = (color: string): string | null => {
+      if (!color || color === "rgba(0, 0, 0, 0)" || color === "transparent") return null;
+      if (/^rgb/.test(color) || /^#/.test(color)) return color; // already safe
+      try {
+        cvCtx.clearRect(0, 0, 1, 1);
+        cvCtx.fillStyle = color;
+        cvCtx.fillRect(0, 0, 1, 1);
+        const [r, g, b, a] = cvCtx.getImageData(0, 0, 1, 1).data;
+        if (a === 0) return null;
+        return a === 255 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${(a / 255).toFixed(3)})`;
+      } catch { return null; }
+    };
+
+    const COLOR_PROPS = [
+      "color", "background-color",
+      "border-top-color", "border-right-color",
+      "border-bottom-color", "border-left-color",
+    ];
+
+    const allEls = [cardRef.current, ...Array.from(cardRef.current.querySelectorAll<HTMLElement>("*"))];
+    const savedStyles = allEls.map(el => el.style.cssText);
+
+    allEls.forEach(el => {
+      const computed = window.getComputedStyle(el);
+      COLOR_PROPS.forEach(prop => {
+        const val = computed.getPropertyValue(prop);
+        const rgb = toRgb(val);
+        if (rgb) el.style.setProperty(prop, rgb);
+      });
     });
 
-    return new Promise((resolve, reject) => {
-      canvas.toBlob(
-        blob => blob ? resolve(blob) : reject(new Error("Failed to generate image")),
-        "image/png", 1.0
-      );
-    });
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2.5,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: theme.hex,
+        logging: false,
+        removeContainer: true,
+        onclone: (_doc, el) => {
+          el.querySelectorAll("img").forEach(img => {
+            (img as HTMLImageElement).style.display = "block";
+          });
+        },
+      });
+
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(
+          blob => blob ? resolve(blob) : reject(new Error("Failed to generate image")),
+          "image/png", 1.0
+        );
+      });
+    } finally {
+      // Always restore original inline styles
+      allEls.forEach((el, i) => { el.style.cssText = savedStyles[i]; });
+    }
   }, [theme.hex]);
 
   // ── Save To Device ────────────────────────────────────────────────────────
@@ -513,9 +555,17 @@ export default function MeasurementCardGenerator() {
                       <h2 className="text-lg font-black uppercase tracking-tight leading-tight truncate">
                         {businessProfile?.name || appName}
                       </h2>
+
+                      {/* WhatsApp first, then Phone */}
+                      {businessProfile?.socials?.whatsapp && (
+                        <p className="text-[10px] font-bold opacity-70 flex items-center gap-1">
+                          <MessageCircle size={10} className="opacity-60 shrink-0" />
+                          {businessProfile.socials.whatsapp}
+                        </p>
+                      )}
                       {businessProfile?.phone && (
                         <p className="text-[10px] font-bold opacity-70 flex items-center gap-1">
-                          <Banknote size={10} className="opacity-50 shrink-0" />
+                          <Phone size={10} className="opacity-60 shrink-0" />
                           {businessProfile.phone}
                         </p>
                       )}
@@ -525,8 +575,35 @@ export default function MeasurementCardGenerator() {
                           <span className="leading-tight">{businessProfile.address}</span>
                         </p>
                       )}
-                      {socialLine && (
-                        <p className="text-[9px] font-bold opacity-50 leading-relaxed pt-0.5">{socialLine}</p>
+
+                      {/* Social icon pills — frosted backdrop works on any theme */}
+                      {(socials?.instagram || socials?.facebook || socials?.tiktok || socials?.youtube) && (
+                        <div className="flex flex-wrap gap-1 pt-0.5">
+                          {socials?.instagram && (
+                            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                              <Instagram size={8} style={{ opacity: 0.9 }} />
+                              <span style={{ fontSize: 8, fontWeight: 700, opacity: 0.9, lineHeight: 1 }}>@{socials.instagram}</span>
+                            </span>
+                          )}
+                          {socials?.facebook && (
+                            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                              <Facebook size={8} style={{ opacity: 0.9 }} />
+                              <span style={{ fontSize: 8, fontWeight: 700, opacity: 0.9, lineHeight: 1 }}>{socials.facebook}</span>
+                            </span>
+                          )}
+                          {socials?.tiktok && (
+                            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                              <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.9 }}><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+                              <span style={{ fontSize: 8, fontWeight: 700, opacity: 0.9, lineHeight: 1 }}>@{socials.tiktok}</span>
+                            </span>
+                          )}
+                          {socials?.youtube && (
+                            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                              <Youtube size={8} style={{ opacity: 0.9 }} />
+                              <span style={{ fontSize: 8, fontWeight: 700, opacity: 0.9, lineHeight: 1 }}>{socials.youtube}</span>
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
 
