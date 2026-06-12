@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { Users, Crown, Clock, AlertCircle, CheckCircle, XCircle, Search, RefreshCw } from "lucide-react";
+import {
+  Users, Crown, Clock, AlertCircle, CheckCircle, XCircle,
+  Search, RefreshCw, CheckSquare, Square, Zap, ShieldOff, Shield, Star
+} from "lucide-react";
 import { authFetch } from "@/lib/authFetch";
 
 interface AccountRecord {
@@ -54,18 +57,21 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function Accounts() {
-  const [accounts, setAccounts] = useState<AccountRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<string>("all");
+  const [accounts, setAccounts]       = useState<AccountRecord[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState("");
+  const [filter, setFilter]           = useState<string>("all");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkMsg, setBulkMsg]         = useState("");
 
   const fetchAccounts = async () => {
     setLoading(true);
+    setSelectedIds(new Set());
     try {
       const res = await authFetch("/api/admin/accounts");
       if (!res.ok) throw new Error("Failed to fetch accounts");
-      const data = await res.json();
-      setAccounts(data);
+      setAccounts(await res.json());
     } catch (err) {
       console.error("Accounts fetch error:", err);
     } finally {
@@ -87,11 +93,67 @@ export default function Accounts() {
     return matchSearch && matchFilter;
   });
 
+  const allSelected   = filtered.length > 0 && filtered.every(a => selectedIds.has(a.id));
+  const someSelected  = filtered.some(a => selectedIds.has(a.id));
+  const selectedCount = [...selectedIds].filter(id => filtered.find(a => a.id === id)).length;
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        filtered.forEach(a => next.delete(a.id));
+        return next;
+      });
+    } else {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        filtered.forEach(a => next.add(a.id));
+        return next;
+      });
+    }
+  };
+
+  const runBulkAction = async (action: string) => {
+    const ids = [...selectedIds].filter(id => filtered.find(a => a.id === id));
+    if (!ids.length) return;
+    const label =
+      action === "approvePremium" ? "approve premium for" :
+      action === "suspend"        ? "suspend" :
+      action === "activate"       ? "activate" :
+      action === "grantBonus"     ? "grant +5 usage to" : action;
+    if (!confirm(`${label.charAt(0).toUpperCase() + label.slice(1)} ${ids.length} account(s)?`)) return;
+    setBulkLoading(true);
+    setBulkMsg("");
+    try {
+      const res = await authFetch("/api/admin/users/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, action, bonusAmount: 5 }),
+      });
+      const data = await res.json();
+      setBulkMsg(data.message || "Done");
+      setSelectedIds(new Set());
+      fetchAccounts();
+    } catch {
+      setBulkMsg("Error — please try again.");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   const stats = {
-    total: accounts.length,
-    premium: accounts.filter(a => a.isPremium).length,
+    total:          accounts.length,
+    premium:        accounts.filter(a => a.isPremium).length,
     pendingPayment: accounts.filter(a => a.premiumRequestStatus === "payment_submitted").length,
-    leads: accounts.filter(a => a.accountStatus === "Lead").length,
+    leads:          accounts.filter(a => a.accountStatus === "Lead").length,
   };
 
   return (
@@ -115,10 +177,10 @@ export default function Accounts() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Accounts", value: stats.total, icon: Users, color: "text-blue-400" },
-          { label: "Premium Active", value: stats.premium, icon: Crown, color: "text-emerald-400" },
-          { label: "Pending Review", value: stats.pendingPayment, icon: Clock, color: "text-amber-400" },
-          { label: "Leads", value: stats.leads, icon: AlertCircle, color: "text-slate-400" },
+          { label: "Total Accounts", value: stats.total,          icon: Users,        color: "text-blue-400" },
+          { label: "Premium Active", value: stats.premium,        icon: Crown,        color: "text-emerald-400" },
+          { label: "Pending Review", value: stats.pendingPayment, icon: Clock,        color: "text-amber-400" },
+          { label: "Leads",          value: stats.leads,          icon: AlertCircle,  color: "text-slate-400" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-card border border-border rounded-2xl p-4 space-y-2">
             <div className="flex items-center gap-2">
@@ -155,6 +217,52 @@ export default function Accounts() {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {someSelected && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl border"
+          style={{ background: "rgba(96,165,250,0.07)", borderColor: "rgba(96,165,250,0.25)" }}>
+          <span className="text-xs font-bold text-blue-400">{selectedCount} selected</span>
+          <div className="flex flex-wrap gap-2 flex-1">
+            <button
+              onClick={() => runBulkAction("approvePremium")}
+              disabled={bulkLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+            >
+              <Crown size={11} /> Approve Premium
+            </button>
+            <button
+              onClick={() => runBulkAction("suspend")}
+              disabled={bulkLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+            >
+              <ShieldOff size={11} /> Suspend
+            </button>
+            <button
+              onClick={() => runBulkAction("activate")}
+              disabled={bulkLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+            >
+              <Shield size={11} /> Activate
+            </button>
+            <button
+              onClick={() => runBulkAction("grantBonus")}
+              disabled={bulkLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+            >
+              <Star size={11} /> Grant +5 Usage
+            </button>
+          </div>
+          {bulkLoading && <Zap size={14} className="text-primary animate-pulse" />}
+          {bulkMsg && <span className="text-xs text-muted-foreground">{bulkMsg}</span>}
+          <button
+            onClick={() => { setSelectedIds(new Set()); setBulkMsg(""); }}
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {loading ? (
@@ -173,6 +281,17 @@ export default function Accounts() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
+                  <th className="p-4 w-10">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      title={allSelected ? "Deselect all" : "Select all"}
+                    >
+                      {allSelected
+                        ? <CheckSquare size={16} className="text-primary" />
+                        : <Square size={16} />}
+                    </button>
+                  </th>
                   <th className="text-left p-4 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Business</th>
                   <th className="text-left p-4 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Contact</th>
                   <th className="text-left p-4 font-semibold text-muted-foreground text-xs uppercase tracking-wider">Location</th>
@@ -182,36 +301,48 @@ export default function Accounts() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map(acc => (
-                  <tr key={acc.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="p-4">
-                      <p className="font-semibold">{acc.businessName || acc.profile?.name || "—"}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">ID #{acc.id}</p>
-                    </td>
-                    <td className="p-4">
-                      <p className="text-sm">{acc.email || "—"}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{acc.phone || "—"}</p>
-                    </td>
-                    <td className="p-4">
-                      <p className="text-sm text-muted-foreground">
-                        {[acc.profile?.city, acc.profile?.state, acc.profile?.country]
-                          .filter(Boolean)
-                          .join(", ") || "—"}
-                      </p>
-                    </td>
-                    <td className="p-4">
-                      <StatusBadge status={acc.accountStatus} />
-                    </td>
-                    <td className="p-4 text-xs text-muted-foreground">
-                      {new Date(acc.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="p-4 text-xs text-muted-foreground">
-                      {acc.lastLoginAt
-                        ? new Date(acc.lastLoginAt).toLocaleDateString("en-NG", { day: "numeric", month: "short" })
-                        : "Never"}
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map(acc => {
+                  const checked = selectedIds.has(acc.id);
+                  return (
+                    <tr
+                      key={acc.id}
+                      className={`hover:bg-muted/20 transition-colors cursor-pointer ${checked ? "bg-primary/5" : ""}`}
+                      onClick={() => toggleSelect(acc.id)}
+                    >
+                      <td className="p-4 w-10" onClick={e => { e.stopPropagation(); toggleSelect(acc.id); }}>
+                        {checked
+                          ? <CheckSquare size={15} className="text-primary" />
+                          : <Square size={15} className="text-muted-foreground" />}
+                      </td>
+                      <td className="p-4">
+                        <p className="font-semibold">{acc.businessName || acc.profile?.name || "—"}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">ID #{acc.id}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm">{acc.email || "—"}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{acc.phone || "—"}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm text-muted-foreground">
+                          {[acc.profile?.city, acc.profile?.state, acc.profile?.country]
+                            .filter(Boolean)
+                            .join(", ") || "—"}
+                        </p>
+                      </td>
+                      <td className="p-4">
+                        <StatusBadge status={acc.accountStatus} />
+                      </td>
+                      <td className="p-4 text-xs text-muted-foreground">
+                        {new Date(acc.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+                      </td>
+                      <td className="p-4 text-xs text-muted-foreground">
+                        {acc.lastLoginAt
+                          ? new Date(acc.lastLoginAt).toLocaleDateString("en-NG", { day: "numeric", month: "short" })
+                          : "Never"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -220,6 +351,7 @@ export default function Accounts() {
 
       <p className="text-xs text-muted-foreground text-right">
         {filtered.length} of {accounts.length} accounts shown
+        {selectedCount > 0 && ` · ${selectedCount} selected`}
       </p>
     </div>
   );

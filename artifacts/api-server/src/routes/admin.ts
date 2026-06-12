@@ -12,13 +12,14 @@ import {
   tailoringCustomersTable,
   tailoringMeasurementsTable,
   licenseActivationsTable,
+  premiumRequestsTable,
   businessProfilesTable,
   pushSubscriptionsTable,
   notificationsTable,
   emailLogsTable,
   auditLogsTable
 } from "@workspace/db";
-import { eq, ne, sql, and, gte, lte } from "drizzle-orm";
+import { eq, ne, sql, and, gte, lte, inArray } from "drizzle-orm";
 import { authenticateAdmin } from "../middlewares/auth";
 
 const router = Router();
@@ -362,6 +363,65 @@ router.get("/admin/referral-stats", authenticateAdmin as any, async (req, res) =
     });
   } catch (error) {
     console.error("Referral stats error:", error);
+    return void res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ─── POST /admin/users/bulk ───────────────────────────────────────────────────
+router.post("/admin/users/bulk", authenticateAdmin as any, async (req, res) => {
+  const { ids, action, bonusAmount } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0 || !action) {
+    return void res.status(400).json({ message: "ids (array) and action are required" });
+  }
+  const numIds = ids.map(Number).filter(Boolean);
+  try {
+    if (action === "suspend") {
+      await db.update(usersTable).set({ status: "disabled" }).where(inArray(usersTable.id, numIds));
+      return void res.json({ message: `${numIds.length} account(s) suspended` });
+    }
+    if (action === "activate") {
+      await db.update(usersTable).set({ status: "active" }).where(inArray(usersTable.id, numIds));
+      return void res.json({ message: `${numIds.length} account(s) activated` });
+    }
+    if (action === "grantBonus") {
+      const bonus = Number(bonusAmount) || 5;
+      const users = await db.select({ id: usersTable.id, bonusUsageLimit: usersTable.bonusUsageLimit }).from(usersTable).where(inArray(usersTable.id, numIds));
+      for (const user of users) {
+        await db.update(usersTable).set({ bonusUsageLimit: (user.bonusUsageLimit ?? 0) + bonus }).where(eq(usersTable.id, user.id));
+      }
+      return void res.json({ message: `Granted +${bonus} usage to ${numIds.length} account(s)` });
+    }
+    if (action === "approvePremium") {
+      const users = await db.select().from(usersTable).where(inArray(usersTable.id, numIds));
+      let approved = 0;
+      for (const user of users) {
+        if (user.isPremium) continue;
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        const seg = (n: number) => Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+        const key = `OT-${seg(6)}-${seg(6)}`;
+        const [license] = await db.insert(licensesTable).values({
+          key, status: "active",
+          customerName: user.businessName || "User",
+          businessName: user.businessName || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          userId: user.id,
+        }).returning();
+        await db.update(usersTable).set({ isPremium: true, status: "active" }).where(eq(usersTable.id, user.id));
+        if (license) {
+          await db.insert(licenseActivationsTable).values({
+            licenseId: license.id,
+            deviceId: user.deviceId || "bulk-approved",
+          });
+          await db.update(premiumRequestsTable).set({ status: "approved", licenseId: license.id }).where(eq(premiumRequestsTable.userId, user.id));
+        }
+        approved++;
+      }
+      return void res.json({ message: `Premium approved for ${approved} account(s)` });
+    }
+    return void res.status(400).json({ message: "Unknown action" });
+  } catch (error) {
+    console.error("Bulk action error:", error);
     return void res.status(500).json({ message: "Internal server error" });
   }
 });

@@ -1006,6 +1006,14 @@ function TasksTab({ templates }: { templates: Template[] }) {
 
 // ─── Templates Tab ────────────────────────────────────────────────────────────
 
+type ChannelTab = "whatsapp" | "email" | "sms";
+
+const CHANNEL_META: Record<ChannelTab, { prefix: string; icon: string; label: string; hint: string; emptyMsg: string; maxChars?: number }> = {
+  whatsapp: { prefix: "",    icon: "💬", label: "WhatsApp", hint: "Opens WhatsApp with the template pre-filled.",       emptyMsg: "Create your first WhatsApp follow-up template", maxChars: undefined },
+  email:    { prefix: "📧 ", icon: "📧", label: "Email",    hint: "Use these templates when composing follow-up emails.",  emptyMsg: "Create your first email template",              maxChars: undefined },
+  sms:      { prefix: "📱 ", icon: "📱", label: "SMS",      hint: "SMS templates — keep messages under 159 characters.",  emptyMsg: "Create your first SMS template",                maxChars: 159 },
+};
+
 function TemplatesTab() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1014,6 +1022,9 @@ function TemplatesTab() {
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [channelTab, setChannelTab] = useState<ChannelTab>("whatsapp");
+
+  const meta = CHANNEL_META[channelTab];
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -1025,11 +1036,18 @@ function TemplatesTab() {
 
   useEffect(() => { fetchTemplates(); }, []);
 
+  const channelTemplates = templates.filter(t => {
+    if (channelTab === "email") return t.name.startsWith("📧 ");
+    if (channelTab === "sms")   return t.name.startsWith("📱 ");
+    return !t.name.startsWith("📧 ") && !t.name.startsWith("📱 ");
+  });
+
   const openEdit = (t: Template) => { setEditingId(t.id); setName(t.name); setContent(t.content); setShowForm(true); };
-  const openNew = () => { setEditingId(null); setName(""); setContent(""); setShowForm(true); };
+  const openNew = () => { setEditingId(null); setName(meta.prefix); setContent(""); setShowForm(true); };
 
   const save = async () => {
     if (!name.trim() || !content.trim()) return;
+    if (meta.maxChars && content.length > meta.maxChars) return;
     setSaving(true);
     try {
       const res = editingId
@@ -1047,29 +1065,53 @@ function TemplatesTab() {
 
   return (
     <div>
+      {/* Channel tabs */}
+      <div className="flex gap-1 mb-5 p-1 rounded-xl w-fit" style={{ background: "hsl(218,44%,10%)", border: "1px solid hsl(218,38%,18%)" }}>
+        {(Object.keys(CHANNEL_META) as ChannelTab[]).map(ch => (
+          <button
+            key={ch}
+            onClick={() => { setChannelTab(ch); setShowForm(false); }}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${channelTab === ch ? "text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            style={channelTab === ch ? { background: "hsl(218,44%,16%)", color: "hsl(43,82%,60%)" } : {}}
+          >
+            {CHANNEL_META[ch].icon} {CHANNEL_META[ch].label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex items-start justify-between mb-5 gap-4">
-        <div className="space-y-1">
-          <p className="text-sm font-bold text-muted-foreground">
-            Reusable WhatsApp message templates. Use <code className="bg-muted px-1 rounded text-[11px]">{"{{name}}"}</code>, <code className="bg-muted px-1 rounded text-[11px]">{"{{business}}"}</code>, <code className="bg-muted px-1 rounded text-[11px]">{"{{phone}}"}</code> as variables.
-          </p>
-        </div>
+        <p className="text-xs text-muted-foreground">{meta.hint} Use <code className="bg-muted px-1 rounded">{"{{name}}"}</code>, <code className="bg-muted px-1 rounded">{"{{business}}"}</code>, <code className="bg-muted px-1 rounded">{"{{phone}}"}</code>.</p>
         {isAdmin() && (
           <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap shrink-0">
-            <Plus size={13} /> New Template
+            <Plus size={13} /> New
           </button>
         )}
       </div>
 
       {showForm && (
         <div className="rounded-2xl p-5 mb-5 space-y-4" style={{ background: "hsl(218,44%,10%)", border: "1px solid hsl(218,38%,20%)" }}>
-          <h4 className="font-bold text-sm">{editingId ? "Edit Template" : "New Template"}</h4>
+          <h4 className="font-bold text-sm">{editingId ? "Edit Template" : `New ${meta.label} Template`}</h4>
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Template name"
             className="w-full px-4 py-2.5 rounded-xl text-sm bg-background border border-border outline-none focus:border-primary/50" />
-          <textarea rows={5} value={content} onChange={e => setContent(e.target.value)}
-            placeholder={"Hello {{name}}, thank you for joining OneTailor...\n\nUse {{business}} for business name, {{phone}} for phone."}
-            className="w-full px-4 py-2.5 rounded-xl text-sm bg-background border border-border outline-none resize-none focus:border-primary/50" />
+          <div className="relative">
+            <textarea
+              rows={channelTab === "sms" ? 4 : 5}
+              value={content}
+              onChange={e => {
+                if (meta.maxChars && e.target.value.length > meta.maxChars) return;
+                setContent(e.target.value);
+              }}
+              placeholder={channelTab === "sms" ? "Short SMS message (max 159 chars)..." : `Hello {{name}}, thank you for your interest in our tailoring services...`}
+              className="w-full px-4 py-2.5 rounded-xl text-sm bg-background border border-border outline-none resize-none focus:border-primary/50"
+            />
+            {meta.maxChars && (
+              <span className={`absolute bottom-3 right-3 text-[10px] font-bold ${content.length > (meta.maxChars - 20) ? "text-red-400" : "text-muted-foreground/50"}`}>
+                {content.length}/{meta.maxChars}
+              </span>
+            )}
+          </div>
           <div className="flex gap-2">
-            <button onClick={save} disabled={saving}
+            <button onClick={save} disabled={saving || (!!meta.maxChars && content.length > meta.maxChars)}
               className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50 transition-all"
               style={{ background: "hsl(43,82%,55%)", color: "hsl(218,44%,8%)" }}>
               {saving ? "Saving…" : "Save"}
@@ -1081,20 +1123,27 @@ function TemplatesTab() {
 
       {loading ? (
         <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-t-transparent border-primary rounded-full animate-spin" /></div>
-      ) : templates.length === 0 ? (
+      ) : channelTemplates.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <MessageSquare size={32} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No templates yet</p>
-          <p className="text-xs mt-2">Create your first WhatsApp template to speed up follow-ups</p>
+          <p className="text-sm">{meta.emptyMsg}</p>
+          {isAdmin() && (
+            <button onClick={openNew} className="mt-3 text-xs font-bold text-primary hover:underline">+ Create Template</button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
-          {templates.map(t => (
+          {channelTemplates.map(t => (
             <div key={t.id} className="rounded-2xl p-4" style={{ background: "hsl(218,44%,10%)", border: "1px solid hsl(218,38%,18%)" }}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-primary">{t.name}</p>
                   <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed whitespace-pre-wrap">{t.content}</p>
+                  {channelTab === "sms" && (
+                    <p className={`text-[10px] mt-1 font-bold ${t.content.length > 159 ? "text-red-400" : "text-muted-foreground/50"}`}>
+                      {t.content.length} chars{t.content.length > 159 ? " — over limit!" : ""}
+                    </p>
+                  )}
                   <p className="text-[10px] text-muted-foreground/50 mt-2">Updated {relDate(t.createdAt)}</p>
                 </div>
                 {isAdmin() && (

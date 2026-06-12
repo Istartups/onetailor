@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Palette, Download, Printer, ShieldCheck, Users, ChevronRight,
   MapPin, Phone, MessageCircle, Quote, Ruler, Share2, AlertCircle,
-  Instagram, Facebook, Youtube
+  Instagram, Facebook, Youtube, Lock, Wand2
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useLocation } from "wouter";
@@ -46,6 +46,24 @@ const THEMES = [
 
 const IMAGE_FIELDS = ["image", "styleimage", "photo", "designimage", "referenceimage"];
 
+// ─── Card Styles ──────────────────────────────────────────────────────────────
+
+type CardStyleDef = {
+  id: string; label: string; premium: boolean;
+  topBarColor: string; topBarHeight: number;
+  leftBarColor: string; cornerDots: boolean;
+};
+
+const CARD_STYLES: CardStyleDef[] = [
+  { id: "standard",  label: "Standard",       premium: false, topBarColor: "",                 topBarHeight: 0, leftBarColor: "",                cornerDots: false },
+  { id: "executive", label: "Executive",      premium: true,  topBarColor: "",                 topBarHeight: 0, leftBarColor: "hsl(43,82%,55%)", cornerDots: false },
+  { id: "luxury",    label: "Luxury",         premium: true,  topBarColor: "hsl(43,82%,55%)",  topBarHeight: 7, leftBarColor: "",                cornerDots: false },
+  { id: "modern",    label: "Modern",         premium: true,  topBarColor: "hsl(220,70%,60%)", topBarHeight: 3, leftBarColor: "",                cornerDots: false },
+  { id: "minimal",   label: "Minimal",        premium: true,  topBarColor: "",                 topBarHeight: 0, leftBarColor: "",                cornerDots: false },
+  { id: "fashion",   label: "Fashion Studio", premium: true,  topBarColor: "hsl(43,82%,55%)",  topBarHeight: 8, leftBarColor: "",                cornerDots: true  },
+  { id: "elegant",   label: "Elegant",        premium: true,  topBarColor: "",                 topBarHeight: 0, leftBarColor: "",                cornerDots: true  },
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseMeasurements(raw: string): Record<string, string> {
@@ -67,6 +85,7 @@ export default function MeasurementCardGenerator() {
   const appLogo         = useAppStore((s) => s.appLogo);
   const appName         = useAppStore((s) => s.appName);
   const businessProfile = useAppStore((s) => s.businessProfile);
+  const isPremium       = useAppStore((s) => s.isPremium);
 
   const [step, setStep]                         = useState<Step>("select_customer");
   const [customers, setCustomers]               = useState<Customer[]>([]);
@@ -74,6 +93,7 @@ export default function MeasurementCardGenerator() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedRecord, setSelectedRecord]     = useState<MeasurementRecord | null>(null);
   const [theme, setTheme]                       = useState(THEMES[0]);
+  const [selectedCardStyle, setSelectedCardStyle] = useState("standard");
   const [customNote, setCustomNote]             = useState("");
   const [loading, setLoading]                   = useState(false);
   const [sharing, setSharing]                   = useState(false);
@@ -84,6 +104,8 @@ export default function MeasurementCardGenerator() {
 
   const cardRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const cardStyleDef = CARD_STYLES.find(s => s.id === selectedCardStyle) ?? CARD_STYLES[0]!;
 
   // ── BrandKit Validation ───────────────────────────────────────────────────
   const isBrandKitComplete = useMemo(() =>
@@ -534,14 +556,60 @@ export default function MeasurementCardGenerator() {
               </div>
             </div>
 
+            {/* CARD STYLE SELECTOR */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <Wand2 size={14} className="text-primary" />
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Card Style</label>
+                {!isPremium && (
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">PRO</span>
+                )}
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                {CARD_STYLES.map(s => {
+                  const locked = s.premium && !isPremium;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => !locked && setSelectedCardStyle(s.id)}
+                      title={locked ? "Upgrade to Premium to unlock this style" : s.label}
+                      className={`shrink-0 relative px-4 py-2.5 rounded-xl border text-[10px] font-bold transition-all ${selectedCardStyle === s.id ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-card border-border text-muted-foreground"} ${locked ? "opacity-60" : ""}`}
+                    >
+                      {s.label}
+                      {locked && <Lock size={8} className="absolute top-1 right-1 text-muted-foreground" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* PREVIEW CARD */}
             <div className="p-1 bg-slate-200 dark:bg-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
-              <div ref={cardRef} className={`w-full ${theme.bg} ${theme.text} p-8 space-y-8 transition-colors relative`}>
-
+              <div
+                ref={cardRef}
+                className={`w-full ${theme.bg} ${theme.text} ${cardStyleDef.id === "minimal" ? "p-12" : "p-8"} space-y-8 transition-colors relative`}
+                style={{
+                  borderLeft: cardStyleDef.leftBarColor ? `4px solid ${cardStyleDef.leftBarColor}` : undefined,
+                  paddingTop: cardStyleDef.topBarHeight > 0 ? `${cardStyleDef.topBarHeight + 32}px` : undefined,
+                }}
+              >
                 {/* BG watermark */}
                 <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.03] pointer-events-none">
                   {appLogo && <img src={appLogo} className="w-full h-full object-contain" alt="" crossOrigin="anonymous" />}
                 </div>
+
+                {/* Card Style accent */}
+                {cardStyleDef.topBarColor && cardStyleDef.topBarHeight > 0 && (
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: cardStyleDef.topBarHeight, background: cardStyleDef.topBarColor }} />
+                )}
+                {cardStyleDef.cornerDots && (
+                  <>
+                    <div style={{ position: "absolute", top: 12, left: 12, width: 7, height: 7, borderRadius: "50%", background: "currentColor", opacity: 0.22 }} />
+                    <div style={{ position: "absolute", top: 12, right: 12, width: 7, height: 7, borderRadius: "50%", background: "currentColor", opacity: 0.22 }} />
+                    <div style={{ position: "absolute", bottom: 12, left: 12, width: 7, height: 7, borderRadius: "50%", background: "currentColor", opacity: 0.22 }} />
+                    <div style={{ position: "absolute", bottom: 12, right: 12, width: 7, height: 7, borderRadius: "50%", background: "currentColor", opacity: 0.22 }} />
+                  </>
+                )}
 
                 {/* ── 3-COLUMN HEADER ── */}
                 <div className={`pb-5 border-b ${theme.border}`}>

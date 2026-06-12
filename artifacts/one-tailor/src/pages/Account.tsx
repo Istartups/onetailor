@@ -61,10 +61,10 @@ export default function Account() {
             {!account.isPremium && pendingPremiumRequest && (() => {
               const cfg =
                 premiumRequestStatus === "payment_submitted"
-                  ? { bg: "bg-blue-500/10", border: "border-blue-500/20", text: "text-blue-400", label: "Awaiting Approval", msg: "Your payment proof is under review. We'll activate your premium once verified." }
+                  ? { bg: "bg-blue-500/10", border: "border-blue-500/20", text: "text-blue-400", label: "Awaiting Approval", msg: "Your payment proof is in good hands — our team is reviewing it now. ✨ You'll be notified the moment it's confirmed." }
                   : premiumRequestStatus === "rejected"
-                  ? { bg: "bg-red-500/10", border: "border-red-500/20", text: "text-red-400", label: "Payment Rejected", msg: "Your proof could not be verified. Please retry below." }
-                  : { bg: "bg-amber-500/10", border: "border-amber-500/20", text: "text-amber-400", label: "Payment Pending", msg: "You started an upgrade but haven't completed payment. Resume below." };
+                  ? { bg: "bg-red-500/10", border: "border-red-500/20", text: "text-red-400", label: "Payment Not Confirmed", msg: "No worries — let's sort this together. Tap Resume below to re-upload a clearer proof and we'll get you unlocked fast." }
+                  : { bg: "bg-amber-500/10", border: "border-amber-500/20", text: "text-amber-400", label: "Complete Your Upgrade", msg: "You're so close! 🌟 Your premium journey started — just one step left. Resume below to unlock everything." };
               return (
                 <div className={`p-4 ${cfg.bg} border ${cfg.border} rounded-2xl text-xs ${cfg.text} font-medium space-y-1`}>
                   <p className="font-black uppercase tracking-wider text-[10px]">{cfg.label}</p>

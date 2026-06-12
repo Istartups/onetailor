@@ -121,6 +121,8 @@ function App() {
           pendingTitle: data.pendingTitle,
           pendingBody: data.pendingBody,
           pendingCTA: data.pendingCTA,
+          adminNotificationPhone: data.adminNotificationPhone,
+          adminNotificationMessage: data.adminNotificationMessage,
         });
         if (data.currencySymbol && data.currencyCode) {
           setCurrency(data.currencySymbol, data.currencyCode);

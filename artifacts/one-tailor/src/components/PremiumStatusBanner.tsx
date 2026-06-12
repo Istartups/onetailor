@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Clock, AlertTriangle, XCircle, Loader2, ChevronRight } from "lucide-react";
+import { Clock, AlertTriangle, XCircle, Loader2, ChevronRight, MessageCircle } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 
 const DEFAULTS = {
@@ -36,14 +36,16 @@ const DEFAULTS = {
 };
 
 export function PremiumStatusBanner() {
-  const account               = useAppStore((s) => s.account);
-  const isPremium             = useAppStore((s) => s.isPremium);
-  const pendingPremiumRequest = useAppStore((s) => s.pendingPremiumRequest);
-  const premiumRequestStatus  = useAppStore((s) => s.premiumRequestStatus);
-  const pendingTitle          = useAppStore((s) => s.pendingTitle);
-  const pendingBody           = useAppStore((s) => s.pendingBody);
-  const pendingCTA            = useAppStore((s) => s.pendingCTA);
-  const [, navigate]          = useLocation();
+  const account                  = useAppStore((s) => s.account);
+  const isPremium                = useAppStore((s) => s.isPremium);
+  const pendingPremiumRequest    = useAppStore((s) => s.pendingPremiumRequest);
+  const premiumRequestStatus     = useAppStore((s) => s.premiumRequestStatus);
+  const pendingTitle             = useAppStore((s) => s.pendingTitle);
+  const pendingBody              = useAppStore((s) => s.pendingBody);
+  const pendingCTA               = useAppStore((s) => s.pendingCTA);
+  const adminNotificationPhone   = useAppStore((s) => s.adminNotificationPhone);
+  const adminNotificationMessage = useAppStore((s) => s.adminNotificationMessage);
+  const [, navigate]             = useLocation();
 
   if (!account || isPremium || !pendingPremiumRequest) return null;
 
@@ -51,7 +53,6 @@ export function PremiumStatusBanner() {
     ? DEFAULTS[premiumRequestStatus as keyof typeof DEFAULTS]
     : DEFAULTS.pending;
 
-  // For the "pending" state, allow admin overrides from system settings
   const config = premiumRequestStatus === "pending"
     ? {
         ...baseConfig,
@@ -62,6 +63,16 @@ export function PremiumStatusBanner() {
     : baseConfig;
 
   const Icon = config.icon;
+
+  const buildAdminWhatsApp = () => {
+    if (!adminNotificationPhone) return null;
+    const phone = adminNotificationPhone.replace(/\D/g, "");
+    const rawMsg = adminNotificationMessage || "Hello, I submitted my payment proof for OneTailor Premium. Please review my account — {{name}}.";
+    const msg = rawMsg.replace(/\{\{name\}\}/g, account.businessName || "");
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  };
+
+  const adminWaLink = buildAdminWhatsApp();
 
   return (
     <div
@@ -88,15 +99,29 @@ export function PremiumStatusBanner() {
           <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{baseConfig.next}</p>
         )}
 
-        {config.action && (
-          <button
-            onClick={() => navigate("/pre-unlock")}
-            className="mt-2.5 flex items-center gap-1 text-xs font-bold active:scale-95 transition-transform"
-            style={{ color: config.iconColor }}
-          >
-            {config.action} <ChevronRight size={12} />
-          </button>
-        )}
+        <div className="flex flex-wrap gap-3 mt-2.5">
+          {config.action && (
+            <button
+              onClick={() => navigate("/pre-unlock")}
+              className="flex items-center gap-1 text-xs font-bold active:scale-95 transition-transform"
+              style={{ color: config.iconColor }}
+            >
+              {config.action} <ChevronRight size={12} />
+            </button>
+          )}
+
+          {premiumRequestStatus === "payment_submitted" && adminWaLink && (
+            <a
+              href={adminWaLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs font-bold active:scale-95 transition-transform"
+              style={{ color: "#25d366" }}
+            >
+              <MessageCircle size={12} /> Notify Admin
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );

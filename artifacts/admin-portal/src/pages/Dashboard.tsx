@@ -146,7 +146,11 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <div className="px-4 py-4 border-t border-sidebar-border">
+          <div className="px-4 py-4 border-t border-sidebar-border space-y-2">
+            <button onClick={toggleTheme} className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-white/5" style={itemStyle}>
+              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
+            </button>
             <button onClick={handleLogout} className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors">
               <LogOut size={15} />
               Logout

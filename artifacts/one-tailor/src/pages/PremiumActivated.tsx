@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import {
   Crown, Shield, Smartphone, Plus, ChevronRight, Check,
-  Users, Palette, Zap, Video, Database, ShieldCheck, LogIn
+  Users, Palette, Zap, MessageCircle, CreditCard, FileText, ShieldCheck, LogIn
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useLocation } from "wouter";
 
 export default function PremiumActivated() {
-  const isPremium           = useAppStore((s) => s.isPremium);
-  const account             = useAppStore((s) => s.account);
-  const selectedDeviceCount = useAppStore((s) => s.selectedDeviceCount);
+  const isPremium                = useAppStore((s) => s.isPremium);
+  const account                  = useAppStore((s) => s.account);
+  const selectedDeviceCount      = useAppStore((s) => s.selectedDeviceCount);
+  const adminNotificationPhone   = useAppStore((s) => s.adminNotificationPhone);
+  const adminNotificationMessage = useAppStore((s) => s.adminNotificationMessage);
 
   const [, navigate] = useLocation();
   const [licenseData, setLicenseData] = useState<{
@@ -129,30 +131,51 @@ export default function PremiumActivated() {
       </div>
 
       {/* Add More Devices */}
-      <button
-        onClick={() => navigate("/premium-details")}
-        className="w-full p-5 bg-card border-2 border-dashed border-border rounded-3xl flex items-center gap-4 hover:border-primary/40 transition-all active:scale-[0.98] group"
-      >
-        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/20 transition-colors">
-          <Plus size={24} />
-        </div>
-        <div className="text-left flex-1">
-          <p className="font-bold text-sm">Add More Devices</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Expand your license to cover more devices</p>
-        </div>
-        <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
-      </button>
+      {(() => {
+        const buildAdminWa = () => {
+          if (!adminNotificationPhone) return null;
+          const phone = adminNotificationPhone.replace(/\D/g, "");
+          const rawMsg = adminNotificationMessage
+            || "Hello, I'd like to expand my OneTailor Premium license to add more devices. Business: {{name}}.";
+          const msg = rawMsg.replace(/\{\{name\}\}/g, account?.businessName || "");
+          return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+        };
+        const waLink = buildAdminWa();
+        return (
+          <button
+            onClick={() => {
+              if (waLink) window.open(waLink, "_blank");
+              else navigate("/premium-details");
+            }}
+            className="w-full p-5 bg-card border-2 border-dashed border-border rounded-3xl flex items-center gap-4 hover:border-primary/40 transition-all active:scale-[0.98] group"
+          >
+            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/20 transition-colors">
+              <Plus size={24} />
+            </div>
+            <div className="text-left flex-1">
+              <p className="font-bold text-sm">Add More Devices</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {waLink ? "Contact admin via WhatsApp to expand your license" : "Expand your license to cover more devices"}
+              </p>
+            </div>
+            {waLink
+              ? <MessageCircle size={18} className="text-green-500 group-hover:text-green-400 transition-colors" />
+              : <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />}
+          </button>
+        );
+      })()}
 
       {/* Features reminder */}
       <div className="space-y-2">
         <p className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Your Premium Includes</p>
         {[
-          { icon: Users,    label: "Unlimited Client Database" },
-          { icon: Palette,  label: "Professional Brand Kit & Measurement Cards" },
-          { icon: Zap,      label: "Payment Collection & Invoicing" },
-          { icon: Shield,   label: "Customer Notes & Full History" },
-          { icon: Database, label: "Multi-Device License Access" },
-          { icon: Video,    label: "Priority Customer Support" },
+          { icon: Users,         label: "Unlimited Client Database & Records" },
+          { icon: Palette,       label: "Professional Brand Kit & Card Styles" },
+          { icon: CreditCard,    label: "Payment Collection & Invoicing" },
+          { icon: FileText,      label: "Full Measurement History & Notes" },
+          { icon: Smartphone,    label: `Multi-Device License (${licenseData.deviceLimit ?? selectedDeviceCount} device${(licenseData.deviceLimit ?? selectedDeviceCount) !== 1 ? "s" : ""})` },
+          { icon: MessageCircle, label: "Direct WhatsApp Client Follow-Ups" },
+          { icon: Zap,           label: "Priority Support & Feature Unlocks" },
         ].map(({ icon: Icon, label }) => (
           <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border">
             <Icon size={14} className="text-primary shrink-0" />
