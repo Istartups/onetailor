@@ -242,6 +242,10 @@ export default function Settings() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   
   // Brand Kit State
+  const [emailError, setEmailError] = useState<string | null>(null);
+
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+
   const [brandForm, setBrandForm] = useState({
     name: businessProfile?.name || appName || "",
     phone: businessProfile?.phone || "",
@@ -341,6 +345,12 @@ export default function Settings() {
     
     const phoneVal = validatePhone(brandForm.phone);
     if (!phoneVal.valid) { toast({ title: "Invalid Phone", description: phoneVal.message, variant: "destructive" }); return; }
+
+    if (brandForm.email && !isValidEmail(brandForm.email)) {
+      setEmailError("Enter a valid email address");
+      toast({ title: "Invalid Email", description: "Please enter a valid email address.", variant: "destructive" });
+      return;
+    }
 
     const combinedAddress = `${brandForm.street ? brandForm.street + ', ' : ''}${brandForm.city}, ${brandForm.state}${brandForm.landmark ? ' (Near ' + brandForm.landmark + ')' : ''}, ${brandForm.country}`;
 
@@ -518,12 +528,20 @@ export default function Settings() {
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50" size={16} />
                       <input 
                         type="tel" 
-                        placeholder="e.g. +234..." 
+                        placeholder="e.g. +2348012345678" 
                         value={brandForm.phone} 
-                        onChange={e => setBrandForm({...brandForm, phone: e.target.value.replace(/[^0-9+\-() ]/g, "")})}
+                        onChange={e => {
+                          const cleaned = e.target.value.replace(/[^0-9+]/g, "");
+                          setBrandForm({...brandForm, phone: cleaned});
+                        }}
                         onKeyDown={e => {
-                          const allowed = ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Enter","+","-","(",")"," "];
-                          if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault();
+                          const nav = ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Enter","Home","End"];
+                          if (!nav.includes(e.key) && !/^\d$/.test(e.key) && e.key !== "+") e.preventDefault();
+                        }}
+                        onPaste={e => {
+                          e.preventDefault();
+                          const pasted = e.clipboardData.getData("text").replace(/[^0-9+]/g, "");
+                          setBrandForm({...brandForm, phone: (brandForm.phone + pasted).slice(0, 20)});
                         }}
                         maxLength={20}
                         className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-muted/30 border border-border outline-none focus:border-primary font-bold text-sm"
@@ -538,10 +556,21 @@ export default function Settings() {
                         type="email" 
                         placeholder="business@example.com" 
                         value={brandForm.email} 
-                        onChange={e => setBrandForm({...brandForm, email: e.target.value})} 
-                        className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-muted/30 border border-border outline-none focus:border-primary font-bold text-sm"
+                        onChange={e => {
+                          const val = e.target.value;
+                          setBrandForm({...brandForm, email: val});
+                          if (val && !isValidEmail(val)) setEmailError("Enter a valid email address");
+                          else setEmailError(null);
+                        }}
+                        onBlur={e => {
+                          const val = e.target.value;
+                          if (val && !isValidEmail(val)) setEmailError("Enter a valid email address");
+                          else setEmailError(null);
+                        }}
+                        className={`w-full pl-12 pr-4 py-3.5 rounded-2xl bg-muted/30 border outline-none font-bold text-sm transition-colors ${emailError ? "border-red-500 focus:border-red-500" : "border-border focus:border-primary"}`}
                       />
                     </div>
+                    {emailError && <p className="text-[10px] text-red-500 font-semibold ml-1">{emailError}</p>}
                   </div>
                 </div>
 

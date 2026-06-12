@@ -14,6 +14,7 @@ import DeployGuide from "./pages/DeployGuide";
 import Accounts from "./pages/Accounts";
 import CRM from "./pages/CRM";
 import SystemLogs from "./pages/SystemLogs";
+import ReferralAnalytics from "./pages/ReferralAnalytics";
 import { Toaster } from "./components/ui/toaster";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -76,6 +77,9 @@ export default function App() {
         </Route>
         <Route path="/logs">
           <PrivateRoute><Dashboard><SystemLogs /></Dashboard></PrivateRoute>
+        </Route>
+        <Route path="/referrals">
+          <PrivateRoute><Dashboard><ReferralAnalytics /></Dashboard></PrivateRoute>
         </Route>
         <Route path="/deploy-guide">
           <PrivateRoute><Dashboard><DeployGuide /></Dashboard></PrivateRoute>

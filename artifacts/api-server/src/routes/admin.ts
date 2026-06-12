@@ -286,6 +286,85 @@ router.get("/admin/system-logs", authenticateAdmin as any, async (req, res) => {
   }
 });
 
+// ─── GET /admin/referral-stats ────────────────────────────────────────────────
+router.get("/admin/referral-stats", authenticateAdmin as any, async (req, res) => {
+  try {
+    // Summary counts
+    const [summary] = await db.execute(sql`
+      SELECT
+        COALESCE(SUM(successful_invites), 0)                                              AS total_referrals,
+        COUNT(*) FILTER (WHERE referred_by IS NOT NULL)                                   AS referred_users,
+        COUNT(*) FILTER (WHERE successful_invites > 0)                                    AS active_referrers,
+        COUNT(*) FILTER (WHERE referred_by IS NOT NULL AND total_usage_count > 0)         AS converted_users
+      FROM ${usersTable}
+    `);
+
+    const referredUsers  = Number((summary as any).referred_users  || 0);
+    const convertedUsers = Number((summary as any).converted_users || 0);
+    const conversionRate = referredUsers > 0 ? Math.round((convertedUsers / referredUsers) * 100) : 0;
+
+    // Top inviters
+    const topInviters = await db
+      .select({
+        id:                  usersTable.id,
+        businessName:        usersTable.businessName,
+        email:               usersTable.email,
+        referralCode:        usersTable.referralCode,
+        successfulInvites:   usersTable.successfulInvites,
+        referralRewardLevel: usersTable.referralRewardLevel,
+        isPremium:           usersTable.isPremium,
+        createdAt:           usersTable.createdAt,
+      })
+      .from(usersTable)
+      .where(sql`${usersTable.successfulInvites} > 0`)
+      .orderBy(sql`${usersTable.successfulInvites} DESC`)
+      .limit(10);
+
+    // Reward tier breakdown
+    const tiers = await db.execute(sql`
+      SELECT referral_reward_level AS tier, COUNT(*) AS count
+      FROM ${usersTable}
+      WHERE successful_invites > 0
+      GROUP BY referral_reward_level
+      ORDER BY referral_reward_level ASC
+    `);
+
+    // Daily new referred users — last 7 days
+    const dailyReferred = await db.execute(sql`
+      WITH RECURSIVE days AS (
+        SELECT date_trunc('day', now()) AS day
+        UNION ALL
+        SELECT day - interval '1 day' FROM days WHERE day > date_trunc('day', now()) - interval '6 days'
+      )
+      SELECT
+        to_char(days.day, 'Mon DD') AS name,
+        COUNT(u.id)                 AS count
+      FROM days
+      LEFT JOIN ${usersTable} u
+        ON date_trunc('day', u.created_at) = days.day
+        AND u.referred_by IS NOT NULL
+      GROUP BY days.day, name
+      ORDER BY days.day ASC
+    `);
+
+    return void res.json({
+      summary: {
+        totalReferrals:  Number((summary as any).total_referrals  || 0),
+        referredUsers,
+        activeReferrers: Number((summary as any).active_referrers || 0),
+        convertedUsers,
+        conversionRate,
+      },
+      topInviters,
+      tierBreakdown: tiers.rows as { tier: number; count: number }[],
+      dailyReferred:  dailyReferred.rows as { name: string; count: number }[],
+    });
+  } catch (error) {
+    console.error("Referral stats error:", error);
+    return void res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // For initial setup: Create first admin if none exists
 router.post("/admin/setup", async (req, res) => {
   const { username, password } = req.body;
