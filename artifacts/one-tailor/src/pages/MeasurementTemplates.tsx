@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Layers, Plus, Trash2, Check, ChevronDown, ArrowRight } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Layers, Plus, Trash2, Check, ChevronDown, ArrowRight, Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useAppStore } from "@/store/useAppStore";
 import { useToast } from "@/hooks/use-toast";
@@ -28,12 +28,22 @@ export default function MeasurementTemplates() {
 
   const [showCreate, setShowCreate]   = useState(false);
   const [showSystem, setShowSystem]   = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [genderFilter, setGenderFilter] = useState<"all" | Gender>("all");
   const [form, setForm] = useState({
     name: "",
     gender: "both" as Gender,
     selectedFields: [] as string[],
     customFieldInput: "",
   });
+
+  const filteredTemplates = useMemo(() => {
+    return customTemplates.filter(t => {
+      const matchesName = !searchQuery.trim() || t.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesGender = genderFilter === "all" || t.gender === genderFilter;
+      return matchesName && matchesGender;
+    });
+  }, [customTemplates, searchQuery, genderFilter]);
 
   const toggleField = (field: string) =>
     setForm(f => ({
@@ -124,6 +134,37 @@ export default function MeasurementTemplates() {
             </button>
           </div>
 
+          {/* Search + Gender filter — only shown when there are templates */}
+          {customTemplates.length > 0 && (
+            <div className="space-y-2">
+              <div className="relative">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  placeholder="Search templates…"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs font-medium bg-muted/30 border border-border outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/40"
+                />
+              </div>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+                {(["all", "male", "female", "both"] as const).map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setGenderFilter(g)}
+                    className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all capitalize ${
+                      genderFilter === g
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-card border-border text-muted-foreground"
+                    }`}
+                  >
+                    {g === "all" ? "All" : g === "both" ? "All Genders" : g}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {customTemplates.length === 0 && !showCreate && (
             <div className="text-center py-12 bg-card border border-dashed border-border rounded-3xl">
               <Layers size={32} className="mx-auto text-muted-foreground/20 mb-3" />
@@ -134,7 +175,20 @@ export default function MeasurementTemplates() {
             </div>
           )}
 
-          {customTemplates.map(t => (
+          {filteredTemplates.length === 0 && customTemplates.length > 0 && (
+            <div className="text-center py-10 bg-card border border-dashed border-border rounded-3xl">
+              <Search size={26} className="mx-auto text-muted-foreground/20 mb-3" />
+              <p className="text-xs text-muted-foreground">No templates match your filter</p>
+              <button
+                onClick={() => { setSearchQuery(""); setGenderFilter("all"); }}
+                className="mt-3 text-xs font-black text-primary uppercase tracking-widest"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+
+          {filteredTemplates.map(t => (
             <div key={t.id} className="p-4 bg-card border border-border rounded-2xl flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">

@@ -1,18 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export interface WatermarkSettings {
-  text: string;
-  fontSize: number;
-  opacity: number;
-  position: string;
-  color: string;
-  fontWeight?: string;
-  textShadow?: boolean;
-  bgOverlay?: boolean;
-  bgOverlayColor?: string;
-}
-
 export interface MeasurementEntry {
   from: string;
   to: string;
@@ -178,7 +166,6 @@ export interface AppState {
   appName: string;
   appLogo: string | null;
   splashImage: string | null;
-  watermarkSettings: WatermarkSettings;
   measurementHistory: MeasurementEntry[];
   calculationHistory: CalculationEntry[];
   whatsappTemplates: string[];
@@ -203,7 +190,6 @@ export interface AppState {
   setAppName: (name: string) => void;
   setAppLogo: (logo: string | null) => void;
   setSplashImage: (img: string | null) => void;
-  setWatermarkSettings: (s: Partial<WatermarkSettings>) => void;
   addMeasurementHistory: (h: MeasurementEntry) => void;
   addCalculationHistory: (h: CalculationEntry) => void;
   addWhatsappTemplate: (t: string) => void;
@@ -260,16 +246,6 @@ export const useAppStore = create<AppState>()(
       appName: "OneTailor",
       appLogo: null,
       splashImage: null,
-      watermarkSettings: {
-        text: "MyBrand",
-        fontSize: 32,
-        opacity: 50,
-        position: "bottom-right",
-        color: "#ffffff",
-        fontWeight: "bold",
-        textShadow: true,
-        bgOverlay: false,
-      },
       measurementHistory: [],
       calculationHistory: [],
       whatsappTemplates: [
@@ -367,8 +343,6 @@ export const useAppStore = create<AppState>()(
       setAppName: (name) => set({ appName: name }),
       setAppLogo: (logo) => set({ appLogo: logo }),
       setSplashImage: (img) => set({ splashImage: img }),
-      setWatermarkSettings: (s) =>
-        set((state) => ({ watermarkSettings: { ...state.watermarkSettings, ...s } })),
       addMeasurementHistory: (h) =>
         set((state) => ({ measurementHistory: [h, ...state.measurementHistory].slice(0, 100) })),
       addCalculationHistory: (h) =>
@@ -454,16 +428,6 @@ export const useAppStore = create<AppState>()(
           fabricQuotes: [],
           customers: [],
           measurements: [],
-          watermarkSettings: {
-            text: "MyBrand",
-            fontSize: 32,
-            opacity: 50,
-            position: "bottom-right",
-            color: "#ffffff",
-            fontWeight: "bold",
-            textShadow: true,
-            bgOverlay: false,
-          },
           whatsappTemplates: [
             "Hello, I want to place an order",
             "I want this design",

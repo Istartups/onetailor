@@ -1,13 +1,12 @@
 import { useLocation } from "wouter";
-import { Home, Grid3X3, Gift, UserCircle, Settings } from "lucide-react";
+import { Home, Star, Gift, UserCircle, Settings } from "lucide-react";
 import { useSearch } from "@/hooks/use-search";
-
 const navItems = [
-  { path: "/home",    label: "Home",    icon: Home },
-  { path: "/all-tools", label: "Tools", icon: Grid3X3 },
-  { path: "/invite",  label: "Invite",  icon: Gift },
-  { path: "/account", label: "Account", icon: UserCircle },
-  { path: "/settings",label: "Settings",icon: Settings },
+  { path: "/home",              label: "Home",    icon: Home     },
+  { path: "/all-tools?cat=fav", label: "Favs",    icon: Star     },
+  { path: "/invite",            label: "Invite",  icon: Gift     },
+  { path: "/account",           label: "Account", icon: UserCircle },
+  { path: "/settings",          label: "Settings",icon: Settings },
 ];
 
 export default function BottomNav() {
