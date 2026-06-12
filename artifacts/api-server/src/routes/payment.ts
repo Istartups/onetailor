@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Response } from "express";
 import { db, paymentSettingsTable, paymentsTable, usersTable, licensesTable, licenseActivationsTable, premiumRequestsTable, businessProfilesTable } from "@workspace/db";
 import { eq, desc, and, or, isNotNull } from "drizzle-orm";
 import { authenticateAdmin } from "../middlewares/auth";
@@ -260,6 +260,7 @@ router.get("/payment-info", async (req, res) => {
 
     const publicSettings = currentSettings ? { ...currentSettings } : {};
     delete (publicSettings as any).paystackSecretKey;
+    delete (publicSettings as any).smtpPass;
 
     res.json({ ...publicSettings, user: userInfo });
   } catch (error) {
@@ -496,11 +497,51 @@ router.post("/payment/manual", upload.single("evidence"), async (req, res) => {
   }
 });
 
+// ─── PWA Icon / Favicon (dynamic from DB) ─────────────────────────────────────
+
+function serveDataUrl(data: string, res: Response): void {
+  const match = data.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) { res.status(400).send("Invalid image data"); return; }
+  const [, mimeType, b64] = match;
+  const buf = Buffer.from(b64, "base64");
+  res.setHeader("Content-Type", mimeType!);
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.end(buf);
+}
+
+router.get("/pwa-icon", async (req, res) => {
+  try {
+    const [s] = await db.select().from(paymentSettingsTable).where(eq(paymentSettingsTable.id, 1)).limit(1);
+    const data = (s as any)?.pwaLogoData as string | undefined;
+    if (data && data.startsWith("data:")) return void serveDataUrl(data, res as any);
+  } catch { /* fall through */ }
+  return void res.redirect("/pwa-512x512.png");
+});
+
+router.get("/pwa-favicon", async (req, res) => {
+  try {
+    const [s] = await db.select().from(paymentSettingsTable).where(eq(paymentSettingsTable.id, 1)).limit(1);
+    const data = (s as any)?.pwaFaviconData as string | undefined;
+    if (data && data.startsWith("data:")) return void serveDataUrl(data, res as any);
+  } catch { /* fall through */ }
+  return void res.redirect("/favicon.ico");
+});
+
 // ─── PWA Manifest (public) ────────────────────────────────────────────────────
 
 router.get("/pwa-manifest", async (req, res) => {
   try {
     const [s] = await db.select().from(paymentSettingsTable).where(eq(paymentSettingsTable.id, 1)).limit(1);
+    const hasCustomIcon = !!(s as any)?.pwaLogoData;
+    const icons = hasCustomIcon
+      ? [
+          { src: "/api/pwa-icon", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+          { src: "/api/pwa-icon", sizes: "192x192", type: "image/png" },
+        ]
+      : [
+          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+        ];
     const manifest = {
       name: s?.pwaName || "OneTailor Toolkit",
       short_name: s?.pwaShortName || "OneTailor",
@@ -509,10 +550,7 @@ router.get("/pwa-manifest", async (req, res) => {
       background_color: s?.pwaBackgroundColor || "#ffffff",
       display: "standalone",
       start_url: "/",
-      icons: [
-        { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
-        { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
-      ]
+      icons,
     };
     res.setHeader("Content-Type", "application/manifest+json");
     return void res.json(manifest);
@@ -540,15 +578,17 @@ router.put("/payment-info", authenticateAdmin as any, async (req, res) => {
       "pwaThemeColor", "pwaBackgroundColor",
       "price2Device", "price3Device", "price5Device",
       "pwaLogoData", "pwaFaviconData", "pwaSplashData",
+      "smtpHost", "smtpPort", "smtpUser", "smtpPass", "smtpSecure",
+      "emailFromName", "emailFromAddr",
     ];
 
     for (const key of allowedFields) {
       if (body[key] !== undefined) {
-        if (["price", "globalUsageLimit", "measurementLimit", "price2Device", "price3Device", "price5Device"].includes(key)) {
+        if (["price", "globalUsageLimit", "measurementLimit", "price2Device", "price3Device", "price5Device", "smtpPort"].includes(key)) {
           updateData[key] = parseInt(body[key]) || 0;
-        } else if (key === "paystackSecretKey") {
-          // Never overwrite with empty string — GET endpoint strips the key,
-          // so saving without re-entering would otherwise wipe it.
+        } else if (["paystackSecretKey", "smtpPass", "resendApiKey"].includes(key)) {
+          // Never overwrite with empty string — GET strips these fields,
+          // so saving without re-entering would otherwise wipe them.
           if (body[key] && typeof body[key] === "string" && body[key].trim() !== "") {
             updateData[key] = body[key].trim();
           }

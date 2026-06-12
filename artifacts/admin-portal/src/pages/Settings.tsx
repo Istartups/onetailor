@@ -40,7 +40,10 @@ import {
   Smartphone,
   ImageIcon,
   Upload,
-  X
+  X,
+  Mail,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 interface PaymentInfo {
@@ -68,6 +71,15 @@ interface PaymentInfo {
   pwaDescription: string;
   pwaThemeColor: string;
   pwaBackgroundColor: string;
+  // Email / SMTP
+  smtpHost: string;
+  smtpPort: string;
+  smtpSecure: boolean;
+  smtpUser: string;
+  smtpPass: string;
+  emailFromName: string;
+  emailFromAddr: string;
+  resendApiKey: string;
 }
 
 export default function Settings() {
@@ -91,6 +103,10 @@ export default function Settings() {
       document.documentElement.classList.toggle("dark", newTheme === "dark");
     }
   };
+
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
+  const [showResendKey, setShowResendKey] = useState(false);
+  const [emailSaving, setEmailSaving] = useState(false);
 
   const [settings, setSettings] = useState<PaymentInfo>({
     price: "",
@@ -117,6 +133,14 @@ export default function Settings() {
     pwaLogoData: "",
     pwaFaviconData: "",
     pwaSplashData: "",
+    smtpHost: "",
+    smtpPort: "587",
+    smtpSecure: false,
+    smtpUser: "",
+    smtpPass: "",
+    emailFromName: "",
+    emailFromAddr: "",
+    resendApiKey: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -174,6 +198,14 @@ export default function Settings() {
           pwaLogoData: data.pwaLogoData || "",
           pwaFaviconData: data.pwaFaviconData || "",
           pwaSplashData: data.pwaSplashData || "",
+          smtpHost: data.smtpHost || "",
+          smtpPort: data.smtpPort ? String(data.smtpPort) : "587",
+          smtpSecure: data.smtpSecure ?? false,
+          smtpUser: data.smtpUser || "",
+          smtpPass: "",
+          emailFromName: data.emailFromName || "",
+          emailFromAddr: data.emailFromAddr || "",
+          resendApiKey: "",
         });
       }
     } catch (error) {
@@ -281,6 +313,9 @@ export default function Settings() {
           </TabsTrigger>
           <TabsTrigger value="pwa" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-2 font-bold transition-all">
             <Smartphone className="w-4 h-4" /> PWA
+          </TabsTrigger>
+          <TabsTrigger value="email" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-2 font-bold transition-all">
+            <Mail className="w-4 h-4" /> Email
           </TabsTrigger>
           <TabsTrigger value="security" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-2 font-bold transition-all">
             <Lock className="w-4 h-4" /> Security & Controls
@@ -720,6 +755,180 @@ export default function Settings() {
                 >
                   {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Save PWA Settings
+                </Button>
+              </div>
+            </form>
+          </section>
+        </TabsContent>
+
+        <TabsContent value="email" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
+              <Mail className="w-5 h-5 text-primary" /> Email Configuration
+            </h2>
+            <p className="text-sm text-muted-foreground">Configure the outgoing email provider used for license delivery, payment confirmations, and password resets. Resend takes priority over SMTP if both are set.</p>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setEmailSaving(true);
+              try {
+                const payload: Record<string, unknown> = {
+                  emailFromName: settings.emailFromName,
+                  emailFromAddr: settings.emailFromAddr,
+                  smtpHost: settings.smtpHost,
+                  smtpPort: settings.smtpPort,
+                  smtpSecure: settings.smtpSecure,
+                  smtpUser: settings.smtpUser,
+                };
+                if (settings.smtpPass?.trim()) payload.smtpPass = settings.smtpPass;
+                if (settings.resendApiKey?.trim()) payload.resendApiKey = settings.resendApiKey;
+                const res = await authFetch("/api/payment-info", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                });
+                if (res.ok) {
+                  toast({ title: "Email Settings Saved", description: "Email configuration updated successfully." });
+                  setSettings((s) => ({ ...s, smtpPass: "", resendApiKey: "" }));
+                } else {
+                  throw new Error("Save failed");
+                }
+              } catch {
+                toast({ variant: "destructive", title: "Error", description: "Failed to save email settings." });
+              } finally {
+                setEmailSaving(false);
+              }
+            }} className="space-y-6">
+
+              {/* Resend Section */}
+              <Card className="rounded-3xl border-border bg-card overflow-hidden">
+                <CardHeader className="px-6 pt-6 pb-2">
+                  <CardTitle className="text-base font-black flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" /> Resend (Recommended)
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">Easiest setup. Get an API key from resend.com — free tier sends up to 3,000 emails/month.</p>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Resend API Key</label>
+                    <div className="relative">
+                      <Input
+                        type={showResendKey ? "text" : "password"}
+                        value={settings.resendApiKey}
+                        onChange={(e) => setSettings({ ...settings, resendApiKey: e.target.value })}
+                        placeholder="re_••••••••••••••••••••"
+                        className="h-12 rounded-xl bg-muted/30 border-border font-mono text-foreground pr-12"
+                      />
+                      <button type="button" onClick={() => setShowResendKey((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                        {showResendKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground px-1">Leave blank to keep the existing key. Filled key will replace it.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* SMTP Section */}
+              <Card className="rounded-3xl border-border bg-card overflow-hidden">
+                <CardHeader className="px-6 pt-6 pb-2">
+                  <CardTitle className="text-base font-black flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-primary" /> SMTP (Custom Mail Server)
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">Use your own mail server, Gmail SMTP, or any transactional provider. Used only if no Resend key is configured.</p>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">SMTP Host</label>
+                      <Input
+                        value={settings.smtpHost}
+                        onChange={(e) => setSettings({ ...settings, smtpHost: e.target.value })}
+                        placeholder="smtp.gmail.com"
+                        className="h-12 rounded-xl bg-muted/30 border-border font-mono text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Port</label>
+                      <div className="flex gap-3">
+                        <Input
+                          type="number"
+                          value={settings.smtpPort}
+                          onChange={(e) => setSettings({ ...settings, smtpPort: e.target.value })}
+                          placeholder="587"
+                          className="h-12 rounded-xl bg-muted/30 border-border font-mono text-foreground flex-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSettings((s) => ({ ...s, smtpSecure: !s.smtpSecure }))}
+                          className={cn(
+                            "h-12 px-4 rounded-xl border font-bold text-xs transition-all",
+                            settings.smtpSecure
+                              ? "bg-primary/15 border-primary/40 text-primary"
+                              : "bg-muted/30 border-border text-muted-foreground"
+                          )}
+                        >
+                          {settings.smtpSecure ? "TLS/SSL" : "STARTTLS"}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">SMTP Username / Email</label>
+                      <Input
+                        value={settings.smtpUser}
+                        onChange={(e) => setSettings({ ...settings, smtpUser: e.target.value })}
+                        placeholder="you@gmail.com"
+                        className="h-12 rounded-xl bg-muted/30 border-border text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">SMTP Password / App Password</label>
+                      <div className="relative">
+                        <Input
+                          type={showSmtpPass ? "text" : "password"}
+                          value={settings.smtpPass}
+                          onChange={(e) => setSettings({ ...settings, smtpPass: e.target.value })}
+                          placeholder="Leave blank to keep existing"
+                          className="h-12 rounded-xl bg-muted/30 border-border text-foreground pr-12"
+                        />
+                        <button type="button" onClick={() => setShowSmtpPass((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                          {showSmtpPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/40">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1 mb-4">Sender Identity</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">From Name</label>
+                        <Input
+                          value={settings.emailFromName}
+                          onChange={(e) => setSettings({ ...settings, emailFromName: e.target.value })}
+                          placeholder="OneTailor"
+                          className="h-12 rounded-xl bg-muted/30 border-border text-foreground"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">From Address</label>
+                        <Input
+                          value={settings.emailFromAddr}
+                          onChange={(e) => setSettings({ ...settings, emailFromAddr: e.target.value })}
+                          placeholder="noreply@yourdomain.com"
+                          className="h-12 rounded-xl bg-muted/30 border-border text-foreground"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                <Button type="submit" disabled={emailSaving} className="h-12 px-8 rounded-2xl font-bold">
+                  {emailSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  Save Email Settings
                 </Button>
               </div>
             </form>

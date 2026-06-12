@@ -422,6 +422,15 @@ async function startServer() {
       { name: "pwa_logo_data",          type: "TEXT" },
       { name: "pwa_favicon_data",       type: "TEXT" },
       { name: "pwa_splash_data",        type: "TEXT" },
+      // Email / SMTP configuration
+      { name: "smtp_host",              type: "TEXT" },
+      { name: "smtp_port",              type: "INTEGER" },
+      { name: "smtp_secure",            type: "BOOLEAN DEFAULT FALSE" },
+      { name: "smtp_user",              type: "TEXT" },
+      { name: "smtp_pass",              type: "TEXT" },
+      { name: "email_from_name",        type: "TEXT" },
+      { name: "email_from_addr",        type: "TEXT" },
+      { name: "resend_api_key",         type: "TEXT" },
     ];
     for (const col of crmSettingsColumns) {
       try { await db.execute(sql.raw(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`)); } catch {}

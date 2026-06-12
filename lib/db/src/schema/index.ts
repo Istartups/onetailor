@@ -128,6 +128,15 @@ export const paymentSettingsTable = pgTable("payment_settings", {
   followup24hEnabled: boolean("followup_24h_enabled").default(true),
   followup48hEnabled: boolean("followup_48h_enabled").default(true),
   followup72hEnabled: boolean("followup_72h_enabled").default(false),
+  // Email / SMTP configuration
+  smtpHost: text("smtp_host"),
+  smtpPort: integer("smtp_port"),
+  smtpSecure: boolean("smtp_secure").default(false),
+  smtpUser: text("smtp_user"),
+  smtpPass: text("smtp_pass"),
+  emailFromName: text("email_from_name"),
+  emailFromAddr: text("email_from_addr"),
+  resendApiKey: text("resend_api_key"),
 });
 
 export const businessProfilesTable = pgTable("business_profiles", {

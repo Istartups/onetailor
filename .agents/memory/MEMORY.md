@@ -6,5 +6,6 @@
 - [Shimmed packages type declarations](shimmed-packages.md) — @ffmpeg/ffmpeg, @ffmpeg/util, @xenova/transformers are shimmed; declare modules in `artifacts/one-tailor/src/global.d.ts`.
 - [Xenova shim must export env](xenova-shim-env.md) — xenova-transformers.ts shim must export `env` as a plain object and all classes (AutoModel, AutoProcessor, RawImage) or the PWA build fails.
 - [Admin portal authFetch](admin-authfetch.md) — authFetch in admin portal tries admin_token first, falls back to agent_token. isAdmin()/isAgent() helpers available. Agent redirect goes to /agent-login on 401/403.
-- [Paystack secret key save guard](paystack-secret-key-guard.md) — PUT /api/payment-info must skip updating paystackSecretKey if value is empty; public GET strips the key so admin save would wipe it otherwise.
+- [Sensitive key save guard](sensitive-key-save-guard.md) — PUT /api/payment-info skips updating paystackSecretKey, smtpPass, resendApiKey if value is empty; GET strips them so admin save would wipe otherwise.
+- [Email settings DB-driven](email-settings-db.md) — notifications.ts loads email config from DB (resendApiKey, smtpHost/Port/User/Pass, emailFromName/Addr) with 60s cache; call invalidateEmailSettingsCache() after admin saves.
 - [CRM system architecture](crm-architecture.md) — CRM auth, token strategy, lead scoring, table structure, and agent role for the full lead CRM system.

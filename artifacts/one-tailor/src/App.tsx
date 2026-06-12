@@ -93,6 +93,9 @@ function App() {
   const setUsage       = useAppStore((s) => s.setUsage);
   const deviceId       = useAppStore((s) => s.deviceId);
   const revalidatePremium = useAppStore((s) => s.revalidatePremium);
+  const setAppName     = useAppStore((s) => s.setAppName);
+  const setAppLogo     = useAppStore((s) => s.setAppLogo);
+  const setSplashImage = useAppStore((s) => s.setSplashImage);
   const [showSplash, setShowSplash] = useState(true);
   const handleSplashDone = useCallback(() => setShowSplash(false), []);
 
@@ -121,6 +124,9 @@ function App() {
         if (data.user) {
           setUsage(data.user.totalUsageCount, data.globalUsageLimit);
         }
+        if (data.pwaName) setAppName(data.pwaName);
+        if (data.pwaLogoData) setAppLogo(data.pwaLogoData);
+        if (data.pwaSplashData) setSplashImage(data.pwaSplashData);
       } catch (err) {
         console.error("Failed to fetch settings", err);
       }

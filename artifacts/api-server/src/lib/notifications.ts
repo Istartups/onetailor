@@ -1,57 +1,117 @@
 import nodemailer from "nodemailer";
+import { db, paymentSettingsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
-export const sendEmail = async (to: string, subject: string, html: string) => {
-  const resendKey = process.env["RESEND_API_KEY"];
-  const brevoKey  = process.env["BREVO_API_KEY"];
+// ─── Email Settings ───────────────────────────────────────────────────────────
 
-  if (resendKey) {
-    try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
-        body: JSON.stringify({ from: "OneTailor <onboarding@resend.dev>", to: [to], subject, html }),
-      });
-      if (response.ok) return { success: true };
-    } catch (e) { console.error("Resend Error:", e); }
-  }
+interface EmailSettings {
+  provider: "resend" | "smtp" | "none";
+  resendApiKey?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
+  smtpUser?: string;
+  smtpPass?: string;
+  fromName?: string;
+  fromEmail?: string;
+}
 
-  if (brevoKey) {
-    try {
-      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "api-key": brevoKey },
-        body: JSON.stringify({
-          sender: { name: "OneTailor", email: "noreply@onetailor.com" },
-          to: [{ email: to }], subject, htmlContent: html,
-        }),
-      });
-      if (response.ok) return { success: true };
-    } catch (e) { console.error("Brevo Error:", e); }
-  }
+let _cachedSettings: EmailSettings | null = null;
+let _cacheAt = 0;
+const CACHE_TTL = 60_000; // re-read every 60s
 
-  if (!process.env["SMTP_USER"] || !process.env["SMTP_PASS"]) {
-    console.warn("[EMAIL] No provider configured — logging instead.");
-    console.log(`[EMAIL → ${to}] ${subject}`);
-    return { success: false, error: "SMTP not configured" };
-  }
-
-  const transporter = nodemailer.createTransport({
-    host: process.env["SMTP_HOST"] || "smtp.gmail.com",
-    port: parseInt(process.env["SMTP_PORT"] || "587"),
-    secure: false,
-    auth: { user: process.env["SMTP_USER"], pass: process.env["SMTP_PASS"] },
-  });
+async function loadEmailSettings(): Promise<EmailSettings> {
+  if (_cachedSettings && Date.now() - _cacheAt < CACHE_TTL) return _cachedSettings;
 
   try {
-    await transporter.sendMail({
-      from: `"OneTailor Support" <${process.env["SMTP_USER"]}>`,
-      to, subject, html,
-    });
-    return { success: true };
-  } catch (error) {
-    console.error("Email send error:", error);
-    return { success: false, error };
+    const [row] = await db.select().from(paymentSettingsTable)
+      .where(eq(paymentSettingsTable.id, 1)).limit(1);
+
+    // DB settings take precedence over env vars when set
+    const resendKey  = (row as any)?.resendApiKey  || process.env["RESEND_API_KEY"];
+    const smtpHost   = (row as any)?.smtpHost      || process.env["SMTP_HOST"];
+    const smtpUser   = (row as any)?.smtpUser      || process.env["SMTP_USER"];
+    const smtpPass   = (row as any)?.smtpPass      || process.env["SMTP_PASS"];
+    const smtpPort   = (row as any)?.smtpPort      || parseInt(process.env["SMTP_PORT"] || "587");
+    const smtpSecure = (row as any)?.smtpSecure    ?? (smtpPort === 465);
+    const fromName   = (row as any)?.emailFromName || process.env["EMAIL_FROM_NAME"] || "OneTailor";
+    const fromEmail  = (row as any)?.emailFromAddr || process.env["EMAIL_FROM_ADDR"] || (smtpUser || "noreply@onetailor.com");
+
+    let settings: EmailSettings;
+    if (resendKey) {
+      settings = { provider: "resend", resendApiKey: resendKey, fromName, fromEmail };
+    } else if (smtpHost && smtpUser && smtpPass) {
+      settings = { provider: "smtp", smtpHost, smtpPort, smtpSecure, smtpUser, smtpPass, fromName, fromEmail };
+    } else {
+      settings = { provider: "none" };
+    }
+
+    _cachedSettings = settings;
+    _cacheAt = Date.now();
+    return settings;
+  } catch {
+    // Fallback to env vars only
+    const resendKey = process.env["RESEND_API_KEY"];
+    const smtpUser  = process.env["SMTP_USER"];
+    const smtpPass  = process.env["SMTP_PASS"];
+    const smtpHost  = process.env["SMTP_HOST"];
+    if (resendKey) return { provider: "resend", resendApiKey: resendKey, fromName: "OneTailor", fromEmail: "noreply@onetailor.com" };
+    if (smtpHost && smtpUser && smtpPass) return { provider: "smtp", smtpHost, smtpPort: 587, smtpSecure: false, smtpUser, smtpPass, fromName: "OneTailor", fromEmail: smtpUser };
+    return { provider: "none" };
   }
+}
+
+/** Bust cache after settings update */
+export function invalidateEmailSettingsCache() {
+  _cachedSettings = null;
+}
+
+// ─── Send Email ───────────────────────────────────────────────────────────────
+
+export const sendEmail = async (to: string, subject: string, html: string, _template?: string): Promise<{ success: boolean; error?: unknown }> => {
+  const cfg = await loadEmailSettings();
+
+  if (cfg.provider === "resend" && cfg.resendApiKey) {
+    try {
+      const from = cfg.fromEmail && cfg.fromEmail !== "noreply@onetailor.com"
+        ? `${cfg.fromName} <${cfg.fromEmail}>`
+        : `${cfg.fromName} <onboarding@resend.dev>`;
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.resendApiKey}` },
+        body: JSON.stringify({ from, to: [to], subject, html }),
+      });
+      if (response.ok) return { success: true };
+      const err = await response.text();
+      console.error("Resend Error:", err);
+    } catch (e) {
+      console.error("Resend Exception:", e);
+    }
+  }
+
+  if (cfg.provider === "smtp" && cfg.smtpHost && cfg.smtpUser && cfg.smtpPass) {
+    const transporter = nodemailer.createTransport({
+      host: cfg.smtpHost,
+      port: cfg.smtpPort || 587,
+      secure: cfg.smtpSecure ?? false,
+      auth: { user: cfg.smtpUser, pass: cfg.smtpPass },
+      tls: { rejectUnauthorized: false },
+    });
+
+    try {
+      await transporter.sendMail({
+        from: `"${cfg.fromName}" <${cfg.fromEmail || cfg.smtpUser}>`,
+        to, subject, html,
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("SMTP send error:", error);
+      return { success: false, error };
+    }
+  }
+
+  console.warn(`[EMAIL] No provider configured — logged only → ${to} | ${subject}`);
+  return { success: false, error: "No email provider configured" };
 };
 
 // ─── Email Templates ─────────────────────────────────────────────────────────
@@ -66,7 +126,6 @@ const S = {
 
 export const templates = {
 
-  /** Sent immediately after account creation. */
   welcome: (businessName: string) => ({
     subject: "Welcome to OneTailor — Account Created",
     html: `<div style="${S.wrap}">
@@ -80,7 +139,6 @@ export const templates = {
     </div>`,
   }),
 
-  /** Sent when premium is activated — does NOT show the license key. */
   premiumActivated: (businessName: string) => ({
     subject: "🎉 Your OneTailor Premium is Now Active!",
     html: `<div style="${S.wrap}">
@@ -95,7 +153,6 @@ export const templates = {
     </div>`,
   }),
 
-  /** Kept for admin "resend details" use — shows recovery key for support purposes. */
   licenseActivated: (businessName: string, key: string) => ({
     subject: "Your OneTailor Premium Access Details",
     html: `<div style="${S.wrap}">
@@ -110,7 +167,6 @@ export const templates = {
     </div>`,
   }),
 
-  /** Sent to admin when manual payment evidence is submitted. */
   manualPaymentReceived: (businessName: string, amount: number) => ({
     subject: "New Manual Payment Evidence Submitted",
     html: `<div style="${S.wrap}">
@@ -123,7 +179,6 @@ export const templates = {
     </div>`,
   }),
 
-  /** Sent to user when their payment is rejected. */
   paymentRejected: (reason: string) => ({
     subject: "Update on Your OneTailor Premium Payment",
     html: `<div style="${S.wrap}">
@@ -137,7 +192,6 @@ export const templates = {
     </div>`,
   }),
 
-  /** Sent for password reset requests. */
   passwordReset: (name: string, resetLink: string) => ({
     subject: "Reset Your OneTailor Password",
     html: `<div style="${S.wrap}">
