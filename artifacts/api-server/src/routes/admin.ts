@@ -292,14 +292,15 @@ router.get("/admin/system-logs", authenticateAdmin as any, async (req, res) => {
 router.get("/admin/referral-stats", authenticateAdmin as any, async (req, res) => {
   try {
     // Summary counts
-    const [summary] = await db.execute(sql`
+    const summaryRows = await db.execute(sql`
       SELECT
-        COALESCE(SUM(successful_invites), 0)                                              AS total_referrals,
-        COUNT(*) FILTER (WHERE referred_by IS NOT NULL)                                   AS referred_users,
-        COUNT(*) FILTER (WHERE successful_invites > 0)                                    AS active_referrers,
-        COUNT(*) FILTER (WHERE referred_by IS NOT NULL AND total_usage_count > 0)         AS converted_users
-      FROM ${usersTable}
+        COALESCE(SUM(successful_invites), 0)::integer                                     AS total_referrals,
+        COUNT(*) FILTER (WHERE referred_by IS NOT NULL)::integer                          AS referred_users,
+        COUNT(*) FILTER (WHERE successful_invites > 0)::integer                           AS active_referrers,
+        COUNT(*) FILTER (WHERE referred_by IS NOT NULL AND total_usage_count > 0)::integer AS converted_users
+      FROM users
     `);
+    const summary = (summaryRows as any[])[0] ?? {};
 
     const referredUsers  = Number((summary as any).referred_users  || 0);
     const convertedUsers = Number((summary as any).converted_users || 0);

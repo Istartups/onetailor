@@ -223,7 +223,7 @@ router.get("/payment-info", async (req, res) => {
         instructions: "Pay into the account above and send proof of payment to support.",
         isPaystackEnabled: true, isManualEnabled: true,
         proUpgradeMessage: "Unlock Premium to access more features.",
-        proUpgradeButtonText: "⭐ Unlock Premium",
+        proUpgradeButtonText: "Unlock OneTailor Pro",
       };
       try { await db.insert(paymentSettingsTable).values(defaultSettings as any).onConflictDoNothing(); } catch {}
       settings = [defaultSettings as any];

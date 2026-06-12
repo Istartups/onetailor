@@ -316,6 +316,35 @@ export default function Settings() {
     }
   };
 
+  const handleSavePWA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        pwaName: settings.pwaName,
+        pwaShortName: settings.pwaShortName,
+        pwaDescription: settings.pwaDescription,
+        pwaThemeColor: settings.pwaThemeColor,
+        pwaBackgroundColor: settings.pwaBackgroundColor,
+        pwaLogoData: settings.pwaLogoData,
+        pwaFaviconData: settings.pwaFaviconData,
+        pwaSplashData: settings.pwaSplashData,
+      };
+      const res = await authFetch("/api/payment-info", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        toast({ title: "PWA Settings Saved", description: "App branding updated successfully." });
+      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to save PWA settings." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleResetUsage = async () => {
     if (!confirm("This will reset tool usage counters for ALL users. Users who reached their limit will be able to use tools again. Proceed?")) return;
     
@@ -635,7 +664,7 @@ export default function Settings() {
               <Smartphone className="w-5 h-5 text-primary" /> PWA App Branding
             </h2>
             <p className="text-sm text-muted-foreground">Controls the app name, theme colour, and description shown when users install the PWA on their device. Changes take effect on the next app load.</p>
-            <form onSubmit={handleSaveSystem} className="space-y-6">
+            <form onSubmit={handleSavePWA} className="space-y-6">
               <Card className="rounded-3xl border-border bg-card overflow-hidden">
                 <CardContent className="p-6 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

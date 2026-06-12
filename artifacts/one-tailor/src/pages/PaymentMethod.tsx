@@ -31,7 +31,8 @@ export default function PaymentMethod() {
   const account                  = useAppStore((s) => s.account);
   const isPremium                = useAppStore((s) => s.isPremium);
   const selectedDeviceCount      = useAppStore((s) => s.selectedDeviceCount);
-  const setPendingPremiumRequest = useAppStore((s) => s.setPendingPremiumRequest);
+  const setPendingPremiumRequest  = useAppStore((s) => s.setPendingPremiumRequest);
+  const setPremiumRequestStatus   = useAppStore((s) => s.setPremiumRequestStatus);
 
   const { toast }    = useToast();
   const [, navigate] = useLocation();
@@ -106,6 +107,7 @@ export default function PaymentMethod() {
       const res = await fetch("/api/payment/manual", { method: "POST", body: fd });
       if (res.ok) {
         setPendingPremiumRequest(true);
+        setPremiumRequestStatus("payment_submitted");
         navigate("/pre-unlock");
         toast({ title: "Submitted!", description: "We'll verify your payment shortly." });
       } else {

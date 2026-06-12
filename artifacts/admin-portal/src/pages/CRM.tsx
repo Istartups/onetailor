@@ -5,7 +5,7 @@ import {
   Plus, Trash2, Edit2, X, Users, Flame, Thermometer,
   Snowflake, CalendarDays, Send, SlidersHorizontal,
   ClipboardList, Settings, MessageCircle, TrendingUp, UserPlus,
-  Copy, CheckCheck, ExternalLink, Pencil, Link as LinkIcon,
+  Copy, CheckCheck, ExternalLink, Pencil, Link as LinkIcon, Mail,
 } from "lucide-react";
 import { authFetch, isAdmin, isAgent } from "@/lib/authFetch";
 
@@ -339,6 +339,272 @@ function WAComposer({
   );
 }
 
+// ─── Email Composer ───────────────────────────────────────────────────────────
+
+const EMAIL_TEMPLATES = [
+  { id: 1, name: "Welcome Follow-up",  subject: "Welcome to OneTailor!",              body: "Hi {{name}},\n\nThank you for checking out OneTailor! We noticed you've been exploring our tools for tailors.\n\nOneTailor Pro unlocks unlimited customers, measurements, order management, payments, and much more.\n\nWould you like to learn more about upgrading?\n\nBest regards,\nOneTailor Team" },
+  { id: 2, name: "Upgrade Reminder",   subject: "Ready to unlock OneTailor Pro?",     body: "Hi {{name}},\n\nYou've been getting great use out of OneTailor — great to see!\n\nUpgrading to OneTailor Pro gives you:\n• Unlimited customers & measurements\n• Order management\n• Payment collection\n• Business analytics\n• And much more\n\nOpen the app anytime to upgrade.\n\nBest regards,\nOneTailor Team" },
+  { id: 3, name: "Special Offer",      subject: "Exclusive offer just for you",       body: "Hi {{name}},\n\nWe have an exclusive offer! Upgrade to OneTailor Pro at a special rate and grow your tailoring business with the right tools.\n\nReply to this email or open the app to upgrade.\n\nBest regards,\nOneTailor Team" },
+  { id: 4, name: "Payment Follow-up",  subject: "Your OneTailor Pro payment",         body: "Hi {{name}},\n\nWe noticed you started the upgrade process but haven't completed it yet.\n\nIf you had any issues with payment, please don't hesitate to reach out — we're here to help.\n\nYou can complete your payment anytime from the app.\n\nBest regards,\nOneTailor Team" },
+  { id: 5, name: "Re-engagement",      subject: "We miss you at OneTailor!",          body: "Hi {{name}},\n\nIt's been a while since we've seen you! Your tailoring business deserves the best tools.\n\nCome back and explore what's new — and consider upgrading to Pro for the full experience.\n\nBest regards,\nOneTailor Team" },
+];
+
+function buildEmailBody(tpl: typeof EMAIL_TEMPLATES[0], lead: Lead) {
+  const name = lead.profile?.name || lead.businessName || "there";
+  return tpl.body.replace(/\{\{name\}\}/g, name);
+}
+
+function EmailComposer({
+  lead,
+  onInteractionLogged,
+}: {
+  lead: Lead;
+  onInteractionLogged: (i: Interaction) => void;
+}) {
+  const [toEmail, setToEmail]       = useState(lead.email || "");
+  const [subject, setSubject]       = useState("");
+  const [body, setBody]             = useState("");
+  const [tplId, setTplId]           = useState<number | "">("");
+  const [sending, setSending]       = useState(false);
+  const [sent, setSent]             = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+
+  const handleSelectTpl = (id: number | "") => {
+    setTplId(id);
+    if (id !== "") {
+      const tpl = EMAIL_TEMPLATES.find(t => t.id === id);
+      if (tpl) { setSubject(tpl.subject); setBody(buildEmailBody(tpl, lead)); }
+    }
+  };
+
+  const handleSend = async () => {
+    if (!toEmail.trim() || !subject.trim() || !body.trim()) return;
+    setSending(true); setError(null);
+    try {
+      const res = await authFetch(`/api/crm/leads/${lead.id}/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toEmail: toEmail.trim(), subject: subject.trim(), body: body.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.interaction) onInteractionLogged(data.interaction);
+        setSent(true);
+        setTimeout(() => setSent(false), 3000);
+      } else {
+        const err = await res.json();
+        setError(err.message || "Failed to send email");
+      }
+    } finally { setSending(false); }
+  };
+
+  return (
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.22)" }}>
+      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-1.5">
+        <Mail size={11} /> Email Composer
+      </p>
+
+      <input
+        value={toEmail}
+        onChange={e => { setToEmail(e.target.value); setSent(false); setError(null); }}
+        placeholder="recipient@email.com"
+        className="w-full px-3 py-2 rounded-xl text-xs bg-background border border-border outline-none focus:border-blue-500/40 transition-colors"
+      />
+
+      <select
+        value={tplId}
+        onChange={e => handleSelectTpl(e.target.value === "" ? "" : Number(e.target.value))}
+        className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none focus:border-blue-500/40 transition-colors"
+      >
+        <option value="">— Pick an email template —</option>
+        {EMAIL_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+      </select>
+
+      <input
+        value={subject}
+        onChange={e => { setSubject(e.target.value); setTplId(""); }}
+        placeholder="Email subject..."
+        className="w-full px-3 py-2 rounded-xl text-xs bg-background border border-border outline-none focus:border-blue-500/40 transition-colors font-bold"
+      />
+
+      <div className="relative">
+        <textarea
+          rows={6}
+          value={body}
+          onChange={e => { setBody(e.target.value); setTplId(""); }}
+          placeholder="Compose your email or pick a template above. Supports {{name}}, {{business}}."
+          className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none resize-none focus:border-blue-500/40 transition-colors leading-relaxed"
+        />
+        {body && (
+          <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground/50 pointer-events-none">
+            {body.length} chars
+          </span>
+        )}
+      </div>
+
+      {error && <p className="text-[10px] text-red-400 flex items-center gap-1"><AlertCircle size={10} /> {error}</p>}
+
+      <button
+        onClick={handleSend}
+        disabled={!toEmail.trim() || !subject.trim() || !body.trim() || sending}
+        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-40"
+        style={sent
+          ? { background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.35)", color: "#4ade80" }
+          : { background: "rgba(59,130,246,0.18)", border: "1px solid rgba(59,130,246,0.35)", color: "#60a5fa" }}
+      >
+        {sending ? "Sending…" : sent ? <><CheckCheck size={12} /> Email Sent!</> : <><Send size={12} /> Send Email</>}
+      </button>
+
+      {!lead.email && !toEmail.trim() && (
+        <p className="text-[10px] text-amber-400/70 flex items-center gap-1">
+          <AlertCircle size={10} /> This lead has no email on file — enter one above.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── SMS / Phone Composer ─────────────────────────────────────────────────────
+
+const SMS_TEMPLATES = [
+  { id: 1, name: "Quick Check-in",      body: "Hi {{name}}, this is OneTailor following up. Are you still interested in upgrading your tailoring business tools? Reply YES and we'll help you get started!" },
+  { id: 2, name: "Upgrade Offer",       body: "Hi {{name}}, ready to unlock OneTailor Pro? Manage unlimited customers, track orders & grow your business. Open the app to upgrade today!" },
+  { id: 3, name: "Payment Reminder",    body: "Hi {{name}}, we noticed you started upgrading to OneTailor Pro but haven't completed payment yet. Open the app anytime to finish. Need help? Reply here." },
+  { id: 4, name: "Welcome",             body: "Hi {{name}}, welcome to OneTailor! You've taken the first step to managing your tailoring business better. Explore all our tools in the app." },
+  { id: 5, name: "Re-engagement",       body: "Hi {{name}}, we miss you at OneTailor! Your tailoring business deserves the best tools. Come back and see what's new." },
+];
+
+function buildSMSBody(tpl: typeof SMS_TEMPLATES[0], lead: Lead) {
+  const name = lead.profile?.name || lead.businessName || "there";
+  return tpl.body.replace(/\{\{name\}\}/g, name);
+}
+
+function SMSComposer({
+  lead,
+  onInteractionLogged,
+}: {
+  lead: Lead;
+  onInteractionLogged: (i: Interaction) => void;
+}) {
+  const [phone, setPhone]     = useState(lead.phone || "");
+  const [msg, setMsg]         = useState("");
+  const [tplId, setTplId]     = useState<number | "">("");
+  const [copied, setCopied]   = useState(false);
+  const copyTimer             = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSelectTpl = (id: number | "") => {
+    setTplId(id);
+    if (id !== "") {
+      const tpl = SMS_TEMPLATES.find(t => t.id === id);
+      if (tpl) setMsg(buildSMSBody(tpl, lead));
+    }
+  };
+
+  const copyMsg = () => {
+    if (!msg.trim()) return;
+    navigator.clipboard.writeText(msg).then(() => {
+      setCopied(true);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 2500);
+    });
+  };
+
+  const openSMS = async () => {
+    const clean = phone.replace(/\s+/g, "");
+    if (!clean) return;
+    window.open(`sms:${clean}${msg ? `?body=${encodeURIComponent(msg)}` : ""}`, "_self");
+    if (msg.trim()) {
+      const snippet = msg.length > 120 ? msg.slice(0, 120) + "…" : msg;
+      const res = await authFetch(`/api/crm/leads/${lead.id}/interactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "call", content: `SMS initiated: "${snippet}"` }),
+      });
+      if (res.ok) {
+        const interaction = await res.json();
+        onInteractionLogged(interaction);
+      }
+    }
+  };
+
+  const cleanPhone = phone.replace(/\s+/g, "");
+
+  return (
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.22)" }}>
+      <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+        <Phone size={11} /> SMS / Phone
+      </p>
+
+      <div className="flex gap-2">
+        <input
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+          placeholder="+2348012345678"
+          className="flex-1 px-3 py-2 rounded-xl text-xs bg-background border border-border outline-none focus:border-amber-500/40 transition-colors"
+        />
+        {cleanPhone && (
+          <a
+            href={`tel:${cleanPhone}`}
+            className="px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 whitespace-nowrap transition-colors"
+            style={{ background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.30)", color: "#fbbf24" }}
+          >
+            <Phone size={12} /> Call
+          </a>
+        )}
+      </div>
+
+      <select
+        value={tplId}
+        onChange={e => handleSelectTpl(e.target.value === "" ? "" : Number(e.target.value))}
+        className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none focus:border-amber-500/40 transition-colors"
+      >
+        <option value="">— Pick an SMS template —</option>
+        {SMS_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+      </select>
+
+      <div className="relative">
+        <textarea
+          rows={4}
+          value={msg}
+          onChange={e => { setMsg(e.target.value); setTplId(""); }}
+          placeholder="Type your SMS message or pick a template above. Supports {{name}}."
+          className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none resize-none focus:border-amber-500/40 transition-colors leading-relaxed"
+        />
+        {msg && (
+          <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground/50 pointer-events-none">
+            {msg.length} chars
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={copyMsg}
+          disabled={!msg.trim()}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-background border border-border text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+        >
+          {copied ? <><CheckCheck size={12} className="text-amber-400" /> Copied!</> : <><Copy size={12} /> Copy</>}
+        </button>
+        <button
+          onClick={openSMS}
+          disabled={!cleanPhone}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-40"
+          style={{ background: "rgba(251,191,36,0.18)", border: "1px solid rgba(251,191,36,0.35)", color: "#fbbf24" }}
+        >
+          <Send size={12} />
+          {msg.trim() ? "Send SMS" : "Open SMS App"}
+        </button>
+      </div>
+
+      {!cleanPhone && !lead.phone && (
+        <p className="text-[10px] text-amber-400/70 flex items-center gap-1">
+          <AlertCircle size={10} /> No phone number on file — enter one above.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Lead Detail Panel ────────────────────────────────────────────────────────
 
 function LeadDetailPanel({
@@ -461,6 +727,18 @@ function LeadDetailPanel({
           <WAComposer
             lead={lead}
             templates={templates}
+            onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
+          />
+
+          {/* Email Composer */}
+          <EmailComposer
+            lead={lead}
+            onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
+          />
+
+          {/* SMS / Phone Composer */}
+          <SMSComposer
+            lead={lead}
             onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
           />
 

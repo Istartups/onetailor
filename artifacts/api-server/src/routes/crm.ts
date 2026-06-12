@@ -17,6 +17,7 @@ import {
 import { eq, desc, and, gte, lte, isNotNull, sql, or, like, isNull, lt } from "drizzle-orm";
 import { authenticateCRM, requireAdminRole, type CRMRequest } from "../middlewares/auth";
 import { sendCallMeBotAlert } from "../lib/callmebot";
+import { sendEmail } from "../lib/notifications";
 
 const router = Router();
 const JWT_SECRET = process.env["JWT_SECRET"] || "onetailor-admin-secret-key-123";
@@ -878,6 +879,44 @@ router.post("/crm/auto-tasks", async (req, res) => {
   } catch (err) {
     console.error("Auto-tasks cron error:", err);
     return void res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ─── POST /crm/leads/:id/send-email ──────────────────────────────────────────
+router.post("/crm/leads/:id/send-email", authenticateCRM as any, async (req, res) => {
+  const { id } = req.params;
+  const { toEmail, subject, body } = req.body;
+  if (!subject?.trim() || !body?.trim()) {
+    return void res.status(400).json({ message: "subject and body are required" });
+  }
+
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, parseInt(id))).limit(1);
+    if (!user) return void res.status(404).json({ message: "Lead not found" });
+
+    const recipient = toEmail?.trim() || user.email;
+    if (!recipient) return void res.status(400).json({ message: "No email address available for this lead" });
+
+    const htmlBody = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;line-height:1.6">${body.trim().replace(/\n/g, "<br>")}</div>`;
+    await sendEmail(recipient, subject.trim(), htmlBody);
+
+    const crm = req as CRMRequest;
+    const agentName = crm.agent?.name || crm.admin?.username || "Admin";
+    const agentType = crm.admin ? "admin" : "agent";
+
+    const [interaction] = await db.insert(leadInteractionsTable).values({
+      userId: user.id,
+      agentId: crm.agent?.id ?? null,
+      agentType,
+      agentName,
+      type: "email",
+      content: `Email sent to ${recipient}: "${subject.trim().slice(0, 80)}"`,
+    }).returning();
+
+    return void res.json({ message: "Email sent", interaction });
+  } catch (error: any) {
+    console.error("CRM send-email error:", error);
+    return void res.status(500).json({ message: error?.message || "Failed to send email" });
   }
 });
 
