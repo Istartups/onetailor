@@ -20,8 +20,8 @@ const STATES = {
     border: "rgba(245,158,11,0.25)",
     label: "Payment Pending",
     message: "You started a premium upgrade but haven't completed payment yet.",
-    next: "Tap below to resume and complete your upgrade.",
-    action: "Resume Payment",
+    next: "Tap below to complete your premium unlock.",
+    action: "Complete your premium unlock",
   },
   rejected: {
     icon: XCircle,

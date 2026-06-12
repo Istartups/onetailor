@@ -45,6 +45,25 @@ A full-stack business tools platform for tailors (PWA) with an admin dashboard f
 
 _Populate as you build — explicit user instructions worth remembering across sessions._
 
+## GitHub Export & Import to a New Replit
+
+When you export this project to GitHub and import it into a new Replit:
+
+1. **Set required secrets** — the new environment will be missing these; add them in Secrets:
+   - `DATABASE_URL` — provision a new PostgreSQL database (Replit Database tab) and paste the connection string
+   - `SESSION_SECRET` — any long random string (e.g. `openssl rand -hex 32`)
+
+2. **Install dependencies** — run `pnpm install` once from the workspace root after import.
+
+3. **No port conflicts** — ports are configured via env vars and handled by Replit's proxy automatically:
+   - API server: `8080` (hardcoded in `artifacts/api-server/src/index.ts`)
+   - Admin Portal: `3002` (set via `PORT=3002` in the workflow command; change if needed)
+   - PWA: `5000` (default; change `PORT` env in the workflow command if needed)
+
+4. **Workflows are preserved** — the `.replit` file is committed, so all three workflows (API Server, Admin Portal, OneTailor PWA) restore automatically.
+
+5. **First boot** — the API server auto-migrates all tables on startup. The default admin account (`admin` / `admin123`) is created on the first request if no admin exists.
+
 ## Gotchas
 
 - The `@xenova/transformers` + `@ffmpeg/*` packages are NOT installed (package firewall 403). They are shimmed via Vite aliases. If those video/ML features are needed, they must be replaced with environment-compatible alternatives.

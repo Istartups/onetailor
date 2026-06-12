@@ -373,6 +373,8 @@ export default function MeasurementCardGenerator() {
     return { entries, previewImageUrl };
   }, [selectedRecord]);
 
+  const socials = businessProfile?.socials;
+
   const socialLine = useMemo(() => {
     const s = businessProfile?.socials;
     return [
