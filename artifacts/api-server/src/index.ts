@@ -479,6 +479,27 @@ async function startServer() {
     console.log(`\n🚀 Backend Server running at http://127.0.0.1:${port}`);
     console.log(`📂 Database mode: ${process.env.DATABASE_URL ? "Remote/Postgres" : "Local/PGLite"}\n`);
   });
+
+  // ─── Internal hourly scheduler for auto-tasks ─────────────────────────────
+  // Fires generate-tasks logic every hour without needing an external cron.
+  // Also runs once 30 seconds after startup to catch any immediate overdue tasks.
+  const runAutoTasks = async () => {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/api/crm/auto-tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json() as { created: number; overdue: number };
+      logger.info({ created: data.created, overdue: data.overdue }, "[scheduler] auto-tasks run complete");
+    } catch (err) {
+      logger.warn({ err }, "[scheduler] auto-tasks run failed");
+    }
+  };
+
+  // First run after 30s (gives DB + routes time to initialise)
+  setTimeout(runAutoTasks, 30_000);
+  // Then every hour
+  setInterval(runAutoTasks, 60 * 60 * 1_000);
 }
 
 startServer().catch(err => {

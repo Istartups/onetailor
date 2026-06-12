@@ -783,4 +783,102 @@ router.post("/crm/generate-tasks", authenticateCRM as any, requireAdminRole as a
   }
 });
 
+// ─── Auto-Tasks: cron-safe endpoint (no auth, optionally token-protected) ──────
+// Call this from a cron job / webhook scheduler: POST /api/crm/auto-tasks
+// Optionally pass ?token=<CRON_SECRET> for lightweight protection.
+
+router.post("/crm/auto-tasks", async (req, res) => {
+  try {
+    // Optional secret-token guard — if CRON_SECRET env is set, enforce it
+    const cronSecret = process.env["CRON_SECRET"];
+    if (cronSecret) {
+      const provided = (req.query["token"] as string | undefined) || req.headers["x-cron-token"] as string | undefined;
+      if (provided !== cronSecret) {
+        return void res.status(401).json({ message: "Unauthorized: missing or invalid cron token" });
+      }
+    }
+
+    const [settings] = await db.select({
+      followup24hEnabled: paymentSettingsTable.followup24hEnabled,
+      followup48hEnabled: paymentSettingsTable.followup48hEnabled,
+      followup72hEnabled: paymentSettingsTable.followup72hEnabled,
+      callmebotPhone: paymentSettingsTable.callmebotPhone,
+      callmebotApiKey: paymentSettingsTable.callmebotApiKey,
+    }).from(paymentSettingsTable).where(eq(paymentSettingsTable.id, 1)).limit(1);
+
+    const now = new Date();
+    const leads = await db.select({
+      id: usersTable.id,
+      email: usersTable.email,
+      businessName: usersTable.businessName,
+      phone: usersTable.phone,
+      createdAt: usersTable.createdAt,
+    }).from(usersTable).where(and(isNotNull(usersTable.passwordHash), eq(usersTable.isPremium, false)));
+
+    let created = 0;
+    const newlyCreatedAlerts: string[] = [];
+
+    for (const lead of leads) {
+      const hoursOld = (now.getTime() - new Date(lead.createdAt).getTime()) / 3600000;
+
+      const taskTypes = [
+        { type: "24h", hours: 24, enabled: settings?.followup24hEnabled !== false },
+        { type: "48h", hours: 48, enabled: settings?.followup48hEnabled !== false },
+        { type: "72h", hours: 72, enabled: settings?.followup72hEnabled !== false },
+      ];
+
+      for (const tt of taskTypes) {
+        if (!tt.enabled) continue;
+        if (hoursOld < tt.hours) continue;
+
+        const existing = await db.select({ id: followUpTasksTable.id })
+          .from(followUpTasksTable)
+          .where(and(
+            eq(followUpTasksTable.userId, lead.id),
+            eq(followUpTasksTable.taskType, tt.type),
+          )).limit(1);
+
+        if (existing.length === 0) {
+          const triggerAt = new Date(new Date(lead.createdAt).getTime() + tt.hours * 3600000);
+          await db.insert(followUpTasksTable).values({
+            userId: lead.id,
+            taskType: tt.type,
+            triggerAt,
+            status: "pending",
+          });
+          created++;
+          const label = lead.email || lead.businessName || lead.phone || `Lead #${lead.id}`;
+          newlyCreatedAlerts.push(`⏰ ${tt.type} Follow-Up Task\nLead: ${label}\nRegistered: ${Math.round(hoursOld)}h ago`);
+        }
+      }
+    }
+
+    if (newlyCreatedAlerts.length > 0 && settings?.callmebotPhone && settings?.callmebotApiKey) {
+      const msg = `📋 OneTailor: ${newlyCreatedAlerts.length} new follow-up task(s) generated.\n\n${newlyCreatedAlerts.slice(0, 5).join("\n\n")}${newlyCreatedAlerts.length > 5 ? `\n\n...and ${newlyCreatedAlerts.length - 5} more.` : ""}`;
+      sendCallMeBotAlert(settings.callmebotPhone, settings.callmebotApiKey, msg).catch(() => {});
+    }
+
+    const overdueTasks = await db.select({
+      id: followUpTasksTable.id,
+      userId: followUpTasksTable.userId,
+      taskType: followUpTasksTable.taskType,
+      triggerAt: followUpTasksTable.triggerAt,
+    }).from(followUpTasksTable).where(and(
+      eq(followUpTasksTable.status, "pending"),
+      lt(followUpTasksTable.triggerAt, now),
+    ));
+
+    if (overdueTasks.length > 0 && settings?.callmebotPhone && settings?.callmebotApiKey) {
+      const msg = `⚠️ OneTailor: ${overdueTasks.length} overdue follow-up task(s) need attention!\n\nLog in to the CRM to review and action them now.`;
+      sendCallMeBotAlert(settings.callmebotPhone, settings.callmebotApiKey, msg).catch(() => {});
+    }
+
+    console.info(`[auto-tasks] created=${created} overdue=${overdueTasks.length}`);
+    return void res.json({ created, overdue: overdueTasks.length, message: `Generated ${created} follow-up tasks. ${overdueTasks.length} task(s) overdue.` });
+  } catch (err) {
+    console.error("Auto-tasks cron error:", err);
+    return void res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 export default router;
