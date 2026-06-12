@@ -1,0 +1,416 @@
+Here’s the **fully updated version** with all your corrections merged in (Premium naming, URL naming, multi-device licensing, better flow, navigation fix, premium upgrade logic). You can paste this directly into Replit:
+
+# Premium System + UX Upgrade Instructions
+
+Upgrade the app with the following improvements.
+
+## 1. Rename Buttons / Labels
+
+Change:
+
+* **Invite Tailors** → **Earn Credit**
+
+For Premium naming:
+
+* Do NOT rename **Premium is Active** to Premium anymore.
+* Keep the visible text as:
+
+**Premium Active**
+
+For page routing:
+
+* First premium purchase page URL = **Premium Details**
+* Premium active page URL = **Premium Activated**
+
+Keep naming structured and professional.
+
+---
+
+## 2. Fix Premium Page Click Issue
+
+Currently when users click **Premium**, the page does not open.
+
+### Fix:
+
+Make sure clicking Premium always opens the Premium page correctly.
+
+Navigation should work like this:
+
+Home
+↓
+Click Premium
+↓
+Open:
+
+`/premium-details`
+
+After successful payment:
+
+Redirect to:
+
+`/premium-activated`
+
+---
+
+## 3. Premium Page URL Structure
+
+Use these routes.
+
+### Before Payment Page
+
+This is the page where users first see premium information.
+
+Visible title:
+
+**⭐ Unlock Premium**
+
+Internal URL:
+
+`/premium-details`
+
+---
+
+### After Payment Page
+
+This is the page shown after successful premium activation.
+
+Visible page title:
+
+**Premium Active**
+
+Internal URL:
+
+`/premium-activated`
+
+Do NOT change visible text.
+
+Only internal route should be Premium Activated.
+
+---
+
+## 4. Upgrade Premium Active Page (Make Users Feel Elevated)
+
+When a user has purchased Premium, redesign the Premium Active page.
+
+The page should feel exclusive, professional, and premium.
+
+Show:
+
+### Premium Membership Details
+
+Display:
+
+* Payment Date
+* Payment Time
+* Payment Method
+* Number of Devices Purchased
+* License Status (Active)
+
+### Premium Ownership Message
+
+Add copy like this:
+
+**👑 Premium Membership Active**
+
+You now have lifetime access to premium professional tailoring tools.
+
+Your premium account is securely linked to your account.
+
+You can access your premium account anytime in the future by simply logging in on another device.
+
+Your license is currently active on your purchased device limit.
+
+---
+
+## 5. Device Restriction Notice
+
+Show clearly:
+
+* One license cannot be used on more devices than purchased.
+* If a user bought 1 device license, only 1 device can use premium at a time.
+* No two devices can use one single-device license simultaneously.
+
+Text:
+
+**Your premium access is protected by device activation control.**
+
+Only the number of devices purchased can use premium at the same time.
+
+If you need more devices, upgrade your license.
+
+---
+
+## 6. Allow Multi-Device License Purchase
+
+Upgrade the Premium system.
+
+Instead of one fixed payment, users choose how many devices they want.
+
+Admin sets pricing based on device count.
+
+Example admin setup:
+
+| Devices   | Price   |
+| --------- | ------- |
+| 1 Device  | ₦15,000 |
+| 2 Devices | ₦25,000 |
+| 3 Devices | ₦35,000 |
+| 5 Devices | ₦50,000 |
+
+Admin should be able to configure pricing.
+
+---
+
+## 7. Premium Unlock Page Upgrade
+
+Current section:
+
+⭐ Unlock Premium
+
+Professional tools for serious tailors.
+
+₦15,000.00
+
+One-time payment · Lifetime access · No subscriptions
+
+### Upgrade it
+
+Below this section add a large visible button:
+
+**[ Change Number of Devices ]**
+
+When clicked:
+
+Open selector asking:
+
+**How many devices do you want premium activated on?**
+
+Example:
+
+* 1 Device
+* 2 Devices
+* 3 Devices
+* 5 Devices
+
+After selection:
+
+Automatically update price based on admin pricing.
+
+Example:
+
+3 devices selected
+
+Price changes to:
+
+₦35,000
+
+---
+
+## 8. Pre-Unlock Purchase Flow
+
+Before payment happens:
+
+Ask user:
+
+**How many devices do you want Premium on?**
+
+After selecting:
+
+Show:
+
+### Order Summary
+
+Premium License
+
+Devices: 3
+
+Amount: ₦35,000
+
+Then continue payment.
+
+---
+
+## 9. Add More Devices After Purchase
+
+Inside Premium Active page, after membership details, add button:
+
+**[ Add More Devices ]**
+
+When clicked:
+
+Show prompt:
+
+**Upgrade your license by adding more devices**
+
+User chooses additional devices.
+
+System calculates difference.
+
+Example:
+
+Current plan = 1 Device
+
+User adds 2 more devices
+
+Charge only additional amount.
+
+---
+
+## 10. Improve Navigation Issue (Client Management)
+
+Current issue:
+
+Home → Client Management → Open Tool → Press Back
+
+Problem:
+
+Instead of returning to Client Management, it returns to All Tools.
+
+### Fix navigation stack
+
+Correct flow:
+
+Home
+↓
+Client Management
+↓
+Open Tool
+↓
+Press Back
+↓
+Return to Client Management
+
+NOT All Tools.
+
+Preserve previous screen history correctly.
+
+---
+
+## 11. Premium Security Logic
+
+Enforce device activation limits.
+
+Rules:
+
+### If user purchased 1 device
+
+* Only 1 device can use Premium.
+
+### If user logs in on another device
+
+System should:
+
+* Block second device login
+
+OR
+
+* Deactivate previous device session
+
+### If user purchased multiple devices
+
+Allow only purchased number.
+
+Example:
+
+Purchased 2 devices
+
+Allowed:
+
+* Phone + Tablet
+
+Not allowed:
+
+* Phone + Tablet + Laptop
+
+unless upgraded.
+
+---
+
+## 12. Better Premium Design Copy
+
+Replace old plain premium text.
+
+Use premium language.
+
+### Premium Details Page
+
+**⭐ Unlock Premium**
+
+Professional-grade tools built for serious tailors ready to grow faster.
+
+Choose how many devices you want access on.
+
+Lifetime access.
+
+No subscriptions.
+
+Secure cloud activation.
+
+Your premium account can always be recovered in the future by simply logging in.
+
+---
+
+### Premium Activated Page
+
+**👑 Premium Membership Active**
+
+You now have exclusive access to advanced tailoring tools reserved for premium professionals.
+
+Your membership is permanently linked to your account.
+
+Access your premium tools anytime by logging in on authorized devices.
+
+Your premium license allows only the number of devices purchased to be active at the same time.
+
+Need more devices?
+
+Expand your license anytime.
+
+Button:
+
+**[ Add More Devices ]**
+
+---
+
+## 13. Admin Panel Upgrade
+
+Admin should be able to:
+
+* Set price for 1 device
+* Set price for 2 devices
+* Set price for 3 devices
+* Set price for 5 devices
+* Edit pricing anytime
+
+Example:
+
+Premium License Pricing
+
+1 Device → ₦15,000
+
+2 Devices → ₦25,000
+
+3 Devices → ₦35,000
+
+5 Devices → ₦50,000
+
+Save Pricing
+
+Frontend pricing should automatically update from admin settings.
+
+---
+
+## Final Goal
+
+Make Premium feel:
+
+* Professional
+* Exclusive
+* Secure
+* Premium
+* Scalable for multi-device licensing
+* Able to support device upgrades anytime after purchase
+
+The premium system should feel enterprise-grade and valuable to serious professional tailors.
+
+This version has **all corrections applied exactly** to what you’ve been refining.

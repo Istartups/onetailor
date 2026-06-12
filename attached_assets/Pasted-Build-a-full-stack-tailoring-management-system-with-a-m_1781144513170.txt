@@ -1,0 +1,259 @@
+Build a full-stack tailoring management system with a modern SaaS UX similar to Stripe/Notion. The system must manage clients, measurements, and garment templates with extreme simplicity and speed.
+
+🧠 CORE OBJECTIVE
+
+Create a system that allows tailors to:
+
+Add clients
+Store body measurements
+Create garment templates (male/female)
+Assign measurement fields to templates
+Support custom measurements
+Quickly add measurements using templates or custom fields
+🏠 HOME DASHBOARD (3 COLUMN UI)
+
+Create a clean dashboard layout with 3 columns:
+
+COLUMN 1: CLIENTS DATABASE
+
+Features:
+
+List all clients
+Search by name or phone
+Filter by gender
+View client profile
+View measurement history
+
+Each client has:
+
+Name
+Phone number (numbers only validation)
+Email (valid email format only)
+Gender
+Measurements history
+COLUMN 2: CARDS / EXPORT CENTER
+
+Features:
+
+Generate measurement cards
+Export PDF
+Print measurement sheet
+Share via WhatsApp (placeholder function)
+COLUMN 3: ADD MEASUREMENT (PRIMARY ACTION)
+
+This is the main workflow entry.
+
+Button:
+👉 “+ Add Measurement”
+
+🧵 ADD MEASUREMENT FLOW
+STEP 1: SELECT OR CREATE CLIENT
+Option A: Search Existing Client
+Search by name or phone
+Dropdown results
+Select client to continue
+Option B: Create New Client
+
+Fields:
+
+Full Name
+Phone Number (ONLY digits allowed)
+Email (must be valid email format)
+Gender
+
+Validation rules:
+
+Block invalid phone input (no letters/symbols)
+Block invalid email format
+STEP 2: SELECT GENDER
+Male
+Female
+🧵 STEP 3: SELECT TEMPLATE (CORE SYSTEM)
+
+After selecting gender, show template selection grid.
+
+DEFAULT SYSTEM TEMPLATES
+MALE DEFAULT TEMPLATES:
+Shirt Template
+Long Sleeve Shirt Template
+Short Sleeve Shirt Template
+Trousers Template
+Suit Jacket Template
+Waistcoat Template
+Traditional Wear Template
+Agbada Template
+FEMALE DEFAULT TEMPLATES:
+Blouse Template
+Long Sleeve Blouse Template
+Short Sleeve Blouse Template
+Skirt Template
+Pencil Skirt Template
+Flare Skirt Template
+Gown Template
+Bridal Gown Template
+Native Wear Template
+Jumpsuit Template
+Wrapper Set Template
+⚙️ STEP 4: CUSTOM TEMPLATE SYSTEM (IMPORTANT FEATURE)
+
+Users must be able to:
+
+➕ CREATE CUSTOM TEMPLATE
+
+Fields:
+
+Template Name
+Gender (Male/Female)
+Select Measurement Fields (multi-select checkbox system)
+DEFAULT MEASUREMENT FIELD LIBRARY
+
+System must include reusable measurement fields:
+
+BODY MEASUREMENTS:
+Neck
+Shoulder
+Chest
+Bust
+Waist
+Hip
+Sleeve Length
+Wrist
+Back Length
+LOWER BODY:
+Trouser Length
+Skirt Length
+Dress Length
+Thigh
+Knee
+Ankle
+Rise (optional)
+CUSTOM MEASUREMENT FEATURE (VERY IMPORTANT)
+
+Users must be able to:
+
+Add custom measurement fields
+Example:
+“Armhole”
+“Collar Depth”
+“Chest Roundness”
+
+Custom fields:
+
+Saved globally
+Available for future templates
+Can be selected inside template builder
+🧵 STEP 5: TEMPLATE → MEASUREMENT ENGINE
+
+When user selects a template:
+
+System must:
+
+Auto-load all assigned measurement fields
+Render dynamic form inputs
+Allow editing values
+
+Also support:
+
+Custom tab: “Add extra measurement for this client only”
+🧠 SMART RULE
+
+Each template = list of measurement field IDs
+
+Example:
+
+Shirt Template:
+[
+  "neck",
+  "shoulder",
+  "chest",
+  "waist",
+  "sleeve_length",
+  "shirt_length"
+]
+
+Custom templates store same structure.
+
+🧵 STEP 6: SAVE MEASUREMENT
+
+Save structure:
+
+Client ID
+Template Used
+Gender
+Measurement Values (key-value object)
+Timestamp
+Optional Notes
+
+Example:
+
+{
+  "clientId": "123",
+  "template": "Shirt Template",
+  "measurements": {
+    "neck": 15,
+    "chest": 40,
+    "waist": 32
+  },
+  "notes": "Slim fit preferred",
+  "date": "2026-06-11"
+}
+🧾 CLIENT PROFILE PAGE
+
+Each client must show:
+
+Personal details
+All past measurements
+Filter by template
+“Repeat measurement” button
+Edit measurement option
+🧱 DATABASE STRUCTURE (IMPORTANT)
+
+Create these collections/tables:
+
+Clients
+id
+name
+phone
+email
+gender
+Templates
+id
+name
+gender
+measurementFields (array of field IDs)
+isCustom (boolean)
+MeasurementFields
+id
+name
+type (default/custom)
+genderScope (male/female/both)
+Measurements
+id
+clientId
+templateId
+values (JSON)
+createdAt
+🎨 UI REQUIREMENTS
+Clean SaaS UI (Stripe/Notion style)
+Responsive design (mobile + desktop)
+Card-based template selection
+Fast search UX
+Minimal clicks to add measurement
+⚡ PERFORMANCE REQUIREMENTS
+Instant search (debounced input)
+Fast form rendering
+No page reload flow (SPA behavior preferred)
+Autosave drafts optional
+🚀 FINAL GOAL
+
+This system must feel like:
+
+“A modern tailoring OS — not just an app”
+
+It should allow tailors to:
+
+Work faster
+Make fewer mistakes
+Reuse templates
+Build custom workflows
+Scale business digitally

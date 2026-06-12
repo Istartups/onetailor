@@ -1,0 +1,107 @@
+modules = ["nodejs-24", "python-3.11"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "API Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "OneTailor PWA"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Admin Portal"
+
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/api-server && pnpm dev"
+waitForPort = 3000
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "OneTailor PWA"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/one-tailor && pnpm dev"
+waitForPort = 5173
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "Admin Portal"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/admin-portal && pnpm dev"
+waitForPort = 5174
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[agent]
+stack = "BEST_EFFORT_FALLBACK"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[[ports]]
+localPort = 3000
+externalPort = 3001
+
+[[ports]]
+localPort = 5173
+externalPort = 5173
+
+[[ports]]
+localPort = 5174
+externalPort = 3003
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 80
+
+[[ports]]
+localPort = 25497
+externalPort = 3000
+
+[[ports]]
+localPort = 25580
+externalPort = 3002
+
+[userenv]
+
+[userenv.shared]
+JWT_SECRET = "de3599f291313e5f36922cbd76767694c5298292aeeae3b181ba46354b7b35e33f8d9258f7bd014c489a0290c6fdc401"
+USER_JWT_SECRET = "8f5d4c1b4116929184edc1f423d22d8c2b3504fe0ce362024f0dda568ba244dc6ac9beba560503393eba726a55faea6f"

@@ -1,0 +1,149 @@
+Before implementing any new features such as push notifications, perform a Production Readiness Audit of the entire account-based premium system.
+
+## Objective
+
+Verify that the complete premium onboarding, payment, licensing, authentication, and admin workflow is stable, consistent, and production-ready.
+
+Do not add new features during this phase.
+
+---
+
+## Phase 1: End-to-End User Flow Verification
+
+Verify every path works correctly:
+
+### Anonymous User
+
+* Uses free tools
+* Clicks Unlock Premium
+* Creates account
+* Continues to payment
+
+### Online Payment User
+
+* Creates account
+* Pays via Paystack
+* Payment verifies
+* Premium request approved
+* License activated
+* Premium access granted
+
+### Manual Payment User
+
+* Creates account
+* Submits payment
+* Payment marked submitted
+* Admin reviews
+* Admin approves
+* License activated
+* Premium access granted
+
+### Rejected Payment User
+
+* Payment rejected
+* User sees correct status
+* User can retry payment
+* Status updates correctly
+
+### Returning User
+
+* Login
+* Resume premium activation
+* Continue payment without re-entering information
+
+### New Device User
+
+* Login on different device
+* Premium status restored
+* License validated
+* Premium features available
+
+---
+
+## Phase 2: Admin Verification
+
+Verify:
+
+* Accounts page
+* Payment approval
+* Payment rejection
+* Premium request status changes
+* License creation
+* License activation
+* Account status calculations
+
+Ensure admin actions always synchronize correctly with the PWA.
+
+---
+
+## Phase 3: Data Integrity Audit
+
+Verify:
+
+* No duplicate user records
+* No duplicate premium requests
+* No orphaned licenses
+* No invalid account states
+* No conflicting premium statuses
+
+Check all account lifecycle transitions.
+
+---
+
+## Phase 4: Offline Verification
+
+Verify:
+
+* Existing premium users continue working offline
+* Cached premium entitlement behaves correctly
+* Revalidation occurs correctly when internet returns
+
+---
+
+## Phase 5: Security Review
+
+Verify:
+
+* Password hashing
+* JWT validation
+* User/admin separation
+* Protected routes
+* Premium access enforcement
+* Unauthorized access prevention
+
+---
+
+## Phase 6: UX Audit
+
+Verify users always understand:
+
+* Their account status
+* Their payment status
+* Their premium status
+* What action is required next
+
+Identify and fix any confusing states.
+
+---
+
+## Phase 7: Final Readiness Report
+
+Provide:
+
+### Fully Working
+
+Items confirmed production-ready
+
+### Issues Found
+
+Any bugs, inconsistencies, or risks
+
+### Fixes Applied
+
+Changes made during audit
+
+### Remaining Risks
+
+Anything that should be addressed before launch
+
+Only after this audit is complete and all critical issues are resolved should we consider additional features such as push notifications.

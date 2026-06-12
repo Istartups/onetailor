@@ -1,0 +1,189 @@
+Before entering Build Mode, I would like a few architectural refinements applied to the plan to ensure long-term scalability and clean data management.
+
+## 1. Preserve Existing Device-Based Users
+
+I agree with linking account creation to the existing device-based user record.
+
+Goal:
+
+Anonymous Device User
+↓
+Uses Free Tools
+↓
+Creates Premium Account
+↓
+Same User Record Upgraded
+↓
+Premium User
+
+Avoid creating duplicate user records when an existing device user upgrades.
+
+Preserve:
+
+* Usage history
+* Analytics
+* Existing preferences
+* Existing local data relationships
+
+---
+
+## 2. Keep Separate Authentication Systems
+
+I agree with using a separate USER_JWT_SECRET.
+
+Admin authentication and user authentication must remain completely isolated.
+
+Verify:
+
+* Admin tokens cannot access user endpoints
+* User tokens cannot access admin endpoints
+* Middleware remains separated
+
+---
+
+## 3. Replace "Pending License" With "Premium Request"
+
+Before implementing, review whether a license record should actually be created during registration.
+
+Preferred architecture:
+
+Account Created
+↓
+Business Profile Created
+↓
+Premium Request Created
+↓
+Payment Pending
+↓
+Payment Approved
+↓
+License Created And Activated
+↓
+Premium Enabled
+
+Reason:
+
+Many users will create accounts but never complete payment.
+
+I want to avoid cluttering the database with unused license records.
+
+Please review the current schema and determine whether:
+
+* Premium Request
+  or
+* Pending License
+
+is the cleaner long-term design.
+
+Explain your recommendation before implementation.
+
+---
+
+## 4. Resume Payment Flow
+
+This is important.
+
+If a user:
+
+Creates Account
+↓
+Reaches Payment Page
+↓
+Leaves Without Paying
+
+They should later be able to:
+
+Login
+↓
+System Detects Premium Pending
+↓
+Resume Payment
+
+without re-entering all business information.
+
+Implement a clean recovery flow for abandoned premium activations.
+
+---
+
+## 5. No Mandatory Email Verification
+
+Do not require email verification before account creation or payment.
+
+Goal:
+
+Low friction conversion.
+
+Allow:
+
+Create Account
+↓
+Proceed To Payment
+
+Password reset can use email later.
+
+Do not block onboarding behind email verification.
+
+---
+
+## 6. Licensing Architecture
+
+Licenses should remain the backend source of truth.
+
+Users should never interact with license keys.
+
+Premium entitlement should be determined by:
+
+User Account
+↓
+License Status
+↓
+Premium Access
+
+License management remains available inside Admin Portal.
+
+---
+
+## 7. Future Multi-Product Readiness
+
+While implementing, structure the account and licensing relationship so that future products can reuse the same account system.
+
+Target architecture:
+
+User Account
+↓
+Product A License
+Product B License
+Product C License
+
+Even if only one product exists today, avoid designs that would prevent this expansion later.
+
+---
+
+## 8. Build Safely
+
+Before modifying files:
+
+* Reconfirm the implementation plan
+* Identify risks
+* Reuse existing structures wherever possible
+* Avoid duplicate systems
+
+During implementation:
+
+* Extend existing functionality
+* Do not introduce competing systems
+* Preserve all existing working functionality
+
+After implementation:
+
+* Test registration flow
+* Test payment flow
+* Test premium activation
+* Test login
+* Test logout
+* Test abandoned payment recovery
+* Test premium restoration on another device
+* Test offline premium validation
+* Test admin workflows
+
+Provide a summary of the final architecture after implementation.

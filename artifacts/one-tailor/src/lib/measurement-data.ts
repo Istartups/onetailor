@@ -1,0 +1,33 @@
+export const SYSTEM_TEMPLATES_META: Record<string, { fields: string[]; gender: "male" | "female" | "both" }> = {
+  "Senator / Native":   { gender: "male",   fields: ["Neck","Shoulder","Chest","Stomach","Hip","Sleeve","Round Sleeve","Cuff","Top Length","Waist","Seat","Thigh","Knee","Bottom","Trouser Length"] },
+  "Suit":               { gender: "male",   fields: ["Neck","Shoulder","Chest","Waist","Hip","Sleeve","Round Sleeve","Jacket Length","Seat","Thigh","Knee","Bottom","Trouser Length"] },
+  "Suit Jacket":        { gender: "male",   fields: ["Neck","Shoulder","Chest","Waist","Hip","Sleeve","Round Sleeve","Cuff","Jacket Length","Back Length"] },
+  "Shirt":              { gender: "male",   fields: ["Neck","Shoulder","Chest","Waist","Sleeve","Round Sleeve","Cuff","Shirt Length"] },
+  "Long Sleeve Shirt":  { gender: "male",   fields: ["Neck","Shoulder","Chest","Waist","Sleeve","Round Sleeve","Cuff","Shirt Length","Back Length"] },
+  "Short Sleeve Shirt": { gender: "male",   fields: ["Neck","Shoulder","Chest","Waist","Round Sleeve","Shirt Length"] },
+  "Trousers":           { gender: "male",   fields: ["Waist","Hip","Thigh","Knee","Bottom","Trouser Length","Rise"] },
+  "Waistcoat":          { gender: "male",   fields: ["Neck","Shoulder","Chest","Waist","Hip","Back Length"] },
+  "Traditional Wear":   { gender: "male",   fields: ["Shoulder","Neck","Chest","Stomach","Length","Sleeve"] },
+  "Agbada":             { gender: "male",   fields: ["Shoulder","Length","Sleeve"] },
+  "Kaftan":             { gender: "male",   fields: ["Neck","Shoulder","Chest","Stomach","Sleeve","Round Sleeve","Length"] },
+  "Female Dress":       { gender: "female", fields: ["Bust","Under Bust","Waist","Hip","Shoulder","Sleeve","Round Sleeve","Full Length","Shoulder To Bust","Bust Span","Waist To Hip","Waist To Knee"] },
+  "Blouse":             { gender: "female", fields: ["Bust","Under Bust","Waist","Shoulder","Round Sleeve","Back Length","Shoulder To Bust"] },
+  "Long Sleeve Blouse": { gender: "female", fields: ["Bust","Under Bust","Waist","Shoulder","Sleeve","Round Sleeve","Cuff","Back Length","Shoulder To Bust"] },
+  "Short Sleeve Blouse":{ gender: "female", fields: ["Bust","Under Bust","Waist","Shoulder","Round Sleeve","Back Length"] },
+  "Skirt":              { gender: "female", fields: ["Waist","Hip","Length"] },
+  "Pencil Skirt":       { gender: "female", fields: ["Waist","Hip","Thigh","Knee","Length"] },
+  "Flare Skirt":        { gender: "female", fields: ["Waist","Hip","Length"] },
+  "Gown":               { gender: "female", fields: ["Bust","Under Bust","Waist","Hip","Shoulder","Sleeve","Round Sleeve","Full Length","Shoulder To Bust","Bust Span"] },
+  "Bridal Gown":        { gender: "female", fields: ["Bust","Under Bust","Waist","Hip","Shoulder","Sleeve","Round Sleeve","Full Length","Shoulder To Bust","Bust Span","Waist To Hip","Waist To Knee"] },
+  "Native Wear (Female)":{ gender: "female",fields: ["Bust","Under Bust","Waist","Hip","Shoulder","Sleeve","Round Sleeve","Length"] },
+  "Jumpsuit":           { gender: "female", fields: ["Bust","Under Bust","Waist","Hip","Shoulder","Sleeve","Round Sleeve","Full Length","Rise","Thigh"] },
+  "Wrapper / Skirt":    { gender: "female", fields: ["Waist","Hip","Length"] },
+};
+
+export const MEASUREMENT_FIELD_LIBRARY: Record<string, string[]> = {
+  "Upper Body":   ["Neck","Shoulder","Chest","Bust","Under Bust","Waist","Hip","Stomach","Seat","Back Length"],
+  "Arms & Sleeves": ["Sleeve","Round Sleeve","Sleeve Length","Cuff","Wrist","Armhole"],
+  "Lengths":      ["Top Length","Shirt Length","Jacket Length","Full Length","Skirt Length","Dress Length","Length"],
+  "Lower Body":   ["Trouser Length","Thigh","Knee","Ankle","Bottom","Rise"],
+  "Fit Details":  ["Shoulder To Bust","Bust Span","Waist To Hip","Waist To Knee"],
+};

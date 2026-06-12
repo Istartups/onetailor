@@ -1,0 +1,328 @@
+# Premium Account System Migration
+
+We are transitioning from a user-facing license system to an account-based premium system while preserving the existing licensing engine as the backend source of truth.
+
+## Important Context
+
+This is a utility PWA.
+
+Free users should continue to use the application immediately without registration or login.
+
+Do NOT introduce mandatory signup before users can access free tools.
+
+The account system should only be introduced when users choose to unlock Premium.
+
+---
+
+# Current Flow
+
+Current flow:
+
+Free User
+→ Clicks Unlock Premium
+→ Completes Business Information Form
+→ Payment
+→ License Activation
+
+The current form is:
+
+Business Name
+Phone Number
+Email Address (currently optional)
+City
+State
+Landmark
+Country
+
+---
+
+# New Goal
+
+Transform the existing Premium Unlock form into:
+
+1. Lead Capture System
+2. Account Creation System
+3. Business Profile Creation System
+4. Premium Activation Flow
+
+without adding unnecessary friction.
+
+---
+
+# Updated Premium Unlock Form
+
+Update the form to:
+
+## Account Information: Page it a two page to avoid over load
+
+Create Account
+
+Business Name *
+
+Phone Number *
+
+Email Address *
+
+Password *
+
+Confirm Password *
+Continue
+
+## Business Details
+
+City
+
+State
+
+Landmark
+
+Country
+
+**⭐ Unlock Premium >**
+
+---
+
+# Validation Requirements
+
+Email is mandatory.
+
+Phone number is mandatory.
+
+Business Name is mandatory.
+
+Password is mandatory.
+
+Confirm Password must match.
+
+Validate email uniqueness.
+
+Prevent duplicate account creation.
+
+Display clear validation messages.
+
+---
+
+# Account Creation Flow
+
+When user clicks:
+
+⭐ Continue to Premium Activation
+
+Perform the following:
+
+1. Create User Account
+2. Create Business Profile
+3. Create Pending Premium Request
+4. Create Pending License Record
+5. Store Lead Information
+6. Automatically Log User In
+7. Redirect To Payment Page
+
+Do NOT activate Premium yet.
+
+Do NOT activate License yet.
+
+Payment must still be completed and approved.
+
+---
+
+# Licensing System
+
+Keep the existing licensing system.
+
+Do NOT remove it.
+
+Licenses should become internal records linked to user accounts.
+
+Users should never need to manually enter license keys.
+
+Architecture:
+
+User Account
+↓
+Business Profile
+↓
+License Record
+↓
+Premium Access
+
+---
+
+# Premium Activation
+
+When:
+
+* Manual payment is approved
+
+OR
+
+* Online payment succeeds
+
+Automatically:
+
+1. Activate license
+2. Link license to account
+3. Enable premium access
+
+No license key should be shown to users.
+
+No activation code should be required.
+
+---
+
+# Login System
+
+
+After setting in the menu: we can have account. Thats where users can login .
+Dont- have an account it takes them to the updated pre-unlock page
+
+Create a simple login system.
+
+Fields:
+
+Email
+Password
+
+Features:
+
+Remember Me
+Forgot Password
+Logout
+
+After login:
+
+Check active license status.
+
+If active license exists:
+
+Premium Enabled
+
+If no active license:
+
+Free Version
+
+---
+
+# Cross Device Support
+
+Premium access should be account-based.
+
+User should be able to:
+
+Install PWA on another device
+↓
+Login
+↓
+System retrieves account
+↓
+System validates active license
+↓
+Premium restored automatically
+
+No license key required.
+
+---
+
+# Offline Support
+
+After successful login and license validation:
+
+Store secure local entitlement information.
+
+Allow Premium features to continue working offline.
+
+When internet becomes available:
+
+Revalidate entitlement automatically.
+
+Do not require users to constantly reconnect.
+
+---
+
+# Admin Portal Updates
+
+Add account and subscription visibility.
+
+Recommended statuses:
+
+Lead
+
+Pending Payment
+
+Payment Submitted
+
+Payment Approved
+
+Premium Active
+
+Premium Expired
+
+Suspended
+
+Cancelled
+
+Admins should be able to:
+
+View accounts
+View business profiles
+View payment status
+View license status
+Activate licenses
+Suspend licenses
+Extend licenses
+
+---
+
+# Existing Users
+
+If any license-only records exist:
+
+Create a migration path that allows them to create an account and have the license linked automatically.
+
+Future access should use login instead of license keys.
+
+---
+
+# UI Requirements
+
+Keep the current UI style and branding.
+
+Do not redesign working screens.
+
+Improve professionalism and usability where appropriate.
+
+Preserve mobile responsiveness.
+
+Preserve existing workflows.
+
+---
+
+# Security Requirements
+
+Hash passwords securely.
+
+Protect authentication endpoints.
+
+Prevent duplicate account creation.
+
+Protect against unauthorized premium access.
+
+Ensure licenses cannot be activated without payment approval.
+
+Do not expose internal license records publicly.
+
+---
+
+# Final Goal
+
+Free users should continue using the utility tools without registration.
+
+Premium users should create an account through the Premium Unlock form.
+
+Payment approval should automatically activate premium access through the existing licensing engine.
+
+Users should access premium features through login rather than license keys.
+
+The licensing system remains the backend source of truth, but accounts become the primary user experience.
+
+Implement the complete flow, test all affected functionality, and ensure no existing working features are broken.

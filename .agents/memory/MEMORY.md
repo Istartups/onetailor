@@ -1,0 +1,9 @@
+- [Price units in OneTailor](price-units.md) — amounts stored in Naira (whole units), NOT kobo. Admin display must NOT divide by 100. Paystack init multiplies by 100 to convert to kobo.
+- [Paystack callback URL](paystack-callback.md) — callback_url must include /api prefix: `${host}/api/payment/paystack/verify`, not `/payment/paystack/verify`.
+- [License activations stats](license-activations.md) — must insert licenseActivationsTable record whenever a license is created (manual approve, Paystack webhook, Paystack verify) for stats activations count to be non-zero.
+- [Express return void pattern](express-return-void.md) — use `return void res.json(...)` not `return res.json(...)` in Express 5 async route handlers to avoid TS7030 "not all code paths return a value" errors.
+- [Drizzle dynamic query typing](drizzle-dynamic-query.md) — use `let query: any =` for variables that will have `.where()` appended conditionally; Drizzle's inferred types omit `.where` after certain chaining patterns.
+- [Shimmed packages type declarations](shimmed-packages.md) — @ffmpeg/ffmpeg, @ffmpeg/util, @xenova/transformers are shimmed; declare modules in `artifacts/one-tailor/src/global.d.ts`.
+- [Xenova shim must export env](xenova-shim-env.md) — xenova-transformers.ts shim must export `env` as a plain object and all classes (AutoModel, AutoProcessor, RawImage) or the PWA build fails.
+- [Admin portal authFetch](admin-authfetch.md) — all admin portal pages use `authFetch` from `@/lib/authFetch` (auto-attaches token + redirects on 401/403); never use raw fetch + localStorage token in admin pages.
+- [Paystack secret key save guard](paystack-secret-key-guard.md) — PUT /api/payment-info must skip updating paystackSecretKey if value is empty; public GET strips the key so admin save would wipe it otherwise.

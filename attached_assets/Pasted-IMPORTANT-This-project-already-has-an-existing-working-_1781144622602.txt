@@ -1,0 +1,68 @@
+IMPORTANT: This project already has an existing working codebase with established features. DO NOT delete, rewrite, or break existing functionality that is already stable.
+
+Instead:
+
+🧠 CORE RULE
+Preserve all existing working features
+Identify what already exists and reuse it
+Only extend, improve, or modularize where needed
+Avoid full rewrites unless explicitly required for bug fixes
+Do not remove current business logic unless it is clearly broken or conflicting
+🧩 IMPROVEMENT STRATEGY
+
+When implementing new features:
+
+1. EXTEND, DO NOT REPLACE
+Add new template system alongside existing category system
+Do NOT remove current categories immediately
+Allow both systems to coexist if needed (legacy + new templates)
+2. SAFE MIGRATION APPROACH
+If existing “Category” system exists, wrap it as:
+“Legacy Mode”
+Keep it functional
+Introduce new “Template System” as the preferred flow
+Let user choose fallback if needed
+3. SMART INTEGRATION RULE
+Reuse existing:
+Client database structure
+Measurement storage logic (if present)
+UI components where possible
+Only refactor if necessary for:
+Better scalability
+Cleaner template mapping
+Improved UX flow
+4. ADDITIVE FEATURE BEHAVIOR
+
+Add new features as:
+
+New modules
+New components
+New services
+NOT replacements of existing ones
+5. TEMPLATE SYSTEM INTEGRATION RULE
+Inject “Templates” feature into existing Add Measurement flow
+Do NOT remove existing measurement/category selection yet
+Instead:
+Add toggle: “Template Mode (New)” vs “Legacy Mode (Existing)”
+6. DATA COMPATIBILITY RULE
+Ensure new structure is backward compatible
+Existing saved measurements must still load correctly
+Do not break database schema without migration handling
+7. UI SAFETY RULE
+Do not redesign entire UI unless required
+Only enhance:
+Add new sections
+Improve flow steps
+Add new buttons/cards where needed
+🚀 FINAL GOAL OF THIS INSTRUCTION
+
+The goal is:
+
+“Upgrade the system without destabilizing what already works.”
+
+The system should evolve into:
+
+Hybrid safe architecture (Legacy + Template System)
+Gradual migration path
+No broken flows for existing users
+Clean upgrade without data loss

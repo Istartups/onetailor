@@ -1,0 +1,270 @@
+# Complete Codebase Audit, Bug Detection & Repair
+
+You have full access to the entire codebase.
+
+Your task is to perform a comprehensive audit of the application and repair all verified issues while preserving existing working functionality.
+
+## Critical Rules
+
+* Analyze the actual codebase before making any changes.
+* Do not assume features exist.
+* Audit only what is implemented in the code.
+* Do not remove working functionality.
+* Do not rewrite stable systems unnecessarily.
+* Prefer targeted fixes over large refactors.
+* Maintain backward compatibility.
+* Prevent regressions.
+* Ensure all fixes are production-ready.
+
+---
+
+## Phase 1: Codebase Discovery
+
+First inspect and document:
+
+* Application architecture
+* Frontend structure
+* PWA implementation
+* Admin portal
+* API routes
+* Database models
+* Authentication system
+* Licensing system
+* Payment system
+* Notification system
+* Media tools
+* File storage system
+* Third-party integrations
+* Background jobs
+* Configuration files
+* Environment variable usage
+
+Map how all systems interact before making changes.
+
+---
+
+## Phase 2: Comprehensive Audit
+
+Audit every discovered module for:
+
+### Functional Issues
+
+* Broken features
+* Incomplete flows
+* Missing handlers
+* Invalid state transitions
+* Navigation issues
+* Form submission issues
+* Upload/download failures
+* Broken integrations
+
+### Code Quality Issues
+
+* Dead code
+* Duplicate logic
+* Unused components
+* Unused APIs
+* Unused database fields
+* Inconsistent patterns
+
+### Reliability Issues
+
+* Unhandled exceptions
+* Failed edge cases
+* Race conditions
+* Async issues
+* Timeout issues
+* Data synchronization issues
+
+### Security Issues
+
+* Authentication weaknesses
+* Authorization issues
+* Validation gaps
+* Unsafe file uploads
+* API vulnerabilities
+* Secrets exposure
+* Privilege escalation risks
+
+### Performance Issues
+
+* Slow queries
+* Excessive API calls
+* Memory leaks
+* Unnecessary re-renders
+* Large bundle problems
+
+---
+
+## Phase 3: End-to-End Flow Testing
+
+Trace every user flow from start to finish.
+
+Verify that every step works correctly.
+
+Examples include:
+
+* Registration
+* Login
+* Password reset
+* User onboarding
+* Subscription flow
+* License activation
+* License validation
+* Payment submission
+* Admin review workflows
+* Media tool processing
+* File uploads
+* File downloads
+* Notifications
+* Settings updates
+
+Identify and repair all broken flows.
+
+---
+
+## Phase 4: Media Tools Priority Audit
+
+Media tools previously showed inconsistent behavior.
+
+Perform deep testing of every media-related feature discovered in the codebase.
+
+Verify:
+
+* Frontend functionality
+* API integration
+* Processing pipeline
+* Storage handling
+* Output generation
+* Error handling
+* Mobile compatibility
+
+Identify why certain tools fail while others work.
+
+Repair all verified issues.
+
+---
+
+## Phase 5: API & Backend Audit
+
+Audit every endpoint and backend service.
+
+Verify:
+
+* Validation
+* Authentication
+* Authorization
+* Error handling
+* Database operations
+* Logging
+* Response consistency
+
+Fix all discovered issues.
+
+---
+
+## Phase 6: Licensing System Audit
+
+If a licensing system exists:
+
+Audit:
+
+* License generation
+* Activation
+* Validation
+* Expiration
+* Renewal
+* Admin controls
+
+Identify and fix any logic errors or bypasses.
+
+---
+
+## Phase 7: Admin Portal Audit
+
+Audit every admin feature.
+
+Verify:
+
+* Dashboard accuracy
+* Statistics accuracy
+* User management
+* Payment management
+* License management
+* Search and filters
+* Reports
+* Settings
+
+Repair broken calculations, missing data, and non-functional actions.
+
+---
+
+## Phase 8: Email Notifications
+
+If manual payment submissions exist and email infrastructure is available:
+
+Implement administrator email notifications when new manual payments are submitted.
+
+Requirements:
+
+* Trigger automatically
+* Support multiple admin recipients
+* Prevent duplicates
+* Log delivery status
+* Handle failures gracefully
+
+Do not break existing notification functionality.
+
+---
+
+## Phase 9: Regression Testing
+
+After every change:
+
+* Test affected functionality
+* Test related systems
+* Verify no working feature is broken
+* Verify build succeeds
+* Verify deployment succeeds
+
+Continue until all discovered critical and high-priority issues are resolved.
+
+---
+
+## Final Deliverables
+
+Provide:
+
+### System Inventory
+
+Everything discovered in the codebase.
+
+### Issues Found
+
+* Severity
+* Root cause
+* Impact
+
+### Fixes Applied
+
+* Files modified
+* Logic changed
+* Configuration updates
+
+### Testing Results
+
+* Features tested
+* Results
+* Remaining risks
+
+### Overall Health Assessment
+
+* Main PWA
+* Admin Portal
+* APIs
+* Media Tools
+* Licensing
+* Payments
+* Notifications
+
+Goal: Deliver the most stable, production-ready version of the application possible by auditing the actual codebase, fixing all verified issues, and preserving all existing working functionality.

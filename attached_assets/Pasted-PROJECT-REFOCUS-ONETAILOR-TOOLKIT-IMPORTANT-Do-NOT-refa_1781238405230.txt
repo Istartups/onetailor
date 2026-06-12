@@ -1,0 +1,197 @@
+PROJECT REFOCUS: ONETAILOR TOOLKIT
+
+IMPORTANT:
+
+Do NOT refactor the architecture.
+
+Do NOT remove existing platform functionality.
+
+Do NOT modify working authentication, subscriptions, payments, licensing, analytics, favorites, recent tools tracking, notifications, admin systems, user management, or database structures unless required for cleanup.
+
+This is a PRODUCT REFOCUS, not a platform rebuild.
+
+==================================================
+NEW PRODUCT NAME
+================
+
+OneTailor Toolkit
+
+Tagline:
+The Complete Digital Toolkit for Modern Tailors
+
+==================================================
+KEEP ALL EXISTING PLATFORM FEATURES
+===================================
+
+Keep all existing functionality including:
+
+* User accounts
+* Authentication
+* Subscriptions
+* Licensing
+* Payment system
+* Favorites
+* Recent tools
+* Tool usage analytics
+* Notifications
+* Admin dashboard
+* User profiles
+* Settings
+* Search functionality
+* Activity tracking
+* Feature access controls
+
+These systems must continue working exactly as they do today.
+
+==================================================
+TOOLS TO KEEP
+=============
+
+CLIENTS
+
+* Client Management
+
+MEASUREMENTS
+
+* Measurement Templates
+* Card Generator
+* Measurement Converter
+* Measurement Checker
+
+FABRIC
+
+* Fabric Requirement
+* Fabric Color Matcher
+
+PRICING
+
+* Fabric Cost Estimator
+* Profit Calculator
+* Price Smartly
+
+PLANNING
+
+* Delivery Date Calculator
+
+==================================================
+TOOLS TO REMOVE FROM PRODUCT
+============================
+
+Remove these tools from the application:
+
+* Watermark Tool
+* Before & After
+* Flyer Resizer
+* Testimonial Card
+* WhatsApp Link Generator
+* Image Compressor
+* Video Compressor
+* Background Remover
+* Video Background Remover
+* Social Video Resizer
+* Change Resolution
+
+Remove them from:
+
+* Dashboard
+* Tool listings
+* Search results
+* Categories
+* Navigation
+* Landing pages
+* Favorites suggestions
+* Recent tools suggestions
+* Tool catalog
+
+If safe, remove related routes and components.
+
+==================================================
+NEW MENU STRUCTURE
+==================
+
+Dashboard
+
+Clients
+
+* Client Management
+
+Measurements
+
+* Measurement Templates
+* Card Generator
+* Measurement Converter
+* Measurement Checker
+
+Fabric
+
+* Fabric Requirement
+* Fabric Color Matcher
+
+Pricing
+
+* Fabric Cost Estimator
+* Profit Calculator
+* Price Smartly
+
+Planning
+
+* Delivery Date Calculator
+
+Account
+
+* Favorites
+* Recent Tools
+* Subscription
+* Profile
+* Settings
+
+==================================================
+DASHBOARD
+=========
+
+Keep existing dashboard functionality.
+
+Update dashboard to show only tools related to OneTailor Toolkit.
+
+Favorites and Recent Tools should continue working normally.
+
+==================================================
+ADMIN PANEL
+===========
+
+Keep existing admin functionality.
+
+Do not remove:
+
+* User Management
+* Subscription Management
+* Licensing
+* Payments
+* Notifications
+* Broadcast System
+* Analytics
+* Settings
+
+Only update tool references so analytics and reports track the remaining OneTailor Toolkit tools.
+
+==================================================
+POSITIONING
+===========
+
+Replace references to generic business toolkit language.
+
+Position product as:
+
+OneTailor Toolkit
+
+A focused toolkit that helps tailors manage clients, measurements, fabric planning, and pricing from one platform.
+
+==================================================
+GOAL
+====
+
+Launch-ready OneTailor Toolkit.
+
+Keep all existing platform functionality.
+
+Only remove non-tailoring tools and update branding, navigation, categories, and tool organization.
