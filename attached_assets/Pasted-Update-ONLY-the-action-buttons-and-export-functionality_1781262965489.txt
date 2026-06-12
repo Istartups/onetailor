@@ -1,0 +1,207 @@
+Update ONLY the action buttons and export functionality inside MeasurementCardGenerator.tsx.
+
+Do NOT change card layout, design, themes, customer selection, measurement loading, or any unrelated code.
+
+Apply ONLY the fixes below.
+
+---
+
+1. FIX "SAVE TO DEVICE" BUTTON
+
+---
+
+Current problem:
+
+The "Save To Device" button is broken or not downloading properly.
+
+Requirements:
+
+* Fix the save/download functionality completely
+* Download ONLY the generated measurement card itself
+* Do NOT capture the whole page
+* Do NOT capture buttons, theme selector, textarea, or other UI elements
+
+Only capture:
+
+The card inside:
+
+cardRef
+
+Current code uses html2canvas.
+
+Check why it is failing.
+
+Requirements:
+
+* Capture only cardRef
+* Export as PNG
+* High quality output
+* Proper file download on mobile and desktop
+
+Example filename:
+
+customer-name-measurement-card.png
+
+Do not change visual design.
+
+---
+
+2. FIX PRINT BUTTON
+
+---
+
+Current problem:
+
+Print currently prints the entire page.
+
+Example:
+
+* Buttons
+* Theme selector
+* Notes field
+* Whole app screen
+
+This is wrong.
+
+Requirements:
+
+When clicking Print:
+
+Print ONLY the generated measurement card.
+
+Do NOT print:
+
+* Theme selector
+* Save button
+* Print button
+* Invite button
+* Custom note textarea
+* Header navigation
+* Entire page UI
+
+Only print the card preview itself.
+
+Possible solutions:
+
+Option A (Preferred)
+
+* Open new temporary window
+* Inject only cardRef HTML
+* Print only that content
+
+OR
+
+Option B
+
+Use print CSS and isolate cardRef only
+
+Goal:
+
+Only the card should print.
+
+Nothing else.
+
+---
+
+3. ADD WHATSAPP SHARE (ONLY IF IMAGE CAN BE ATTACHED)
+
+---
+
+Check browser support first.
+
+Goal:
+
+Allow user to share generated card directly to WhatsApp.
+
+Requirements:
+
+* Generate card image first
+* Convert card to image file
+* Use Web Share API if supported
+
+Example:
+
+navigator.share()
+
+Only proceed if browser allows file sharing.
+
+Must attach the generated card image itself.
+
+If supported flow works:
+
+Button:
+
+Share to WhatsApp
+
+Process:
+
+* Generate image from cardRef
+* Create file object
+* Trigger share with image attachment
+
+If WhatsApp receives image correctly:
+
+Keep feature.
+
+---
+
+4. IF IMAGE ATTACHMENT TO WHATSAPP IS NOT POSSIBLE
+
+---
+
+If browser does NOT allow direct image sharing to WhatsApp:
+
+DO NOT add WhatsApp Share button.
+
+Do NOT add fallback.
+
+Do NOT add text-only share.
+
+No WhatsApp feature unless image attachment works properly.
+
+---
+
+5. KEEP EXISTING DOWNLOAD METHOD BUT DEBUG IT
+
+---
+
+Current code uses:
+
+html2canvas(cardRef.current)
+
+Do NOT replace entire logic unnecessarily.
+
+Debug and fix current implementation.
+
+Possible issues to check:
+
+* cardRef not properly referenced
+* canvas generation failing silently
+* blob creation issue
+* anchor download issue on mobile browsers
+* wrong target element being captured
+
+Make sure Save To Device works consistently.
+
+---
+
+## IMPORTANT
+
+This is a surgical fix.
+
+Change ONLY:
+
+* Save To Device
+* Print
+* Optional WhatsApp share
+
+Do NOT touch:
+
+* Card layout
+* Themes
+* Customer flow
+* Measurement logic
+* API calls
+* Styling unrelated to buttons
+
+No unnecessary refactoring.

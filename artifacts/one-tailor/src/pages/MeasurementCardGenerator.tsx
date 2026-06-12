@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Palette, Download, Printer, ShieldCheck, Users, ChevronRight,
-  User, MapPin, Banknote, Quote, Ruler, RotateCcw
+  User, MapPin, Banknote, Quote, Ruler, Share2
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useLocation } from "wouter";
@@ -108,19 +108,113 @@ export default function MeasurementCardGenerator() {
     setStep("customize");
   };
 
+  // ── Derive a solid bg colour from the active theme for html2canvas ──────────
+  const getThemeBg = () => {
+    const map: Record<string, string> = {
+      dark:    "#0f172a",
+      light:   "#ffffff",
+      gold:    "#451a03",
+      indigo:  "#1e1b4b",
+      emerald: "#022c22",
+    };
+    return map[theme.id] ?? "#0f172a";
+  };
+
+  // ── Generate canvas blob from cardRef ────────────────────────────────────────
+  const generateCardBlob = async (): Promise<Blob> => {
+    if (!cardRef.current) throw new Error("Card not ready");
+    const canvas = await html2canvas(cardRef.current, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: getThemeBg(),
+      logging: false,
+      removeContainer: true,
+    });
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Blob is null")), "image/png", 1.0);
+    });
+  };
+
+  // ── Save To Device ────────────────────────────────────────────────────────────
   const handleDownload = async () => {
     if (!cardRef.current) return;
     setLoading(true);
     try {
-      const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
+      const blob = await generateCardBlob();
+      const url = URL.createObjectURL(blob);
+      const filename = `${(selectedCustomer?.name || "client").replace(/\s+/g, "-").toLowerCase()}-measurement-card.png`;
+
+      // Works on desktop + mobile (appending to body ensures click fires)
       const link = document.createElement("a");
-      link.download = `${selectedCustomer?.name || "client"}-measurements.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = url;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
     } catch (err) {
       console.error("Download error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Print card only ───────────────────────────────────────────────────────────
+  const handlePrint = () => {
+    if (!cardRef.current) return;
+    const cardHtml = cardRef.current.outerHTML;
+    const printWin = window.open("", "_blank", "width=800,height=900");
+    if (!printWin) return;
+    printWin.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Measurement Card</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: ${getThemeBg()}; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 0; }
+    @media print { body { padding: 0; } }
+  </style>
+  <link rel="stylesheet" href="${window.location.origin}/src/index.css" />
+</head>
+<body>${cardHtml}</body>
+</html>`);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => { printWin.print(); printWin.close(); }, 600);
+  };
+
+  // ── WhatsApp share (only if Web Share API supports files) ────────────────────
+  const [canShareFiles, setCanShareFiles] = useState(false);
+  useEffect(() => {
+    // Probe support once on mount
+    try {
+      const testFile = new File(["x"], "test.png", { type: "image/png" });
+      setCanShareFiles(!!navigator.canShare?.({ files: [testFile] }));
+    } catch {
+      setCanShareFiles(false);
+    }
+  }, []);
+
+  const [sharing, setSharing] = useState(false);
+  const handleShare = async () => {
+    if (!cardRef.current) return;
+    setSharing(true);
+    try {
+      const blob = await generateCardBlob();
+      const filename = `${(selectedCustomer?.name || "client").replace(/\s+/g, "-").toLowerCase()}-measurement-card.png`;
+      const file = new File([blob], filename, { type: "image/png" });
+      await navigator.share({
+        title: `${selectedCustomer?.name || "Client"} Measurement Card`,
+        text: `Measurement card from ${businessProfile?.name || appName}`,
+        files: [file],
+      });
+    } catch (err: any) {
+      if (err?.name !== "AbortError") console.error("Share error:", err);
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -397,22 +491,40 @@ export default function MeasurementCardGenerator() {
                </div>
                
                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={handleDownload} 
+                  <button
+                    onClick={handleDownload}
                     disabled={loading}
                     className="h-14 bg-primary text-primary-foreground rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-50"
                   >
-                    {loading ? "Generating..." : <><Download size={20} /> Save To Device</>}
+                    {loading ? (
+                      <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Saving...</>
+                    ) : (
+                      <><Download size={18} /> Save To Device</>
+                    )}
                   </button>
-                  <button 
-                    onClick={() => window.print()} 
+                  <button
+                    onClick={handlePrint}
                     className="h-14 bg-card border border-border rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-muted transition-colors active:scale-[0.98]"
                   >
-                    <Printer size={20} /> Print Card
+                    <Printer size={18} /> Print Card
                   </button>
                </div>
 
-               <Button 
+               {canShareFiles && (
+                 <button
+                   onClick={handleShare}
+                   disabled={sharing}
+                   className="w-full h-14 bg-green-500/10 border border-green-500/30 text-green-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-green-500/20 transition-colors active:scale-[0.98] disabled:opacity-50"
+                 >
+                   {sharing ? (
+                     <><span className="w-4 h-4 border-2 border-green-400/40 border-t-green-400 rounded-full animate-spin" /> Preparing...</>
+                   ) : (
+                     <><Share2 size={18} /> Share Card</>
+                   )}
+                 </button>
+               )}
+
+               <Button
                  onClick={() => setLocation("/invite")}
                  variant="outline"
                  className="w-full h-14 rounded-2xl border-primary/20 bg-primary/5 hover:bg-primary/10 font-bold text-primary transition-all"
