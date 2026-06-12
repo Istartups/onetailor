@@ -22,7 +22,11 @@ export default function Broadcast() {
   const [url, setUrl] = useState("/");
   const [ctaText, setCtaText] = useState("");
   const [ctaUrl, setCtaUrl] = useState("");
+  const [promoImage, setPromoImage] = useState("");
+  const [contentImage, setContentImage] = useState("");
   const [sending, setSending] = useState(false);
+  const promoImageRef = React.useRef<HTMLInputElement>(null);
+  const contentImageRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleSend = async (e: React.FormEvent) => {
@@ -34,7 +38,7 @@ export default function Broadcast() {
       const res = await authFetch("/api/admin/notifications/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, body, url, ctaText: ctaText || null, ctaUrl: ctaUrl || null }),
+        body: JSON.stringify({ title, body, url, ctaText: ctaText || null, ctaUrl: ctaUrl || null, promoImage: promoImage || null, contentImage: contentImage || null }),
       });
 
       const data = await res.json();
@@ -45,6 +49,8 @@ export default function Broadcast() {
         setUrl("/");
         setCtaText("");
         setCtaUrl("");
+        setPromoImage("");
+        setContentImage("");
       } else {
         toast({ variant: "destructive", title: "Failed", description: data.message });
       }
@@ -102,6 +108,68 @@ export default function Broadcast() {
                     onChange={(e) => setUrl(e.target.value)}
                     className="h-12 rounded-xl bg-muted/20"
                   />
+                </div>
+                <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4 space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Images (Optional)</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground px-1">Promo Image</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={promoImageRef}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => setPromoImage(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }}
+                        className="hidden"
+                        id="promo-img-input"
+                      />
+                      <label htmlFor="promo-img-input" className="flex items-center gap-2 h-11 px-3 rounded-xl bg-muted/20 border border-border cursor-pointer hover:bg-muted/30 transition-colors text-sm text-muted-foreground">
+                        <ImageIcon size={14} />
+                        {promoImage ? "Image selected ✓" : "Upload promo image"}
+                      </label>
+                      {promoImage && (
+                        <div className="relative">
+                          <img src={promoImage} alt="promo" className="w-full h-20 object-cover rounded-xl" />
+                          <button type="button" onClick={() => { setPromoImage(""); if (promoImageRef.current) promoImageRef.current.value = ""; }}
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white text-xs">✕</button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground px-1">Content Image</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={contentImageRef}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => setContentImage(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }}
+                        className="hidden"
+                        id="content-img-input"
+                      />
+                      <label htmlFor="content-img-input" className="flex items-center gap-2 h-11 px-3 rounded-xl bg-muted/20 border border-border cursor-pointer hover:bg-muted/30 transition-colors text-sm text-muted-foreground">
+                        <ImageIcon size={14} />
+                        {contentImage ? "Image selected ✓" : "Upload content image"}
+                      </label>
+                      {contentImage && (
+                        <div className="relative">
+                          <img src={contentImage} alt="content" className="w-full h-20 object-cover rounded-xl" />
+                          <button type="button" onClick={() => { setContentImage(""); if (contentImageRef.current) contentImageRef.current.value = ""; }}
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white text-xs">✕</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Images are embedded in the notification for richer delivery.</p>
                 </div>
                 <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4 space-y-3">
                   <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Call-to-Action Button (Optional)</p>

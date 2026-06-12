@@ -37,10 +37,13 @@ async function loadEmailSettings(): Promise<EmailSettings> {
     const fromName   = (row as any)?.emailFromName || process.env["EMAIL_FROM_NAME"] || "OneTailor";
     const fromEmail  = (row as any)?.emailFromAddr || process.env["EMAIL_FROM_ADDR"] || (smtpUser || "noreply@onetailor.com");
 
+    const isResendEnabled = (row as any)?.isResendEnabled !== false;
+    const isSmtpEnabled   = (row as any)?.isSmtpEnabled !== false;
+
     let settings: EmailSettings;
-    if (resendKey) {
+    if (resendKey && isResendEnabled) {
       settings = { provider: "resend", resendApiKey: resendKey, fromName, fromEmail };
-    } else if (smtpHost && smtpUser && smtpPass) {
+    } else if (smtpHost && smtpUser && smtpPass && isSmtpEnabled) {
       settings = { provider: "smtp", smtpHost, smtpPort, smtpSecure, smtpUser, smtpPass, fromName, fromEmail };
     } else {
       settings = { provider: "none" };

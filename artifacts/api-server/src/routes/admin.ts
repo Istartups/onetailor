@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { sendEmail } from "../lib/notifications";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { 
@@ -356,8 +357,8 @@ router.get("/admin/referral-stats", authenticateAdmin as any, async (req, res) =
         conversionRate,
       },
       topInviters,
-      tierBreakdown: tiers.rows as { tier: number; count: number }[],
-      dailyReferred:  dailyReferred.rows as { name: string; count: number }[],
+      tierBreakdown: (tiers as any[]).map((r: any) => ({ tier: Number(r.tier), count: Number(r.count) })),
+      dailyReferred:  (dailyReferred as any[]).map((r: any) => ({ name: r.name as string, count: Number(r.count) })),
     });
   } catch (error) {
     console.error("Referral stats error:", error);
@@ -382,6 +383,27 @@ router.post("/admin/setup", async (req, res) => {
     res.json({ message: "Admin created successfully" });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ─── Test Email ───────────────────────────────────────────────────────────────
+
+router.post("/admin/test-email", authenticateAdmin as any, async (req, res) => {
+  const { to } = req.body;
+  if (!to) return void res.status(400).json({ message: "Recipient email is required" });
+  try {
+    await sendEmail(
+      to,
+      "OneTailor Test Email ✅",
+      `<div style="font-family:sans-serif;padding:32px;max-width:480px">
+        <h2 style="color:#222">Email Config Working!</h2>
+        <p>Your OneTailor email configuration is set up correctly.</p>
+        <p style="color:#888;font-size:12px">Sent from OneTailor Admin at ${new Date().toISOString()}</p>
+      </div>`
+    );
+    return void res.json({ message: "Test email sent successfully" });
+  } catch (error: any) {
+    return void res.status(500).json({ message: `Failed to send: ${error.message}` });
   }
 });
 

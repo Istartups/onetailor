@@ -579,7 +579,8 @@ router.put("/payment-info", authenticateAdmin as any, async (req, res) => {
       "price2Device", "price3Device", "price5Device",
       "pwaLogoData", "pwaFaviconData", "pwaSplashData",
       "smtpHost", "smtpPort", "smtpUser", "smtpPass", "smtpSecure",
-      "emailFromName", "emailFromAddr",
+      "emailFromName", "emailFromAddr", "resendApiKey",
+      "isSmtpEnabled", "isResendEnabled",
     ];
 
     for (const key of allowedFields) {

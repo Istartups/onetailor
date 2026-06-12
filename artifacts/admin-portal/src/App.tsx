@@ -5,9 +5,8 @@ import AgentLogin from "./pages/AgentLogin";
 import Dashboard from "./pages/Dashboard";
 import AgentDashboard from "./pages/AgentDashboard";
 import Overview from "./pages/Overview";
-import Payment from "./pages/Payment";
+import CombinedPayment from "./pages/CombinedPayment";
 import Settings from "./pages/Settings";
-import PaymentSettings from "./pages/PaymentSettings";
 import LicenseManagement from "./pages/LicenseManagement";
 import Broadcast from "./pages/Broadcast";
 import DeployGuide from "./pages/DeployGuide";
@@ -61,10 +60,10 @@ export default function App() {
           <CRMRoute><CRM /></CRMRoute>
         </Route>
         <Route path="/payment">
-          <PrivateRoute><Dashboard><Payment /></Dashboard></PrivateRoute>
+          <PrivateRoute><Dashboard><CombinedPayment /></Dashboard></PrivateRoute>
         </Route>
         <Route path="/payment-settings">
-          <PrivateRoute><Dashboard><PaymentSettings /></Dashboard></PrivateRoute>
+          <PrivateRoute><Redirect to="/payment" /></PrivateRoute>
         </Route>
         <Route path="/settings">
           <PrivateRoute><Dashboard><Settings /></Dashboard></PrivateRoute>

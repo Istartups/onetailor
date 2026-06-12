@@ -1,0 +1,133 @@
+Add an email test-send button to the admin Email tab so i can verify your SMTP/Resend config is working before going live
+for the email server i should be able to select which is on or off
+In admin 
+Payment and payment will be come one Menu with two  tabs
+Menu Name Payment 
+Tab 1 Overview for current payment content
+Tab 2 Setting for current payment setting 
+
+
+on mobile the menu for admin seems broken debug and fix it 
+
+in system setting 
+
+system config tab
+remove this completely
+Payment Details
+Bank Name
+Opay
+Account Number
+1234567890
+Account Name
+OneTailor Technologies
+Payment Link (Direct Pay)
+https://paystack.com/pay/...
+
+
+be already have it else where this is repitition
+
+remove this also from system configDevice Pricing Tiers
+1 Device
+15000
+2 Devices
+₦25,000
+3 Devices
+₦35,000
+5 Devices
+₦50,000
+Leave blank to fall back to the 1-device price.
+remove .00 in the display to user if it has no decimal value
+
+put it in the payment seting tab 
+part of the global setting no repitition
+no break of current functionality
+
+for the broadcas notification add the premium image and content image they see if possible
+
+the lead crm  in the agent tab
+Add the agent login slug so i dont need to be finding it
+
+in the system config
+Unlock Premium Configuration
+Unlock Premium Message
+Unlock Premium to access all professional tools.
+Button Link
+https://wa.me/...
+Button Text
+⭐ Unlock Premium
+
+has to be updated to 
+Unlock OneTailor Prol Configuration
+Unlock Professional Message
+Unlock access all professional tools.
+Button Link
+https://wa.me/...
+Button Text
+Unlock OneTailor Pro
+
+also the message that shows to users on free as they use tools.
+Unlock Premium
+Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools.
+
+Unlock Premium Now
+let us have in the system configure admin can edit it from there.
+just as it works no changes just admin being able to edit if from portal without touching code
+Note this shows to only users on premium plan
+
+
+
+You will never show /premium-details
+to user who has not submitted /pre-unlock details.
+fix the current issue the ⭐ Unlock Premium button in home page lead to premium-details 
+dont change this ever again in this flow put it in the read me
+
+if they have filled the brandkit use some of the details they have to fill the pre unlock form instead of them typing again
+but leave the phone number we want this to delibrately entered
+
+the save Save PWA Settings
+One refresh doesnt save what was changed and no update to PWA
+fix it
+
+reffeal menu on admin portal says
+Referral Analytics
+Track invite performance, conversion rates, and top referrers
+
+Refresh
+Failed to load referral stats
+
+for the leads 
+the current template tab
+turn it to message center
+template will be there
+but now add email and sms template along with the whatsapp templates
+create default messages sms is 159 character. 
+let there be 3 times by default like the whastapp
+agent can click and it opens email, whatsapp sms of the user with pre filled message.
+
+in the message for user who has not paid after visiting premium details
+
+Payment Pending
+
+You started a premium upgrade but haven't completed payment yet.
+
+Tap below to complete your premium unlock.
+
+Complete your premium unlock
+
+change Payment Pending to something else emotional that hyponitze them to want to continue
+we are not selling we are connecting emotionally you can improve the whole message if you can.
+
+in system config let admin to be able to control this aslo
+title, body text cta text
+
+once a use has submiited a detail and its pending eg the manual deposit
+dont take them to the premium details again just display a message 
+that payment confirmation is pending we had it before 
+it has only when a a user has not paid or uploaded payment proof we can always have it as resume payment like we have now
+
+this is account page
+Payment Pending
+
+You started an upgrade but haven't completed payment. Resume below.
+
+fix here too our goal is to avoid sounding like a transcation across 

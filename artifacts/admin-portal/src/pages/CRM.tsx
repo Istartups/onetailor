@@ -5,7 +5,7 @@ import {
   Plus, Trash2, Edit2, X, Users, Flame, Thermometer,
   Snowflake, CalendarDays, Send, SlidersHorizontal,
   ClipboardList, Settings, MessageCircle, TrendingUp, UserPlus,
-  Copy, CheckCheck, ExternalLink, Pencil,
+  Copy, CheckCheck, ExternalLink, Pencil, Link as LinkIcon,
 } from "lucide-react";
 import { authFetch, isAdmin, isAgent } from "@/lib/authFetch";
 
@@ -1222,6 +1222,17 @@ function AgentsTab() {
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm">{a.name}</p>
                 <p className="text-xs text-muted-foreground">@{a.username}{a.phone ? ` · ${a.phone}` : ""} · joined {relDate(a.createdAt)}</p>
+                <button
+                  onClick={() => {
+                    const url = `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, "")}/agent-login`;
+                    navigator.clipboard.writeText(url).then(() => {});
+                  }}
+                  className="text-[10px] font-mono text-primary/50 hover:text-primary transition-colors truncate max-w-[260px] flex items-center gap-1 mt-0.5"
+                  title="Click to copy agent login link"
+                >
+                  <LinkIcon size={9} />
+                  Copy login link
+                </button>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button onClick={() => openEdit(a)}

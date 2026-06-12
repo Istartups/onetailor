@@ -95,6 +95,21 @@ async function startServer() {
       { name: "price_2_device",        type: "INTEGER" },
       { name: "price_3_device",        type: "INTEGER" },
       { name: "price_5_device",        type: "INTEGER" },
+      { name: "callmebot_phone",       type: "TEXT" },
+      { name: "callmebot_api_key",     type: "TEXT" },
+      { name: "followup_24h_enabled",  type: "BOOLEAN NOT NULL DEFAULT TRUE" },
+      { name: "followup_48h_enabled",  type: "BOOLEAN NOT NULL DEFAULT TRUE" },
+      { name: "followup_72h_enabled",  type: "BOOLEAN NOT NULL DEFAULT FALSE" },
+      { name: "smtp_host",             type: "TEXT" },
+      { name: "smtp_port",             type: "INTEGER" },
+      { name: "smtp_secure",           type: "BOOLEAN DEFAULT FALSE" },
+      { name: "smtp_user",             type: "TEXT" },
+      { name: "smtp_pass",             type: "TEXT" },
+      { name: "email_from_name",       type: "TEXT" },
+      { name: "email_from_addr",       type: "TEXT" },
+      { name: "resend_api_key",        type: "TEXT" },
+      { name: "is_smtp_enabled",       type: "BOOLEAN NOT NULL DEFAULT TRUE" },
+      { name: "is_resend_enabled",     type: "BOOLEAN NOT NULL DEFAULT TRUE" },
     ];
     for (const col of settingsColumns) {
       try { await db.execute(sql.raw(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`)); } catch {}

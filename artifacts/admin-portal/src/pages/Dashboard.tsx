@@ -50,7 +50,6 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
     { label: "Accounts",        icon: Users,            href: "/accounts" },
     { label: "License",         icon: KeyRound,         href: "/licenses" },
     { label: "Payment",         icon: CreditCard,       href: "/payment" },
-    { label: "Payment Settings",icon: Settings,         href: "/payment-settings" },
     { label: "Broadcast",       icon: Bell,             href: "/broadcast" },
     { label: "System Settings", icon: Settings,         href: "/settings" },
     { label: "Referrals",        icon: Share2,           href: "/referrals" },

@@ -137,6 +137,8 @@ export const paymentSettingsTable = pgTable("payment_settings", {
   emailFromName: text("email_from_name"),
   emailFromAddr: text("email_from_addr"),
   resendApiKey: text("resend_api_key"),
+  isSmtpEnabled: boolean("is_smtp_enabled").default(true),
+  isResendEnabled: boolean("is_resend_enabled").default(true),
 });
 
 export const businessProfilesTable = pgTable("business_profiles", {

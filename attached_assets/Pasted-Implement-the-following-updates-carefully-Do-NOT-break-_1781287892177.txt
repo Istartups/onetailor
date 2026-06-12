@@ -1,0 +1,731 @@
+Implement the following updates carefully. **Do NOT break existing functionality. Preserve all working flows. Update README where specified.**
+
+## ADMIN PORTAL
+
+### 1. Email Tab
+
+* Add **Test Send Email** button in Admin → Email tab.
+* Must allow testing SMTP / Resend config before production.
+* Add toggle to choose active provider:
+
+  * SMTP ON/OFF
+  * Resend ON/OFF
+
+---
+
+### 2. Payment Menu Restructure
+
+Change Admin menu:
+
+**Menu Name: Payment**
+
+Tabs:
+
+* Overview → keep current payment overview content
+* Settings → move all payment configuration/settings here
+
+Do NOT remove current functionality.
+
+---
+
+### 3. Mobile Admin Menu
+
+* Debug broken admin mobile menu.
+* Fix responsiveness/navigation issues completely.
+
+---
+
+## SYSTEM SETTINGS
+
+### 4. Remove Duplicate Payment Section
+
+Remove completely from System Config:
+
+Delete:
+
+* Payment Details
+* Bank Name
+* Account Number
+* Account Name
+* Payment Link
+
+Already exists elsewhere.
+
+---
+
+### 5. Move Pricing Tier Settings
+
+Remove from System Config:
+
+Delete:
+
+* Device Pricing Tiers
+* 1 Device
+* 2 Devices
+* 3 Devices
+* 5 Devices
+
+Move all pricing config into:
+
+Admin → Payment → Settings
+
+This is global payment config.
+
+No duplicate settings.
+
+---
+
+### 6. Remove Decimal Display
+
+If price has no decimal:
+
+* Show 15,000
+  NOT
+* 15000.00
+
+Frontend display only.
+
+---
+
+## BROADCAST
+
+### 7. Broadcast Notifications
+
+For broadcast notifications:
+
+* Include Premium promotional image
+* Include content image if possible
+
+Do not break existing notification flow.
+
+---
+
+## LEAD CRM
+
+### 8. Agent Tab
+
+In Lead CRM → Agent tab:
+
+* Display Agent Login Slug
+* So admin can copy directly
+
+---
+
+## PREMIUM CONFIG TEXT UPDATE
+
+### 9. Rename Premium Config
+
+In System Config change:
+
+OLD:
+
+* Unlock Premium Configuration
+* Unlock Premium Message
+* Unlock Premium to access all professional tools.
+* ⭐ Unlock Premium
+
+NEW:
+
+* Unlock OneTailor Pro Configuration
+* Unlock Professional Message
+* Unlock access all professional tools.
+* Unlock OneTailor Pro
+
+Keep same logic.
+
+---
+
+### 10. Free User Premium Popup Editable From Admin
+
+Current frontend popup:
+
+Title:
+
+* Unlock Premium
+
+Body:
+
+* Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools.
+
+Button:
+
+* Unlock Premium Now
+
+Move these texts into System Config.
+
+Admin must be able to edit:
+
+* Title
+* Body
+* CTA text
+
+No code edits required later.
+
+Only shown to FREE users.
+
+---
+
+## PREMIUM FLOW (IMPORTANT)
+
+### 11. Premium Access Flow Fix
+
+Rule:
+
+NEVER show:
+
+/premium-details
+
+to users who have NOT submitted:
+
+/pre-unlock
+
+Current bug:
+
+* Homepage ⭐ Unlock Premium button goes directly to premium-details
+
+Fix flow permanently:
+
+Required flow:
+Home → Pre Unlock Form → Premium Details → Payment
+
+DO NOT EVER change this again.
+
+Add this rule to README.
+
+---
+
+### 12. BrandKit Autofill
+
+If user already completed BrandKit:
+
+* Pre-fill pre-unlock form with BrandKit data
+
+Auto-fill:
+
+* Business Name
+* Email
+* Other matching fields
+
+DO NOT auto-fill phone number.
+
+Phone number must always be manually entered.
+
+---
+
+## PWA SETTINGS
+
+### 13. Save PWA Settings Bug
+
+Current issue:
+
+* Save PWA Settings needs refresh before saving
+* PWA update not reflecting immediately
+
+Fix:
+
+* Save instantly
+* Persist correctly
+* Update PWA correctly
+
+---
+
+## REFERRAL
+
+### 14. Referral Analytics Bug
+
+Current error:
+
+Failed to load referral stats
+
+Fix Admin → Referral menu completely.
+
+---
+
+## LEADS MESSAGE CENTER
+
+### 15. Replace Template Tab
+
+Current:
+
+* Template tab
+
+Rename:
+
+* Message Center
+
+Inside add:
+
+#### WhatsApp Templates
+
+Keep existing.
+
+#### Email Templates
+
+Add default 3 templates.
+
+#### SMS Templates
+
+Add default 3 templates.
+
+Rules:
+
+* SMS max 159 characters.
+
+Agent actions:
+
+* Click WhatsApp → opens WhatsApp with prefilled text
+* Click Email → opens email app with prefilled text
+* Click SMS → opens SMS app with prefilled text
+
+---
+
+## PAYMENT PENDING TEXT
+
+### 16. Improve Emotional Copy
+
+Current:
+
+Payment Pending
+You started a premium upgrade but haven't completed payment yet.
+Tap below to complete your premium unlock.
+
+Replace with better emotional conversion-focused copy.
+
+Avoid transactional language.
+
+Make stronger emotional connection.
+
+---
+
+### 17. Make Pending Text Editable
+
+Move these into System Config:
+
+Admin can edit:
+
+* Title
+* Body
+* CTA text
+
+No code editing needed later.
+
+---
+
+## PREMIUM PAYMENT FLOW FIX
+
+### 18. Pending Users Logic
+
+If user submitted upgrade details AND payment pending (manual deposit pending confirmation):
+
+DO NOT take them back to premium-details.
+
+Instead show:
+
+Payment confirmation pending screen.
+
+Only show premium-details when:
+
+* User has not started payment
+  OR
+* User abandoned payment before proof upload
+
+Resume payment only where appropriate.
+
+Restore old logic.
+
+---
+
+### 19. Account Page Text Fix
+
+Current:
+
+Payment Pending
+You started an upgrade but haven't completed payment. Resume below.
+
+Rewrite with emotional/non-transactional wording.
+
+Avoid sounding like purchase flow.
+
+---
+
+## CUSTOMER MEASUREMENTS
+
+### 20. Measurement Edit
+
+In customer measurement edit:
+
+Add image upload field.
+
+Purpose:
+
+* Save reference images/files.
+
+---
+
+## BUSINESS CARD
+
+### 21. Card Layout
+
+Change contact order:
+
+Current:
+Phone
+WhatsApp below
+
+New:
+WhatsApp first, then phone inline
+
+No stacking.
+
+---
+
+## BRANDKIT
+
+### 22. Add Tagline
+
+Add field:
+
+Tagline
+
+Description:
+
+* Tagline shows under Business Name on generated card.
+
+---
+
+## CARD FUNCTIONS (DO NOT BREAK)
+
+### 23. Existing Working Features
+
+These currently work:
+
+* Save
+* Download
+* Share Image to WhatsApp
+
+DO NOT BREAK.
+
+Add note to README.
+
+---
+
+### 24. Share Fix
+
+Current Share broken.
+
+Fix:
+
+Instead of generic share:
+
+* Open customer WhatsApp chat directly
+
+No contact search needed.
+
+Preserve image attachment functionality.
+
+Current image attach behavior is good.
+
+DO NOT BREAK.
+
+---
+
+## CLIENT ID SYSTEM
+
+### 25. Change Client ID Format
+
+Current:
+
+#OT-0002
+
+New format:
+
+Use business prefix.
+
+Rule:
+
+* First name of business + last letter
+
+Example:
+
+OneTailor → OT
+Fashion Hub → FH
+
+Then:
+
+#OT-0002
+#FH-0002
+
+---
+
+### 26. BrandKit Client Prefix
+
+In BrandKit add setting:
+
+Client ID Prefix
+
+Business owner can manually set custom prefix.
+
+This overrides auto-generated prefix.
+
+---
+
+## FINAL RULES
+
+* No breaking existing working functionality
+* Preserve all flows
+* Debug before changing architecture
+* Maintain backward compatibility
+* Update README with protected flows:
+
+  * Premium flow rules
+  * Working save/download/share card functions
+  * Never bypass pre-unlock before premium-details
+
+
+Add a new PREMIUM ONLY feature to Measurement Card Generator called **Card Styles**.
+
+Currently users can only change **Color Themes**.
+
+We now want to introduce **Card Styles (Design Variations)** in addition to Color Themes.
+
+Do NOT remove the existing Theme system.
+
+This is a new separate layer.
+
+---
+
+## NEW FEATURE STRUCTURE
+
+Current:
+
+* Theme = changes colors only
+
+New:
+
+* Theme = controls colors
+* Card Style = controls design/layout appearance
+
+Example:
+
+User chooses:
+
+Theme:
+
+* Dark Blue
+* Gold
+* Emerald
+
+Then separately chooses:
+
+Card Style:
+
+* Executive
+* Luxury
+* Modern
+* Minimal
+* Premium Business
+* Fashion Studio
+* Elegant Card
+
+So same data, different visual presentation.
+
+---
+
+## PREMIUM ONLY FEATURE
+
+Card Styles must ONLY be available to Premium users.
+
+Logic:
+
+If user is NOT premium:
+
+* Show Card Styles section locked
+* Show premium badge/icon
+* Disable interaction
+
+Example UI:
+
+CARD STYLES (Premium Only)
+
+🔒 Upgrade to Premium to unlock creative premium card designs
+
+Free users:
+
+* Can only use normal color themes
+
+Premium users:
+
+* Can access all card styles
+
+Do NOT affect existing theme system.
+
+---
+
+## CARD STYLES SHOULD BE CREATIVE DESIGNS
+
+Do NOT simply rearrange text slightly.
+
+Each style should feel visually different.
+
+Each style must have unique layout structure.
+
+Examples:
+
+1. EXECUTIVE STYLE
+
+* Clean corporate layout
+* Structured sections
+* Professional spacing
+* Premium business appearance
+
+2. LUXURY STYLE
+
+* Premium spacing
+* Elegant typography
+* Decorative separators
+* High-end fashion look
+
+3. MODERN STYLE
+
+* Contemporary card layout
+* Large bold measurement numbers
+* Stylish positioning
+* App-like clean feel
+
+4. MINIMAL STYLE
+
+* Simple whitespace design
+* Elegant clean spacing
+* Very clean professional appearance
+
+5. FASHION STUDIO STYLE
+
+* Tailor/fashion focused design
+* Editorial style layout
+* Premium boutique feel
+
+6. ELEGANT STYLE
+
+* Sophisticated premium card design
+* Balanced spacing
+* Premium visual hierarchy
+
+The user should clearly feel each card style is different.
+
+---
+
+## AUTO BRAND COLOR INTEGRATION
+
+Card Styles should automatically pull colors from Brand Kit.
+
+We already have business Brand Kit.
+
+Use brand colors automatically.
+
+Example:
+
+If Brand Kit primary color is:
+
+Gold + Black
+
+Then card style automatically adapts.
+
+If Brand Kit is:
+
+Blue + White
+
+Then design adapts.
+
+If Brand Kit is:
+
+Green + Cream
+
+Then design adapts.
+
+Goal:
+
+Every generated card should feel branded to that business automatically.
+
+Do not use hardcoded colors only.
+
+Use business Brand Kit colors dynamically.
+
+---
+
+## THEME + STYLE MUST WORK TOGETHER
+
+System must support both.
+
+Example:
+
+Theme controls:
+
+* Main color palette
+* Background colors
+* Accent colors
+
+Card Style controls:
+
+* Layout design
+* Visual arrangement
+* Decorative styling
+* Typography hierarchy
+* Borders
+* Section structure
+
+So:
+
+Theme = Color identity
+
+Style = Design identity
+
+They must work together.
+
+---
+
+## UI CHANGES
+
+Add new section below Theme selector.
+
+Section:
+
+CARD STYLES
+
+Show style preview cards.
+
+Example:
+
+[ Executive ]
+[ Luxury ]
+[ Modern ]
+[ Elegant ]
+[ Fashion Studio ]
+
+Premium users:
+
+* Can click and select
+
+Free users:
+
+* Locked state
+* Premium badge visible
+
+Selected style updates card preview instantly.
+
+---
+
+## IMPORTANT
+
+This feature is PREMIUM ONLY.
+
+Do NOT remove current color theme system.
+
+Do NOT replace existing card generator logic.
+
+Add Card Styles as an additional design layer.
+
+Each style must look genuinely different and visually attractive.
+
+Goal:
+
+Premium users should feel they are getting professionally designed branded measurement cards, not just color changes.

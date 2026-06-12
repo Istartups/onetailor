@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import { 
   Loader2, 
   Save, 
@@ -44,6 +45,8 @@ import {
   Mail,
   Eye,
   EyeOff,
+  Send,
+  CheckCircle,
 } from "lucide-react";
 
 interface PaymentInfo {
@@ -80,6 +83,63 @@ interface PaymentInfo {
   emailFromName: string;
   emailFromAddr: string;
   resendApiKey: string;
+}
+
+function TestEmailButton() {
+  const [to, setTo] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const { toast } = useToast();
+
+  const send = async () => {
+    if (!to) return;
+    setSending(true);
+    try {
+      const res = await authFetch("/api/admin/test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSent(true);
+        toast({ title: "Test Email Sent", description: `Delivered to ${to}` });
+        setTimeout(() => setSent(false), 4000);
+      } else {
+        toast({ variant: "destructive", title: "Send Failed", description: data.message });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Error", description: "Could not reach server" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+      <p className="text-[10px] font-black uppercase tracking-widest text-primary/70">Test Email Delivery</p>
+      <div className="flex gap-2">
+        <Input
+          type="email"
+          placeholder="your@email.com"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          className="h-10 rounded-xl bg-muted/20 border-border flex-1"
+        />
+        <Button
+          type="button"
+          onClick={send}
+          disabled={sending || !to}
+          className="h-10 px-4 rounded-xl gap-2 shrink-0"
+          variant={sent ? "default" : "outline"}
+        >
+          {sending ? <Loader2 size={14} className="animate-spin" /> : sent ? <CheckCircle size={14} /> : <Send size={14} />}
+          {sending ? "Sending…" : sent ? "Sent!" : "Send Test"}
+        </Button>
+      </div>
+      <p className="text-[10px] text-muted-foreground">Sends a test email using the active provider (Resend or SMTP). Save settings first.</p>
+    </div>
+  );
 }
 
 export default function Settings() {
@@ -412,61 +472,6 @@ export default function Settings() {
                       </div>
                     </div>
 
-                    <div className="space-y-2 col-span-1 md:col-span-2">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Device Pricing Tiers</label>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground px-1">1 Device</label>
-                          <div className="relative">
-                            <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary/40" />
-                            <Input
-                              value={settings.price || ""}
-                              onChange={(e) => setSettings({...settings, price: e.target.value})}
-                              placeholder={`${currencySymbol}15,000`}
-                              className="h-11 pl-9 rounded-xl bg-muted/30 border-border font-bold text-foreground text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground px-1">2 Devices</label>
-                          <div className="relative">
-                            <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary/40" />
-                            <Input
-                              value={settings.price2Device || ""}
-                              onChange={(e) => setSettings({...settings, price2Device: e.target.value})}
-                              placeholder={`${currencySymbol}25,000`}
-                              className="h-11 pl-9 rounded-xl bg-muted/30 border-border font-bold text-foreground text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground px-1">3 Devices</label>
-                          <div className="relative">
-                            <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary/40" />
-                            <Input
-                              value={settings.price3Device || ""}
-                              onChange={(e) => setSettings({...settings, price3Device: e.target.value})}
-                              placeholder={`${currencySymbol}35,000`}
-                              className="h-11 pl-9 rounded-xl bg-muted/30 border-border font-bold text-foreground text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground px-1">5 Devices</label>
-                          <div className="relative">
-                            <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary/40" />
-                            <Input
-                              value={settings.price5Device || ""}
-                              onChange={(e) => setSettings({...settings, price5Device: e.target.value})}
-                              placeholder={`${currencySymbol}50,000`}
-                              className="h-11 pl-9 rounded-xl bg-muted/30 border-border font-bold text-foreground text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground px-1">Leave blank to fall back to the 1-device price.</p>
-                    </div>
-
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Measurement Limit (Free Users)</label>
                       <Input 
@@ -480,55 +485,11 @@ export default function Settings() {
 
                   <div className="border-t border-border/50 pt-6 space-y-4">
                     <h3 className="text-sm font-bold text-primary flex items-center gap-2">
-                      <Building2 className="w-4 h-4" /> Payment Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Bank Name</label>
-                        <Input 
-                          value={settings.bankName || ""}
-                          onChange={(e) => setSettings({...settings, bankName: e.target.value})}
-                          className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Account Number</label>
-                        <Input 
-                          value={settings.accountNumber || ""}
-                          onChange={(e) => setSettings({...settings, accountNumber: e.target.value})}
-                          className="h-12 rounded-xl bg-muted/30 border-border font-mono font-bold text-foreground"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Account Name</label>
-                        <Input 
-                          value={settings.accountName || ""}
-                          onChange={(e) => setSettings({...settings, accountName: e.target.value})}
-                          className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Payment Link (Direct Pay)</label>
-                        <div className="relative">
-                          <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/40" />
-                          <Input 
-                            value={settings.paymentLink || ""}
-                            onChange={(e) => setSettings({...settings, paymentLink: e.target.value})}
-                            placeholder="https://paystack.com/pay/..."
-                            className="h-12 pl-11 rounded-xl bg-muted/30 border-border font-bold text-foreground"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-border/50 pt-6 space-y-4">
-                    <h3 className="text-sm font-bold text-primary flex items-center gap-2">
-                      <Zap className="w-4 h-4" /> Unlock Premium Configuration
+                      <Zap className="w-4 h-4" /> Unlock OneTailor Pro Configuration
                     </h3>
                     <div className="grid grid-cols-1 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Unlock Premium Message</label>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Pro Upgrade Popup Message</label>
                         <Textarea 
                           value={settings.proUpgradeMessage || ""}
                           onChange={(e) => setSettings({...settings, proUpgradeMessage: e.target.value})}
@@ -779,6 +740,8 @@ export default function Settings() {
                   smtpPort: settings.smtpPort,
                   smtpSecure: settings.smtpSecure,
                   smtpUser: settings.smtpUser,
+                  isSmtpEnabled: (settings as any).isSmtpEnabled ?? true,
+                  isResendEnabled: (settings as any).isResendEnabled ?? true,
                 };
                 if (settings.smtpPass?.trim()) payload.smtpPass = settings.smtpPass;
                 if (settings.resendApiKey?.trim()) payload.resendApiKey = settings.resendApiKey;
@@ -800,12 +763,24 @@ export default function Settings() {
               }
             }} className="space-y-6">
 
+              {/* Test Email */}
+              <TestEmailButton />
+
               {/* Resend Section */}
               <Card className="rounded-3xl border-border bg-card overflow-hidden">
                 <CardHeader className="px-6 pt-6 pb-2">
-                  <CardTitle className="text-base font-black flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" /> Resend (Recommended)
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-black flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-primary" /> Resend (Recommended)
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Enabled</span>
+                      <Switch
+                        checked={(settings as any).isResendEnabled ?? true}
+                        onCheckedChange={(v) => setSettings({ ...settings, isResendEnabled: v } as any)}
+                      />
+                    </div>
+                  </div>
                   <p className="text-xs text-muted-foreground">Easiest setup. Get an API key from resend.com — free tier sends up to 3,000 emails/month.</p>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -832,9 +807,18 @@ export default function Settings() {
               {/* SMTP Section */}
               <Card className="rounded-3xl border-border bg-card overflow-hidden">
                 <CardHeader className="px-6 pt-6 pb-2">
-                  <CardTitle className="text-base font-black flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-primary" /> SMTP (Custom Mail Server)
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-black flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-primary" /> SMTP (Custom Mail Server)
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Enabled</span>
+                      <Switch
+                        checked={(settings as any).isSmtpEnabled ?? true}
+                        onCheckedChange={(v) => setSettings({ ...settings, isSmtpEnabled: v } as any)}
+                      />
+                    </div>
+                  </div>
                   <p className="text-xs text-muted-foreground">Use your own mail server, Gmail SMTP, or any transactional provider. Used only if no Resend key is configured.</p>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
