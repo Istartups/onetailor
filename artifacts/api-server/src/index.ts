@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { bootstrapSecrets } from "./lib/secretBootstrap";
 import { validateStartupEnvironment } from "./lib/startupValidation";
 import { db, adminsTable, paymentSettingsTable, whatsappTemplatesTable } from "@workspace/db";
 import { sql } from "drizzle-orm";
@@ -21,6 +22,10 @@ async function startServer() {
     console.error(`🔥 ERROR: Invalid PORT "${rawPort}"`);
     process.exit(1);
   }
+
+  // ─── Auto-generate & persist secrets (DB must be reachable first) ────────────
+  // Runs before validateStartupEnvironment so generated values are visible to it.
+  await bootstrapSecrets();
 
   // ─── Security validation — must pass before any DB/network work ─────────────
   validateStartupEnvironment();

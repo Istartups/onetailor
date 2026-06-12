@@ -85,6 +85,10 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
 localPort = 8081
 externalPort = 80
 
@@ -99,6 +103,8 @@ externalPort = 3002
 [userenv]
 
 [userenv.shared]
+API_PORT = "3000"
+ADMIN_PORT = "3002"
 
 [nix]
 channel = "stable-25_05"

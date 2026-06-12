@@ -93,11 +93,11 @@ export default defineConfig({
     } : {},
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:3000",
+        target: `http://127.0.0.1:${process.env.API_PORT || 3000}`,
         changeOrigin: true,
       },
       "/admin-portal": {
-        target: "http://127.0.0.1:3002",
+        target: `http://127.0.0.1:${process.env.ADMIN_PORT || 3002}`,
         changeOrigin: true,
         ws: true,
       },
