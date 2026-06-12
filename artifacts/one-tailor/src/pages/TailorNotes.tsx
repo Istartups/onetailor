@@ -35,6 +35,23 @@ type FilterType = "all" | "general" | "client" | "pinned" | "archived";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function mapNote(row: any): Note {
+  return {
+    id: row.id,
+    deviceId: row.device_id ?? row.deviceId ?? "",
+    title: row.title ?? "",
+    content: row.content ?? "",
+    customerId: row.customer_id ?? row.customerId ?? null,
+    customerName: row.customer_name ?? row.customerName ?? null,
+    tags: row.tags ?? null,
+    isPinned: row.is_pinned ?? row.isPinned ?? false,
+    isArchived: row.is_archived ?? row.isArchived ?? false,
+    imageData: row.image_data ?? row.imageData ?? null,
+    createdAt: row.created_at ?? row.createdAt ?? "",
+    updatedAt: row.updated_at ?? row.updatedAt ?? "",
+  };
+}
+
 function safeTimeAgo(dateStr: string | null | undefined): string {
   if (!dateStr) return "No date";
   const d = new Date(dateStr);
@@ -386,7 +403,7 @@ export default function TailorNotes() {
       if (filter === "pinned") params.set("pinned", "true");
       if (search) params.set("search", search);
       const res = await fetch(`/api/notes?${params}`);
-      if (res.ok) setNotes(await res.json());
+      if (res.ok) setNotes((await res.json()).map(mapNote));
     } catch { /* silent */ }
     finally { setLoading(false); }
   };
@@ -430,6 +447,9 @@ export default function TailorNotes() {
           body: JSON.stringify({ deviceId, ...data }),
         });
         if (res.ok) {
+          const raw = await res.json();
+          const saved = mapNote(raw);
+          setNotes(prev => [saved, ...prev]);
           toast({ title: "Saved", description: "Note created." });
           setView("list"); await fetchNotes();
         } else {

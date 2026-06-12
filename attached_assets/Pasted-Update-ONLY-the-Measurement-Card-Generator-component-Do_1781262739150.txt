@@ -1,0 +1,125 @@
+Update ONLY the Measurement Card Generator component. Do NOT touch unrelated parts of the app.
+
+Apply the following surgical fixes and UI improvements carefully.
+
+REDESIGN THE CARD HEADER LAYOUT
+
+The current card header layout is poorly structured.
+
+Current layout:
+
+Logo on left
+Business Name beside logo
+Measurement title (example: SENATOR / NATIVE MEASUREMENT) directly below business name
+Business contact details placed underneath
+
+This layout is wrong.
+
+Replace the header with a clean 3-column layout.
+
+New structure:
+
+COLUMN 1 (Left)
+
+Business Logo only
+
+COLUMN 2 (Center — wider column)
+
+Business Name (large and bold)
+Full Business Details directly under business name
+
+Business details must include:
+
+Phone Number
+Full Address
+
+Then ALL social handles on ONE SINGLE LINE (not separate lines)
+
+Example:
+
+Instagram: @brandname | WhatsApp: 08123456789 | Facebook: brandname | TikTok: @brandname
+
+Rules:
+
+If a social handle is empty or not submitted, do not show it
+Put all available social handles together on one horizontal line
+Do not stack them vertically
+
+COLUMN 3 (Right)
+
+Client ID
+
+Example:
+
+CLIENT ID
+#OT-0005
+
+MOVE MEASUREMENT TITLE
+
+Currently:
+
+SENATOR / NATIVE MEASUREMENT
+
+is shown directly under the business name.
+
+This is wrong.
+
+Remove it from the business name section.
+
+Move it BELOW the entire 3-column business header section.
+
+New structure:
+
+[ Logo ] [ Business Details ] [ Client ID ]
+
+SENATOR / NATIVE MEASUREMENT
+
+This measurement title should span full width.
+
+Make it bold, uppercase, and visually separated with spacing.
+
+FIX IMAGE FIELD INSIDE MEASUREMENTS
+
+Some measurement records contain images.
+
+Currently image fields are being rendered as plain text URL inside the measurements list.
+
+Example bad behavior:
+
+styleImage → https://.....
+
+This is wrong.
+
+Detect image-related fields inside measurement JSON.
+
+Possible fields:
+
+image
+styleImage
+photo
+designImage
+referenceImage
+
+Requirements:
+
+Remove these fields from the measurement key/value list
+Do NOT render image URLs as text
+
+If an image exists:
+
+Render a proper image preview card ABOVE the measurement values section.
+
+Example order:
+
+SENATOR / NATIVE MEASUREMENT
+
+[ IMAGE PREVIEW IF AVAILABLE ]
+
+Then measurement values below.
+
+Image styling:
+
+Full width
+Rounded corners
+object-cover
+Professional clean card appearance

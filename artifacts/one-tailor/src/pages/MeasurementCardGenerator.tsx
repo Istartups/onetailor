@@ -135,7 +135,31 @@ export default function MeasurementCardGenerator() {
     c.phone.includes(search)
   );
 
-  const entries = selectedRecord ? Object.entries(parseMeasurements(selectedRecord.values)) : [];
+  const IMAGE_FIELDS = ["image", "styleimage", "photo", "designimage", "referenceimage"];
+
+  const allEntries = selectedRecord ? Object.entries(parseMeasurements(selectedRecord.values)) : [];
+
+  const previewImageUrl: string | null = (() => {
+    for (const [k, v] of allEntries) {
+      if (IMAGE_FIELDS.includes(k.toLowerCase()) && typeof v === "string" && v.startsWith("http")) return v;
+    }
+    return null;
+  })();
+
+  const entries = allEntries.filter(([k, v]) => {
+    if (IMAGE_FIELDS.includes(k.toLowerCase())) return false;
+    if (typeof v === "string" && (v.startsWith("http://") || v.startsWith("https://") || v.startsWith("data:image"))) return false;
+    return true;
+  });
+
+  const socials = businessProfile?.socials;
+  const socialLine = [
+    socials?.instagram ? `Instagram: @${socials.instagram}` : null,
+    socials?.whatsapp  ? `WhatsApp: ${socials.whatsapp}` : null,
+    socials?.facebook  ? `Facebook: ${socials.facebook}` : null,
+    socials?.tiktok    ? `TikTok: @${socials.tiktok}` : null,
+    socials?.youtube   ? `YouTube: ${socials.youtube}` : null,
+  ].filter(Boolean).join(" | ");
 
   // ─────────────────────────────────────────────────────────────────────────────
   // RENDER
@@ -254,46 +278,85 @@ export default function MeasurementCardGenerator() {
                   <img src={appLogo || "/onetailor-logo.png"} className="w-full h-full object-contain" />
                 </div>
 
-                {/* Header */}
-                <div className={`flex flex-col gap-4 pb-6 border-b ${theme.border}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-16 h-16 rounded-2xl overflow-hidden border ${theme.border} bg-white shrink-0 shadow-sm p-1`}>
-                        <img src={appLogo || "/onetailor-logo.png"} className="w-full h-full object-contain" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <h2 className="text-xl font-black uppercase tracking-tight leading-tight">{businessProfile?.name || appName}</h2>
-                        <p className="text-[10px] font-bold opacity-60 uppercase tracking-[0.15em]">{selectedRecord.category} Measurement</p>
-                      </div>
+                {/* ── 3-COLUMN HEADER ── */}
+                <div className={`pb-5 border-b ${theme.border}`}>
+                  <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-start">
+
+                    {/* Col 1 — Logo */}
+                    <div className={`w-16 h-16 rounded-2xl overflow-hidden border ${theme.border} bg-white shrink-0 shadow-sm p-1`}>
+                      <img src={appLogo || "/onetailor-logo.png"} className="w-full h-full object-contain" />
                     </div>
-                    <div className="text-right">
-                       <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Client ID</p>
-                       <p className="text-[11px] font-mono font-bold">#OT-{String(selectedCustomer.id).padStart(4, '0')}</p>
+
+                    {/* Col 2 — Business Info */}
+                    <div className="min-w-0 space-y-1">
+                      <h2 className="text-lg font-black uppercase tracking-tight leading-tight truncate">
+                        {businessProfile?.name || appName}
+                      </h2>
+                      {businessProfile?.phone && (
+                        <p className="text-[10px] font-bold opacity-70 flex items-center gap-1">
+                          <Banknote size={10} className="opacity-50 shrink-0" />
+                          {businessProfile.phone}
+                        </p>
+                      )}
+                      {businessProfile?.address && (
+                        <p className="text-[10px] font-bold opacity-70 flex items-start gap-1">
+                          <MapPin size={10} className="opacity-50 shrink-0 mt-0.5" />
+                          <span className="leading-tight">{businessProfile.address}</span>
+                        </p>
+                      )}
+                      {socialLine && (
+                        <p className="text-[9px] font-bold opacity-50 leading-relaxed pt-0.5">
+                          {socialLine}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-1 text-[10px] font-bold opacity-80">
-                    <p className="flex items-center gap-2"><Banknote size={12} className="opacity-50" /> {businessProfile?.phone}</p>
-                    <p className="flex items-center gap-2"><MapPin size={12} className="opacity-50" /> {businessProfile?.address}</p>
-                    <p className="flex items-center gap-2"><User size={12} className="opacity-50" /> @{businessProfile?.name?.replace(/\s+/g, '').toLowerCase() || "onetailor"}</p>
+
+                    {/* Col 3 — Client ID */}
+                    <div className="text-right shrink-0">
+                      <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Client ID</p>
+                      <p className="text-[13px] font-mono font-black mt-0.5">
+                        #OT-{String(selectedCustomer.id).padStart(4, '0')}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Client & Record Details */}
+                {/* ── MEASUREMENT TITLE (full-width, below header) ── */}
+                <div className={`py-3 border-b ${theme.border}`}>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-center opacity-80">
+                    {selectedRecord.category} — {selectedRecord.label}
+                  </p>
+                </div>
+
+                {/* ── CLIENT & DATE ROW ── */}
                 <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Customer</p>
-                    <h4 className="text-lg font-black leading-none">{selectedCustomer.name}</h4>
+                    <h4 className="text-base font-black leading-none">{selectedCustomer.name}</h4>
                     <p className="text-[11px] font-bold opacity-60">{selectedCustomer.phone}</p>
                   </div>
-                  <div className="text-right space-y-1">
+                  <div className="text-right space-y-0.5">
                     <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Date Generated</p>
                     <p className="text-[11px] font-bold">{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-                    <p className="text-[9px] opacity-60 font-bold uppercase">{selectedRecord.label}</p>
                   </div>
                 </div>
 
-                {/* Measurements Table */}
+                {/* ── STYLE IMAGE PREVIEW (if any) ── */}
+                {previewImageUrl && (
+                  <div className={`rounded-2xl overflow-hidden border ${theme.border} shadow-sm`}>
+                    <img
+                      src={previewImageUrl}
+                      alt="Style Reference"
+                      className="w-full object-cover max-h-52"
+                      crossOrigin="anonymous"
+                    />
+                    <div className={`px-3 py-1.5 border-t ${theme.border}`}>
+                      <p className="text-[9px] font-black uppercase tracking-widest opacity-40 text-center">Style Reference</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── MEASUREMENTS TABLE ── */}
                 <div className="grid grid-cols-2 gap-x-12 gap-y-3 py-2">
                   {entries.map(([k, v]) => (
                     <div key={k} className={`flex justify-between items-baseline border-b ${theme.border} pb-1.5`}>
