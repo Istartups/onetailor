@@ -72,3 +72,56 @@ export const optionalUserAuth = (req: AuthUserRequest, res: Response, next: Next
   }
   next();
 };
+
+// ─── Follow-Up Agent Auth ────────────────────────────────────────────────────
+
+export interface CRMRequest extends Request {
+  crmUserId?: number;
+  crmUserRole?: "admin" | "agent";
+  crmUserName?: string;
+}
+
+/**
+ * Accepts either an admin token or a follow-up agent token.
+ * Sets req.crmUserRole = "admin" | "agent" and req.crmUserId accordingly.
+ */
+export const authenticateCRM = (req: CRMRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    res.status(401).json({ message: "Unauthorized: No token provided" });
+    return;
+  }
+
+  // Try admin token first
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { adminId?: number; agentId?: number; role?: string };
+    if (decoded.adminId) {
+      req.crmUserId = decoded.adminId;
+      req.crmUserRole = "admin";
+      next();
+      return;
+    }
+    if (decoded.agentId) {
+      req.crmUserId = decoded.agentId;
+      req.crmUserRole = "agent";
+      req.crmUserName = (decoded as any).name;
+      next();
+      return;
+    }
+  } catch {
+    // Not a valid admin/agent token — fall through to reject
+  }
+
+  res.status(403).json({ message: "Forbidden: Invalid or expired token" });
+};
+
+/** Require admin role specifically (within CRM context) */
+export const requireAdminRole = (req: CRMRequest, res: Response, next: NextFunction) => {
+  if (req.crmUserRole !== "admin") {
+    res.status(403).json({ message: "Forbidden: Admin access required" });
+    return;
+  }
+  next();
+};

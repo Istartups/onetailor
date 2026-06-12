@@ -5,5 +5,6 @@
 - [Drizzle dynamic query typing](drizzle-dynamic-query.md) — use `let query: any =` for variables that will have `.where()` appended conditionally; Drizzle's inferred types omit `.where` after certain chaining patterns.
 - [Shimmed packages type declarations](shimmed-packages.md) — @ffmpeg/ffmpeg, @ffmpeg/util, @xenova/transformers are shimmed; declare modules in `artifacts/one-tailor/src/global.d.ts`.
 - [Xenova shim must export env](xenova-shim-env.md) — xenova-transformers.ts shim must export `env` as a plain object and all classes (AutoModel, AutoProcessor, RawImage) or the PWA build fails.
-- [Admin portal authFetch](admin-authfetch.md) — all admin portal pages use `authFetch` from `@/lib/authFetch` (auto-attaches token + redirects on 401/403); never use raw fetch + localStorage token in admin pages.
+- [Admin portal authFetch](admin-authfetch.md) — authFetch in admin portal tries admin_token first, falls back to agent_token. isAdmin()/isAgent() helpers available. Agent redirect goes to /agent-login on 401/403.
 - [Paystack secret key save guard](paystack-secret-key-guard.md) — PUT /api/payment-info must skip updating paystackSecretKey if value is empty; public GET strips the key so admin save would wipe it otherwise.
+- [CRM system architecture](crm-architecture.md) — CRM auth, token strategy, lead scoring, table structure, and agent role for the full lead CRM system.

@@ -25,6 +25,14 @@ export const usersTable = pgTable("users", {
   lastLoginAt: timestamp("last_login_at"),
   passwordResetToken: text("password_reset_token"),
   passwordResetExpiry: timestamp("password_reset_expiry"),
+
+  // CRM lead tracking
+  whatsappNumber: text("whatsapp_number"),
+  leadScore: integer("lead_score").default(0),
+  leadStatus: text("lead_status").default("new"),
+  assignedAgentId: integer("assigned_agent_id"),
+  toolsViewed: text("tools_viewed"),    // JSON array of tool IDs
+  toolsUsedList: text("tools_used_list"), // JSON array of tool IDs with timestamps
 });
 
 export const adminsTable = pgTable("admins", {
@@ -34,12 +42,20 @@ export const adminsTable = pgTable("admins", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const followUpAgentsTable = pgTable("follow_up_agents", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const licensesTable = pgTable("licenses", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),
   key: text("key").notNull().unique(),
-  // status: "active" | "suspended" | "revoked"
-  // Note: "pending" licenses no longer created — use premiumRequestsTable instead
   status: text("status").notNull().default("active"),
   licenseType: text("license_type").default("one_tailor"),
   customerName: text("customer_name"),
@@ -50,24 +66,13 @@ export const licensesTable = pgTable("licenses", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-/**
- * Tracks premium upgrade intent per user per product.
- * Created at account registration. Transitions through:
- *   pending → payment_submitted → approved / rejected
- *
- * A license record is ONLY created when status reaches "approved".
- * This keeps licensesTable clean — only real, paid licenses live there.
- *
- * Multi-product ready: one row per (userId, licenseType) combination.
- */
 export const premiumRequestsTable = pgTable("premium_requests", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   licenseType: text("license_type").notNull().default("one_tailor"),
-  // pending | payment_submitted | approved | rejected | cancelled
   status: text("status").notNull().default("pending"),
-  paymentId: integer("payment_id"),   // set when payment submitted
-  licenseId: integer("license_id"),   // set when approved
+  paymentId: integer("payment_id"),
+  licenseId: integer("license_id"),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -117,6 +122,12 @@ export const paymentSettingsTable = pgTable("payment_settings", {
   pwaDescription: text("pwa_description"),
   pwaThemeColor: text("pwa_theme_color"),
   pwaBackgroundColor: text("pwa_background_color"),
+  // CallMeBot / automation settings
+  callmebotPhone: text("callmebot_phone"),
+  callmebotApiKey: text("callmebot_api_key"),
+  followup24hEnabled: boolean("followup_24h_enabled").default(true),
+  followup48hEnabled: boolean("followup_48h_enabled").default(true),
+  followup72hEnabled: boolean("followup_72h_enabled").default(false),
 });
 
 export const businessProfilesTable = pgTable("business_profiles", {
@@ -125,7 +136,7 @@ export const businessProfilesTable = pgTable("business_profiles", {
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   email: text("email").notNull(),
-  address: text("address").notNull(), // combined display string
+  address: text("address").notNull(),
   city: text("city"),
   state: text("state"),
   landmark: text("landmark"),
@@ -200,5 +211,38 @@ export const auditLogsTable = pgTable("audit_logs", {
   entityType: text("entity_type").notNull(),
   entityId: integer("entity_id"),
   details: text("details"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ─── CRM Tables ───────────────────────────────────────────────────────────────
+
+export const leadInteractionsTable = pgTable("lead_interactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  agentId: integer("agent_id"),         // null = admin or system
+  agentType: text("agent_type").default("admin"), // admin/agent/system/auto
+  agentName: text("agent_name"),
+  type: text("type").notNull().default("note"), // note/whatsapp/call/email/auto/system
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const whatsappTemplatesTable = pgTable("whatsapp_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const followUpTasksTable = pgTable("follow_up_tasks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  agentId: integer("agent_id"),
+  taskType: text("task_type").notNull(), // 24h/48h/72h
+  status: text("status").notNull().default("pending"), // pending/completed/dismissed
+  triggerAt: timestamp("trigger_at").notNull(),
+  completedAt: timestamp("completed_at"),
+  notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

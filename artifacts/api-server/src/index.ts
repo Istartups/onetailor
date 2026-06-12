@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { validateStartupEnvironment } from "./lib/startupValidation";
-import { db, adminsTable, paymentSettingsTable } from "@workspace/db";
+import { db, adminsTable, paymentSettingsTable, whatsappTemplatesTable } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -332,6 +332,81 @@ async function startServer() {
       )
     `);
 
+    // ─── CRM Tables ──────────────────────────────────────────────────────────
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS follow_up_agents (
+        id SERIAL PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        phone TEXT,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS lead_interactions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        agent_id INTEGER,
+        agent_type TEXT DEFAULT 'admin',
+        agent_name TEXT,
+        type TEXT NOT NULL DEFAULT 'note',
+        content TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS whatsapp_templates (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS follow_up_tasks (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        agent_id INTEGER,
+        task_type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        trigger_at TIMESTAMP NOT NULL,
+        completed_at TIMESTAMP,
+        notes TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // CRM columns on existing tables
+    const crmUserColumns = [
+      { name: "whatsapp_number",   type: "TEXT" },
+      { name: "lead_score",        type: "INTEGER DEFAULT 0" },
+      { name: "lead_status",       type: "TEXT DEFAULT 'new'" },
+      { name: "assigned_agent_id", type: "INTEGER" },
+      { name: "tools_viewed",      type: "TEXT" },
+      { name: "tools_used_list",   type: "TEXT" },
+    ];
+    for (const col of crmUserColumns) {
+      try { await db.execute(sql.raw(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`)); } catch {}
+    }
+
+    const crmSettingsColumns = [
+      { name: "callmebot_phone",        type: "TEXT" },
+      { name: "callmebot_api_key",      type: "TEXT" },
+      { name: "followup_24h_enabled",   type: "BOOLEAN DEFAULT TRUE" },
+      { name: "followup_48h_enabled",   type: "BOOLEAN DEFAULT TRUE" },
+      { name: "followup_72h_enabled",   type: "BOOLEAN DEFAULT FALSE" },
+    ];
+    for (const col of crmSettingsColumns) {
+      try { await db.execute(sql.raw(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`)); } catch {}
+    }
+
     logger.info("Database tables verified.");
 
     // ─── Initial Data Setup ───────────────────────────────────────────────────
@@ -360,6 +435,26 @@ async function startServer() {
         proUpgradeMessage: "Unlock Premium to access all professional tools.",
         proUpgradeButtonText: "⭐ Unlock Premium",
       });
+    }
+
+    // Seed default WhatsApp templates if none exist
+    const templateCheck = await db.select().from(whatsappTemplatesTable).limit(1);
+    if (templateCheck.length === 0) {
+      await db.insert(whatsappTemplatesTable).values([
+        {
+          name: "Welcome Follow-Up",
+          content: "Hello {{name}}, thank you for joining OneTailor Toolkit! We noticed you haven't completed your upgrade yet. We'd love to help you unlock all the professional tools. Can we assist you?",
+        },
+        {
+          name: "Upgrade Reminder",
+          content: "Hello {{name}}, your tailoring toolkit is ready! Upgrade today to unlock cloud backup, order management, and all premium tools. Reply YES and we'll guide you through it.",
+        },
+        {
+          name: "Final Follow-Up",
+          content: "Hello {{name}}, this is our final gentle reminder about your OneTailor account. Premium features are still waiting for you. Upgrade now to grow your tailoring business. We're here to help!",
+        },
+      ]);
+      logger.info("Default WhatsApp templates seeded.");
     }
   } catch (err) {
     logger.error({ err }, "Failed to verify/create database tables or initial data");

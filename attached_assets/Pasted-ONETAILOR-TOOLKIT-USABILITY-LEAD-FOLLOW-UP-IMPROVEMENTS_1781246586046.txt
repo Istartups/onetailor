@@ -1,0 +1,280 @@
+ONETAILOR TOOLKIT - USABILITY & LEAD FOLLOW-UP IMPROVEMENTS
+
+==================================================
+
+1. RECENTLY USED TOOLS
+   ==================================================
+
+Add a smart "Recently Used" section to the Home Dashboard.
+
+Requirements:
+
+* Track every tool opened by a user.
+* Display the last 3-4 tools used.
+* Most recent tool appears first.
+* One tap opens the tool again.
+* Persist history per user account.
+* If user has no history, hide section.
+
+Example:
+
+Recently Used
+
+1. Measurement Checker
+2. Fabric Requirement
+3. Price Smartly
+4. Card Generator
+
+This should reduce navigation friction and improve tool engagement.
+
+==================================================
+2. PRE-UNLOCK LEAD VISIBILITY
+=============================
+
+All information entered during the pre-unlock stage must be visible to Admin.
+
+Capture and display:
+
+* Full Name
+* Phone Number
+* WhatsApp Number
+* Email
+* Business Name
+* Business Type
+* City
+* Registration Date
+* Last Activity Date
+* Tools Viewed
+* Tools Used
+* Conversion Status
+* Subscription Status
+
+Do not discard any lead information.
+
+==================================================
+3. LEAD PRIORITY SCORING
+========================
+
+Create a Lead Score system.
+
+Automatically rank leads by likelihood to convert.
+
+Scoring examples:
+
+* Registered recently
+* Opened multiple tools
+* Added client records
+* Returned multiple times
+* Viewed pricing pages
+* Started upgrade process
+
+Lead score examples:
+
+Hot Lead
+Warm Lead
+Cold Lead
+
+Admin dashboard should sort by highest priority first.
+
+==================================================
+4. DATE FILTERS
+===============
+
+Add date filters for lead management.
+
+Examples:
+
+Today
+Yesterday
+Last 7 Days
+Last 30 Days
+Custom Date Range
+
+This allows filtering and follow-up by signup period.
+
+==================================================
+5. MINI CRM FOR FOLLOW-UP AGENT
+===============================
+
+Create a dedicated Follow-Up CRM module.
+
+Purpose:
+
+Allow a staff member to manage and follow up leads.
+
+Required fields:
+
+Lead Name
+Phone Number
+WhatsApp Number
+Lead Score
+Signup Date
+Last Activity
+Assigned Agent
+Status
+Notes
+
+Statuses:
+
+New
+Contacted
+Interested
+Follow-Up Needed
+Converted
+Not Interested
+
+==================================================
+6. FOLLOW-UP AGENT LOGIN
+========================
+
+Create new user role:
+
+Follow-Up Agent
+
+Permissions:
+
+Can View Leads
+Can Update Lead Status
+Can Add Notes
+Can Send WhatsApp Messages
+Can View Assigned Leads
+
+Cannot:
+
+Access Payments
+Access Licenses
+Access Settings
+Access Users
+Access Admin Configuration
+
+This is a restricted CRM-only login.
+
+==================================================
+7. INTERACTION HISTORY
+======================
+
+Every lead should have timeline history.
+
+Example:
+
+15 Jun 2026
+Lead Registered
+
+16 Jun 2026
+WhatsApp Message Sent
+
+17 Jun 2026
+Agent Called Lead
+
+18 Jun 2026
+Interested In Upgrade
+
+19 Jun 2026
+Converted
+
+Maintain complete interaction log.
+
+==================================================
+8. WHATSAPP QUICK ACTION
+========================
+
+Add WhatsApp button beside every lead.
+
+One click opens WhatsApp chat.
+
+Use configurable templates.
+
+Examples:
+
+Template 1:
+Hello {{name}}, thank you for joining OneTailor Toolkit. We noticed you have not completed your upgrade. Can we help?
+
+Template 2:
+Hello {{name}}, your tailoring toolkit account is ready. Upgrade today to unlock all professional tools.
+
+Admin should be able to create, edit and delete templates.
+
+==================================================
+9. AUTOMATED FOLLOW-UP QUEUE
+============================
+
+Create follow-up automation system.
+
+Rules:
+
+If lead has not converted after 24 hours:
+
+Create follow-up task.
+
+If lead has not converted after 48 hours:
+
+Create second follow-up task.
+
+If lead has not converted after 72 hours:
+
+Create final follow-up task.
+
+Tasks should appear in agent dashboard.
+
+==================================================
+10. CALLMEBOT INTEGRATION PREPARATION
+=====================================
+
+Prepare notification layer for future CallMeBot integration.
+
+Do not hardcode API.
+
+Create configurable provider settings.
+
+Future use case:
+
+When lead reaches follow-up threshold:
+
+Send notification to Follow-Up Agent WhatsApp.
+
+Example:
+
+New Hot Lead
+
+Name: John Doe
+Phone: 080xxxxxxx
+Lead Score: 85
+Days Since Signup: 2
+
+Admin can configure:
+
+24 Hour Reminder
+48 Hour Reminder
+72 Hour Reminder
+
+==================================================
+11. DASHBOARD WIDGETS
+=====================
+
+Admin Dashboard
+
+Show:
+
+Total Leads
+New Leads Today
+Hot Leads
+Pending Follow-Ups
+Converted Leads
+Conversion Rate
+
+Follow-Up Dashboard
+
+Show:
+
+Assigned Leads
+Today's Follow-Ups
+Overdue Follow-Ups
+Recently Converted Leads
+
+==================================================
+GOAL
+====
+
+Turn pre-unlock registrations into a structured lead pipeline.
+
+The system should function as a lightweight CRM and follow-up center that helps manually convert more leads while preparing for future WhatsApp automation.

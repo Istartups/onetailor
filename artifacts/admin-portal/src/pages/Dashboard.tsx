@@ -12,7 +12,8 @@ import {
   Moon,
   BookOpen,
   Bell,
-  Users
+  Users,
+  MessageSquare
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
 
   const menuItems = [
     { label: "Overview",        icon: LayoutDashboard, href: "/overview" },
+    { label: "Lead CRM",        icon: MessageSquare,   href: "/crm" },
     { label: "Accounts",        icon: Users,            href: "/accounts" },
     { label: "License",         icon: KeyRound,         href: "/licenses" },
     { label: "Payment",         icon: CreditCard,       href: "/payment" },

@@ -141,9 +141,8 @@ export default function Home() {
   );
 
   const displayedFavorites = favorites.slice(0, 4);
-  const filteredRecent = recentTools
-    .filter(id => !displayedFavorites.includes(id))
-    .slice(0, 4);
+  // Show last 4 used tools at the top regardless of favorites overlap
+  const quickAccessTools = recentTools.slice(0, 4);
 
   const RECOMMENDED_TOOL_IDS = [
     "customer-measurement",
@@ -160,6 +159,17 @@ export default function Home() {
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleOpen = (toolId: string, path: string) => {
     addRecentTool(toolId);
+    // Track tool use on server for lead scoring (fire-and-forget)
+    try {
+      const did = getDeviceId();
+      if (did) {
+        fetch("/api/crm/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceId: did, toolId, eventType: "use" }),
+        }).catch(() => {});
+      }
+    } catch {}
     setLocation(path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
@@ -376,6 +386,49 @@ export default function Home() {
         </div>
       </form>
 
+      {/* ── Recently Used Quick Access ─────────────────────────────────────── */}
+      {quickAccessTools.length > 0 && (
+        <section className="mb-5">
+          <div className="flex items-center justify-between mb-2.5 px-0.5">
+            <div className="flex items-center gap-2">
+              <Clock size={13} style={{ color: "hsl(43,82%,55%)" }} />
+              <p className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: "rgba(212,160,32,0.65)" }}>Recently Used</p>
+            </div>
+            <button
+              onClick={() => handleNavigate("/all-tools")}
+              className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors"
+            >
+              All Tools <ChevronRight size={10} className="inline ml-0.5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {quickAccessTools.map((id) => {
+              const tool = getToolById(id);
+              if (!tool) return null;
+              const Icon = tool.icon;
+              return (
+                <button
+                  key={id}
+                  onClick={() => handleOpen(id, tool.path)}
+                  className="flex flex-col items-center gap-2 py-3 px-1.5 rounded-2xl active:scale-[0.95] transition-all"
+                  style={{ background: "hsl(218,44%,11%)", border: `1px solid ${tool.borderColor}` }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: tool.iconBg }}
+                  >
+                    <Icon size={18} strokeWidth={2} style={{ color: tool.iconColor }} />
+                  </div>
+                  <p className="text-[10px] font-black text-center leading-tight line-clamp-2 w-full px-0.5" style={{ color: "hsl(43,25%,88%)" }}>
+                    {tool.name}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ── Client Management ─────────────────────────────────────────────── */}
       <section className="mb-8">
         <div className="flex items-center justify-between mb-3 px-1">
@@ -520,40 +573,6 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {displayedFavorites.map((id) => {
-              const tool = getToolById(id)!;
-              return (
-                <button
-                  key={id}
-                  onClick={() => handleNavigate(tool.path)}
-                  className="p-4 rounded-2xl bg-card border border-border flex flex-col gap-3 active:scale-[0.98] transition-all text-left"
-                >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: tool.iconBg, color: tool.iconColor }}>
-                    <tool.icon size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-black text-foreground line-clamp-1">{tool.name}</p>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight line-clamp-1">{tool.category}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* ── Recently Used ───────────────────────────────────────────────────── */}
-      {filteredRecent.length > 0 && (
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
-                <Clock size={16} />
-              </div>
-              <p className="text-xs font-black uppercase tracking-[0.15em] text-foreground/80">Recently Used</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {filteredRecent.map((id) => {
               const tool = getToolById(id)!;
               return (
                 <button
