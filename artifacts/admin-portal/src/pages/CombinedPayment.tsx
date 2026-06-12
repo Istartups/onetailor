@@ -56,7 +56,7 @@ interface PaymentSettings {
 
 function formatPrice(amount: number, symbol: string, code: string) {
   return new Intl.NumberFormat("en-NG", {
-    style: "currency", currency: code,
+    style: "currency", currency: code, maximumFractionDigits: 0,
   }).format(amount).replace(code, symbol);
 }
 

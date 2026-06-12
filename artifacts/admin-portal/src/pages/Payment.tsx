@@ -111,7 +111,8 @@ export default function Payment() {
   const formatPrice = (p: number) => {
     return new Intl.NumberFormat('en-NG', { 
       style: 'currency', 
-      currency: currencySettings.code 
+      currency: currencySettings.code,
+      maximumFractionDigits: 0,
     }).format(p).replace(currencySettings.code, currencySettings.symbol);
   };
 

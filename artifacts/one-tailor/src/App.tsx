@@ -117,6 +117,10 @@ function App() {
           proUpgradeMessage: data.proUpgradeMessage,
           proUpgradeLink: data.proUpgradeLink,
           proUpgradeButtonText: data.proUpgradeButtonText,
+          proUpgradeTitle: data.proUpgradeTitle,
+          pendingTitle: data.pendingTitle,
+          pendingBody: data.pendingBody,
+          pendingCTA: data.pendingCTA,
         });
         if (data.currencySymbol && data.currencyCode) {
           setCurrency(data.currencySymbol, data.currencyCode);

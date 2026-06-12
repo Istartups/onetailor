@@ -1275,7 +1275,7 @@ export default function CRM() {
   const TABS: { id: Tab; label: string; icon: React.ElementType; adminOnly?: boolean }[] = [
     { id: "leads",     label: "Leads",     icon: Users },
     { id: "tasks",     label: "Tasks",     icon: ClipboardList },
-    { id: "templates", label: "Templates", icon: MessageSquare },
+    { id: "templates", label: "Message Center", icon: MessageSquare },
     { id: "agents",    label: "Agents",    icon: UserCheck, adminOnly: true },
   ];
 

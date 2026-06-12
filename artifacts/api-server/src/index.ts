@@ -446,6 +446,14 @@ async function startServer() {
       { name: "email_from_name",        type: "TEXT" },
       { name: "email_from_addr",        type: "TEXT" },
       { name: "resend_api_key",         type: "TEXT" },
+      // Premium popup & pending banner customization
+      { name: "pro_upgrade_title",           type: "TEXT" },
+      { name: "pending_title",               type: "TEXT" },
+      { name: "pending_body",                type: "TEXT" },
+      { name: "pending_cta",                 type: "TEXT" },
+      // Admin payment notification (WhatsApp)
+      { name: "admin_notification_phone",    type: "TEXT" },
+      { name: "admin_notification_message",  type: "TEXT" },
     ];
     for (const col of crmSettingsColumns) {
       try { await db.execute(sql.raw(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`)); } catch {}

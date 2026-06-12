@@ -78,14 +78,16 @@ function ToolRow({ toolId, onClick, isFav, onFav }: { toolId: string; onClick: (
 export default function Home() {
   const [, setLocation] = useLocation();
 
-  const isPremium           = useAppStore((s) => s.isPremium);
-  const appName             = useAppStore((s) => s.appName);
-  const appLogo             = useAppStore((s) => s.appLogo);
+  const isPremium              = useAppStore((s) => s.isPremium);
+  const pendingPremiumRequest  = useAppStore((s) => s.pendingPremiumRequest);
+  const appName                = useAppStore((s) => s.appName);
+  const appLogo                = useAppStore((s) => s.appLogo);
   const favorites           = useAppStore((s) => s.favorites);
   const recentTools         = useAppStore((s) => s.recentTools);
-  const proUpgradeMessage   = useAppStore((s) => s.proUpgradeMessage);
-  const proUpgradeLink      = useAppStore((s) => s.proUpgradeLink);
+  const proUpgradeMessage    = useAppStore((s) => s.proUpgradeMessage);
+  const proUpgradeLink       = useAppStore((s) => s.proUpgradeLink);
   const proUpgradeButtonText = useAppStore((s) => s.proUpgradeButtonText);
+  const proUpgradeTitle      = useAppStore((s) => s.proUpgradeTitle);
   const toggleFavorite      = useAppStore((s) => s.toggleFavorite);
   const addRecentTool       = useAppStore((s) => s.addRecentTool);
   const deviceId            = useAppStore((s) => s.deviceId);
@@ -233,7 +235,7 @@ export default function Home() {
             <button onClick={() => setLocation("/pre-unlock")}
               className="flex items-center gap-1.5 rounded-full px-3 py-1.5 active:scale-95 transition-transform"
               style={{ background: "rgba(212,160,32,0.1)", border: "1px solid rgba(212,160,32,0.3)", color: "hsl(43,82%,60%)", fontSize: 11, fontWeight: 700 }}>
-              <ShieldCheck size={12} /> ⭐ Unlock Premium
+              <ShieldCheck size={12} /> {pendingPremiumRequest ? "⭐ Resume Upgrade" : "⭐ Unlock Pro"}
             </button>
           )}
         </div>
@@ -246,7 +248,7 @@ export default function Home() {
             <div className="p-4 flex items-center justify-between border-b border-border bg-muted/20">
               <div className="flex items-center gap-2 text-primary">
                 <Crown size={18} />
-                <h3 className="text-sm font-black uppercase tracking-wider">OneTailor Premium</h3>
+                <h3 className="text-sm font-black uppercase tracking-wider">{proUpgradeTitle || "OneTailor Pro"}</h3>
               </div>
               <button onClick={() => setShowProPopup(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-colors">
                 <X size={16} />
@@ -651,15 +653,15 @@ export default function Home() {
 
       {/* ── Premium Teaser ───────────────────────────────────────────────────── */}
       {!isPremium && (
-        <div onClick={() => setLocation("/premium-details")} className="mt-3 relative overflow-hidden p-6 rounded-[2.5rem] bg-slate-900 border border-primary/20 cursor-pointer active:scale-[0.98] transition-all group">
+        <div onClick={() => setLocation(pendingPremiumRequest ? "/pre-unlock" : "/premium-details")} className="mt-3 relative overflow-hidden p-6 rounded-[2.5rem] bg-slate-900 border border-primary/20 cursor-pointer active:scale-[0.98] transition-all group">
           <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors" />
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center border border-primary/30 group-hover:scale-110 transition-transform">
               <Crown size={28} className="text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-black text-white leading-tight">⭐ Unlock Premium</h3>
-              <p className="text-xs text-slate-400 mt-1">Unlock all professional tailoring tools</p>
+              <h3 className="text-lg font-black text-white leading-tight">⭐ {pendingPremiumRequest ? "Resume Upgrade" : "Unlock OneTailor Pro"}</h3>
+              <p className="text-xs text-slate-400 mt-1">{pendingPremiumRequest ? "Finish your payment to activate premium" : "Unlock all professional tailoring tools"}</p>
             </div>
             <ChevronRight className="text-primary" />
           </div>

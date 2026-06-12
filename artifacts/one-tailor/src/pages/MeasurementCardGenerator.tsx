@@ -557,6 +557,11 @@ export default function MeasurementCardGenerator() {
                       <h2 className="text-lg font-black uppercase tracking-tight leading-tight truncate">
                         {businessProfile?.name || appName}
                       </h2>
+                      {businessProfile?.tagline && (
+                        <p className="text-[9px] font-bold opacity-60 italic leading-tight truncate">
+                          {businessProfile.tagline}
+                        </p>
+                      )}
 
                       {/* WhatsApp first, then Phone */}
                       {businessProfile?.socials?.whatsapp && (
@@ -613,7 +618,7 @@ export default function MeasurementCardGenerator() {
                     <div className="text-right shrink-0">
                       <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Client ID</p>
                       <p className="text-[13px] font-mono font-black mt-0.5">
-                        #OT-{String(selectedCustomer.id).padStart(4, "0")}
+                        #{(businessProfile?.clientIdPrefix || "OT")}-{String(selectedCustomer.id).padStart(4, "0")}
                       </p>
                     </div>
                   </div>

@@ -97,6 +97,8 @@ export interface BusinessProfile {
     landmark?: string;
     country?: string;
   };
+  tagline?: string;
+  clientIdPrefix?: string;
   socials?: {
     instagram?: string;
     facebook?: string;
@@ -179,6 +181,10 @@ export interface AppState {
   proUpgradeMessage: string;
   proUpgradeLink: string;
   proUpgradeButtonText: string;
+  proUpgradeTitle: string;
+  pendingTitle: string;
+  pendingBody: string;
+  pendingCTA: string;
 
   setSelectedDeviceCount: (count: number) => void;
   setIsPremium: (status: boolean, key?: string) => void;
@@ -209,6 +215,10 @@ export interface AppState {
     proUpgradeMessage?: string;
     proUpgradeLink?: string;
     proUpgradeButtonText?: string;
+    proUpgradeTitle?: string;
+    pendingTitle?: string;
+    pendingBody?: string;
+    pendingCTA?: string;
     paymentLink?: string;
   }) => void;
   importData: (data: { customers: Customer[]; measurements: MeasurementRecord[] }) => void;
@@ -265,7 +275,11 @@ export const useAppStore = create<AppState>()(
       proUpgradeMessage:
         "Want to backup your customer measurement and never lose them if you phone or device is broken stolen etc. Unlock Premium to access more features beyond measurement, manage order, delivery, payment, inventory, finance, expense and so much more.",
       proUpgradeLink: "",
-      proUpgradeButtonText: "⭐ Unlock Premium",
+      proUpgradeButtonText: "⭐ Unlock OneTailor Pro",
+      proUpgradeTitle: "OneTailor Pro",
+      pendingTitle: "",
+      pendingBody: "",
+      pendingCTA: "",
       mediaWorkspace: null,
       referralCode: "",
       successfulInvites: 0,
@@ -408,6 +422,10 @@ export const useAppStore = create<AppState>()(
           proUpgradeMessage: s.proUpgradeMessage ?? state.proUpgradeMessage,
           proUpgradeLink: s.proUpgradeLink ?? state.proUpgradeLink,
           proUpgradeButtonText: s.proUpgradeButtonText ?? state.proUpgradeButtonText,
+          proUpgradeTitle: s.proUpgradeTitle ?? state.proUpgradeTitle,
+          pendingTitle: s.pendingTitle ?? state.pendingTitle,
+          pendingBody: s.pendingBody ?? state.pendingBody,
+          pendingCTA: s.pendingCTA ?? state.pendingCTA,
           upgradeLink: s.paymentLink ?? state.upgradeLink,
         })),
       importData: (data) =>

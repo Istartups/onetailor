@@ -2,51 +2,64 @@ import { useLocation } from "wouter";
 import { Clock, AlertTriangle, XCircle, Loader2, ChevronRight } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 
-const STATES = {
+const DEFAULTS = {
   payment_submitted: {
     icon: Clock,
     iconColor: "#60a5fa",
     bg: "rgba(59,130,246,0.08)",
     border: "rgba(59,130,246,0.25)",
-    label: "Awaiting Admin Approval",
-    message: "Your payment proof has been submitted and is being reviewed.",
-    next: "You'll be notified by email once approved — usually within 24 hrs.",
-    action: null,
+    label: "Under Review",
+    message: "Your payment proof is in the queue — our team is on it! 🎉",
+    next: "You'll get an email confirmation once approved. Usually within a few hours.",
+    action: null as string | null,
   },
   pending: {
     icon: AlertTriangle,
     iconColor: "#f59e0b",
     bg: "rgba(245,158,11,0.08)",
     border: "rgba(245,158,11,0.25)",
-    label: "Payment Pending",
-    message: "You started a premium upgrade but haven't completed payment yet.",
-    next: "Tap below to complete your premium unlock.",
-    action: "Complete your premium unlock",
+    label: "Complete Your Upgrade",
+    message: "You're one step away from unlocking the full power of OneTailor Pro! ⭐",
+    next: "Tap below to finish your payment and activate your premium tools.",
+    action: "Finish Upgrade — Resume Now" as string | null,
   },
   rejected: {
     icon: XCircle,
     iconColor: "#f87171",
     bg: "rgba(239,68,68,0.08)",
     border: "rgba(239,68,68,0.25)",
-    label: "Payment Rejected",
-    message: "Your previous payment could not be verified by the admin.",
-    next: "Please retry with a correct receipt or use Paystack.",
-    action: "Retry Payment",
+    label: "Payment Not Verified",
+    message: "We couldn't confirm your last payment. No worries — let's sort it out.",
+    next: "Please retry with a clear receipt image, or use Paystack for instant activation.",
+    action: "Retry Payment" as string | null,
   },
-} as const;
+};
 
 export function PremiumStatusBanner() {
   const account               = useAppStore((s) => s.account);
   const isPremium             = useAppStore((s) => s.isPremium);
   const pendingPremiumRequest = useAppStore((s) => s.pendingPremiumRequest);
   const premiumRequestStatus  = useAppStore((s) => s.premiumRequestStatus);
+  const pendingTitle          = useAppStore((s) => s.pendingTitle);
+  const pendingBody           = useAppStore((s) => s.pendingBody);
+  const pendingCTA            = useAppStore((s) => s.pendingCTA);
   const [, navigate]          = useLocation();
 
   if (!account || isPremium || !pendingPremiumRequest) return null;
 
-  const config = premiumRequestStatus && premiumRequestStatus in STATES
-    ? STATES[premiumRequestStatus as keyof typeof STATES]
-    : STATES.pending;
+  const baseConfig = premiumRequestStatus && premiumRequestStatus in DEFAULTS
+    ? DEFAULTS[premiumRequestStatus as keyof typeof DEFAULTS]
+    : DEFAULTS.pending;
+
+  // For the "pending" state, allow admin overrides from system settings
+  const config = premiumRequestStatus === "pending"
+    ? {
+        ...baseConfig,
+        label: pendingTitle || baseConfig.label,
+        message: pendingBody || baseConfig.message,
+        action: pendingCTA || baseConfig.action,
+      }
+    : baseConfig;
 
   const Icon = config.icon;
 
@@ -71,7 +84,9 @@ export function PremiumStatusBanner() {
           {config.label}
         </p>
         <p className="text-xs text-foreground/80 leading-relaxed">{config.message}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{config.next}</p>
+        {premiumRequestStatus !== "pending" && (
+          <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{baseConfig.next}</p>
+        )}
 
         {config.action && (
           <button

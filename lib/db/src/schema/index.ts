@@ -139,6 +139,15 @@ export const paymentSettingsTable = pgTable("payment_settings", {
   resendApiKey: text("resend_api_key"),
   isSmtpEnabled: boolean("is_smtp_enabled").default(true),
   isResendEnabled: boolean("is_resend_enabled").default(true),
+  // Premium popup customization
+  proUpgradeTitle: text("pro_upgrade_title"),
+  // Payment pending banner customization
+  pendingTitle: text("pending_title"),
+  pendingBody: text("pending_body"),
+  pendingCTA: text("pending_cta"),
+  // Admin payment notification
+  adminNotificationPhone: text("admin_notification_phone"),
+  adminNotificationMessage: text("admin_notification_message"),
 });
 
 export const businessProfilesTable = pgTable("business_profiles", {

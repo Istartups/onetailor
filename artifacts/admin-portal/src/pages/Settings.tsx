@@ -67,6 +67,12 @@ interface PaymentInfo {
   proUpgradeMessage: string;
   proUpgradeLink: string;
   proUpgradeButtonText: string;
+  proUpgradeTitle: string;
+  pendingTitle: string;
+  pendingBody: string;
+  pendingCTA: string;
+  adminNotificationPhone: string;
+  adminNotificationMessage: string;
   isUsageLimitEnabled: boolean;
   isDebugMode: boolean;
   pwaName: string;
@@ -183,6 +189,12 @@ export default function Settings() {
     proUpgradeMessage: "",
     proUpgradeLink: "",
     proUpgradeButtonText: "",
+    proUpgradeTitle: "",
+    pendingTitle: "",
+    pendingBody: "",
+    pendingCTA: "",
+    adminNotificationPhone: "",
+    adminNotificationMessage: "",
     isUsageLimitEnabled: true,
     isDebugMode: false,
     pwaName: "",
@@ -247,9 +259,15 @@ export default function Settings() {
           measurementLimit: data.measurementLimit || 25,
           proUpgradeMessage: data.proUpgradeMessage || "",
           proUpgradeLink: data.proUpgradeLink || "",
+          proUpgradeButtonText: data.proUpgradeButtonText || "",
+          proUpgradeTitle: data.proUpgradeTitle || "",
+          pendingTitle: data.pendingTitle || "",
+          pendingBody: data.pendingBody || "",
+          pendingCTA: data.pendingCTA || "",
+          adminNotificationPhone: data.adminNotificationPhone || "",
+          adminNotificationMessage: data.adminNotificationMessage || "",
           isUsageLimitEnabled: data.isUsageLimitEnabled ?? true,
           isDebugMode: data.isDebugMode ?? false,
-          proUpgradeButtonText: data.proUpgradeButtonText || "",
           pwaName: data.pwaName || "",
           pwaShortName: data.pwaShortName || "",
           pwaDescription: data.pwaDescription || "",
@@ -489,6 +507,15 @@ export default function Settings() {
                     </h3>
                     <div className="grid grid-cols-1 gap-6">
                       <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Popup Title</label>
+                        <Input
+                          value={settings.proUpgradeTitle || ""}
+                          onChange={(e) => setSettings({...settings, proUpgradeTitle: e.target.value})}
+                          placeholder="e.g. Unlock OneTailor Pro"
+                          className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Pro Upgrade Popup Message</label>
                         <Textarea 
                           value={settings.proUpgradeMessage || ""}
@@ -519,6 +546,70 @@ export default function Settings() {
                           />
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border/50 pt-6 space-y-4">
+                    <h3 className="text-sm font-bold text-primary flex items-center gap-2">
+                      <Zap className="w-4 h-4" /> Payment Pending Banner Text
+                    </h3>
+                    <p className="text-xs text-muted-foreground">Shown to users who have started the upgrade process but haven't completed payment.</p>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Banner Title</label>
+                        <Input
+                          value={settings.pendingTitle || ""}
+                          onChange={(e) => setSettings({...settings, pendingTitle: e.target.value})}
+                          placeholder="e.g. Complete Your Upgrade"
+                          className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Banner Body</label>
+                        <Textarea
+                          value={settings.pendingBody || ""}
+                          onChange={(e) => setSettings({...settings, pendingBody: e.target.value})}
+                          className="min-h-[80px] rounded-xl bg-muted/30 border-border font-medium leading-relaxed text-foreground"
+                          placeholder="e.g. You're one step away from unlocking all premium tools!"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">CTA Button Text</label>
+                        <Input
+                          value={settings.pendingCTA || ""}
+                          onChange={(e) => setSettings({...settings, pendingCTA: e.target.value})}
+                          placeholder="e.g. Finish Upgrade — Resume Now"
+                          className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border/50 pt-6 space-y-4">
+                    <h3 className="text-sm font-bold text-primary flex items-center gap-2">
+                      <Zap className="w-4 h-4" /> Admin Payment Notification
+                    </h3>
+                    <p className="text-xs text-muted-foreground">When a user submits manual payment, notify this WhatsApp number.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Admin WhatsApp Number</label>
+                        <Input
+                          value={settings.adminNotificationPhone || ""}
+                          onChange={(e) => setSettings({...settings, adminNotificationPhone: e.target.value})}
+                          placeholder="+2348012345678"
+                          className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Notification Message Template</label>
+                      <Textarea
+                        value={settings.adminNotificationMessage || ""}
+                        onChange={(e) => setSettings({...settings, adminNotificationMessage: e.target.value})}
+                        className="min-h-[80px] rounded-xl bg-muted/30 border-border font-medium leading-relaxed text-foreground"
+                        placeholder="e.g. New payment submitted by {name}. Please review."
+                      />
+                      <p className="text-[10px] text-muted-foreground px-1">Use {"{{name}}"} for the user's business name.</p>
                     </div>
                   </div>
                 </CardContent>

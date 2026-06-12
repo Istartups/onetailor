@@ -426,10 +426,10 @@ export default function PreUnlock() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className={lbl}>Phone Number</label>
+                  <label className={lbl}>WhatsApp Number</label>
                   <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                    <input required type="tel" placeholder="080..." value={answers.phone}
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-green-500" size={16} />
+                    <input required type="tel" placeholder="e.g. 08012345678" value={answers.phone}
                       onChange={e => setAnswers(a => ({ ...a, phone: e.target.value.replace(/[^0-9+]/g, "") }))} className={inp} />
                   </div>
                 </div>

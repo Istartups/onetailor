@@ -581,6 +581,9 @@ router.put("/payment-info", authenticateAdmin as any, async (req, res) => {
       "smtpHost", "smtpPort", "smtpUser", "smtpPass", "smtpSecure",
       "emailFromName", "emailFromAddr", "resendApiKey",
       "isSmtpEnabled", "isResendEnabled",
+      "proUpgradeTitle",
+      "pendingTitle", "pendingBody", "pendingCTA",
+      "adminNotificationPhone", "adminNotificationMessage",
     ];
 
     for (const key of allowedFields) {

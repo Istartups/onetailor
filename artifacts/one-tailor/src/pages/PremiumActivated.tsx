@@ -148,11 +148,11 @@ export default function PremiumActivated() {
         <p className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Your Premium Includes</p>
         {[
           { icon: Users,    label: "Unlimited Client Database" },
-          { icon: Palette,  label: "Professional Branding" },
-          { icon: Zap,      label: "Smart Media Suite" },
-          { icon: Video,    label: "Advanced Video Tools" },
-          { icon: Shield,   label: "Financial Dashboard" },
-          { icon: Database, label: "Multi-Device Access" },
+          { icon: Palette,  label: "Professional Brand Kit & Measurement Cards" },
+          { icon: Zap,      label: "Payment Collection & Invoicing" },
+          { icon: Shield,   label: "Customer Notes & Full History" },
+          { icon: Database, label: "Multi-Device License Access" },
+          { icon: Video,    label: "Priority Customer Support" },
         ].map(({ icon: Icon, label }) => (
           <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border">
             <Icon size={14} className="text-primary shrink-0" />
