@@ -1,12 +1,13 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Search, RefreshCw, MessageSquare, Phone, Star, UserCheck,
   Clock, CheckCircle, XCircle, AlertCircle, ChevronRight,
   Plus, Trash2, Edit2, X, Users, Flame, Thermometer,
   Snowflake, CalendarDays, Send, SlidersHorizontal,
-  ClipboardList, Settings, MessageCircle, TrendingUp, UserPlus
+  ClipboardList, Settings, MessageCircle, TrendingUp, UserPlus,
+  Copy, CheckCheck, ExternalLink, Pencil,
 } from "lucide-react";
-import { authFetch, isAdmin } from "@/lib/authFetch";
+import { authFetch, isAdmin, isAgent } from "@/lib/authFetch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ interface Interaction {
 
 interface Template { id: number; name: string; content: string; createdAt: string; }
 interface Agent { id: number; username: string; name: string; phone: string | null; isActive: boolean; createdAt: string; }
-interface Task { id: number; userId: number; taskType: string; status: string; triggerAt: string; notes: string | null; user: { email: string | null; businessName: string | null; phone: string | null } | null; }
+interface Task { id: number; userId: number; taskType: string; status: string; triggerAt: string; notes: string | null; user: { email: string | null; businessName: string | null; phone: string | null; whatsappNumber?: string | null } | null; }
 interface Stats { totalLeads: number; newToday: number; hotLeads: number; pendingFollowUps: number; converted: number; conversionRate: number; }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -82,6 +83,31 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function getAgentIdFromToken(): number | null {
+  const token = localStorage.getItem("agent_token");
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.agentId || null;
+  } catch { return null; }
+}
+
+function buildWAMessage(template: string, lead: Lead): string {
+  const name = lead.profile?.name || lead.businessName || lead.email?.split("@")[0] || "there";
+  const business = lead.businessName || lead.profile?.name || name;
+  const phone = lead.phone || lead.whatsappNumber || "";
+  return template
+    .replace(/\{\{name\}\}/g, name)
+    .replace(/\{\{business\}\}/g, business)
+    .replace(/\{\{phone\}\}/g, phone);
+}
+
+function cleanWANumber(raw: string): string {
+  return raw.replace(/\D/g, "");
+}
+
+// ─── Score / Status badges ─────────────────────────────────────────────────────
+
 function ScoreBadge({ score, label }: { score: number; label: string }) {
   if (label === "hot") return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-red-500/15 text-red-400 border border-red-500/25">
@@ -115,11 +141,6 @@ function InteractionIcon({ type }: { type: string }) {
   return <ClipboardList {...props} className="text-primary" />;
 }
 
-function buildWAMessage(template: string, lead: Lead): string {
-  const name = lead.profile?.name || lead.businessName || lead.email?.split("@")[0] || "there";
-  return encodeURIComponent(template.replace(/\{\{name\}\}/g, name));
-}
-
 // ─── Stats Strip ──────────────────────────────────────────────────────────────
 
 function StatsStrip({ stats }: { stats: Stats | null }) {
@@ -149,6 +170,175 @@ function StatsStrip({ stats }: { stats: Stats | null }) {
   );
 }
 
+// ─── WhatsApp Composer ────────────────────────────────────────────────────────
+
+function WAComposer({
+  lead,
+  templates,
+  onInteractionLogged,
+}: {
+  lead: Lead;
+  templates: Template[];
+  onInteractionLogged: (interaction: Interaction) => void;
+}) {
+  const [waPhone, setWaPhone] = useState(lead.whatsappNumber || lead.phone || "");
+  const [composerMsg, setComposerMsg] = useState("");
+  const [composerTplId, setComposerTplId] = useState<number | "">("");
+  const [savingNumber, setSavingNumber] = useState(false);
+  const [numberSaved, setNumberSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [waSending, setWaSending] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const waNumber = cleanWANumber(waPhone);
+
+  const handleSaveWANumber = async () => {
+    if (!waPhone.trim()) return;
+    setSavingNumber(true);
+    try {
+      await authFetch(`/api/crm/leads/${lead.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ whatsappNumber: waPhone.trim() }),
+      });
+      setNumberSaved(true);
+    } finally { setSavingNumber(false); }
+  };
+
+  const handleSelectTemplate = (tplId: number | "") => {
+    setComposerTplId(tplId);
+    if (tplId !== "") {
+      const tpl = templates.find(t => t.id === tplId);
+      if (tpl) setComposerMsg(buildWAMessage(tpl.content, lead));
+    }
+  };
+
+  const copyMessage = () => {
+    if (!composerMsg.trim()) return;
+    navigator.clipboard.writeText(composerMsg).then(() => {
+      setCopied(true);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 2500);
+    });
+  };
+
+  const handleWASend = async () => {
+    if (!waNumber || !composerMsg.trim()) return;
+    setWaSending(true);
+    try {
+      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(composerMsg)}`, "_blank", "noopener,noreferrer");
+      const snippet = composerMsg.length > 120 ? composerMsg.slice(0, 120) + "…" : composerMsg;
+      const res = await authFetch(`/api/crm/leads/${lead.id}/interactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "whatsapp", content: `WhatsApp sent: "${snippet}"` }),
+      });
+      if (res.ok) {
+        const interaction = await res.json();
+        onInteractionLogged(interaction);
+      }
+    } finally { setWaSending(false); }
+  };
+
+  return (
+    <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.22)" }}>
+      <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest flex items-center gap-1.5">
+        <MessageSquare size={11} /> WhatsApp Composer
+      </p>
+
+      {/* Phone number row */}
+      <div className="flex gap-2">
+        <input
+          value={waPhone}
+          onChange={e => { setWaPhone(e.target.value); setNumberSaved(false); }}
+          placeholder="Number with country code e.g. 2348012345678"
+          className="flex-1 px-3 py-2 rounded-xl text-xs bg-background border border-border outline-none focus:border-green-500/40 transition-colors"
+        />
+        <button
+          onClick={handleSaveWANumber}
+          disabled={savingNumber || !waPhone.trim()}
+          className="px-3 py-2 rounded-xl text-xs font-bold transition-colors disabled:opacity-40 whitespace-nowrap flex items-center gap-1"
+          style={numberSaved
+            ? { background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.35)", color: "#4ade80" }
+            : { background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#4ade80" }}
+        >
+          {savingNumber ? "…" : numberSaved ? <><CheckCheck size={12} /> Saved</> : "Save #"}
+        </button>
+      </div>
+
+      {/* Template picker */}
+      {templates.length > 0 && (
+        <select
+          value={composerTplId}
+          onChange={e => handleSelectTemplate(e.target.value === "" ? "" : Number(e.target.value))}
+          className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none focus:border-green-500/40 transition-colors"
+        >
+          <option value="">— Pick a template —</option>
+          {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+      )}
+
+      {/* Message editor */}
+      <div className="relative">
+        <textarea
+          rows={5}
+          value={composerMsg}
+          onChange={e => { setComposerMsg(e.target.value); setComposerTplId(""); }}
+          placeholder={
+            waNumber
+              ? "Pick a template above or type your message directly. Supports {{name}}, {{business}}, {{phone}}."
+              : "Enter a WhatsApp number first, then compose your message."
+          }
+          className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none resize-none focus:border-green-500/40 transition-colors leading-relaxed"
+        />
+        {composerMsg && (
+          <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground/50 pointer-events-none">
+            {composerMsg.length} chars
+          </span>
+        )}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={copyMessage}
+          disabled={!composerMsg.trim()}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-background border border-border text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+        >
+          {copied ? <><CheckCheck size={12} className="text-green-400" /> Copied!</> : <><Copy size={12} /> Copy</>}
+        </button>
+        <button
+          onClick={handleWASend}
+          disabled={!waNumber || !composerMsg.trim() || waSending}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-40"
+          style={{ background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.35)", color: "#4ade80" }}
+        >
+          <ExternalLink size={12} />
+          {waSending ? "Opening…" : "Open in WhatsApp"}
+        </button>
+      </div>
+
+      {/* Quick open without message */}
+      {waNumber && (
+        <a
+          href={`https://wa.me/${waNumber}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] text-green-400/60 hover:text-green-400 flex items-center gap-1 transition-colors"
+        >
+          <MessageCircle size={10} /> Open chat without message
+        </a>
+      )}
+
+      {!waNumber && (
+        <p className="text-[10px] text-amber-400/70 flex items-center gap-1">
+          <AlertCircle size={10} /> Enter and save a WhatsApp number to enable sending.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Lead Detail Panel ────────────────────────────────────────────────────────
 
 function LeadDetailPanel({
@@ -167,8 +357,6 @@ function LeadDetailPanel({
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState(lead.leadStatus || "new");
   const [agentId, setAgentId] = useState<string>(String(lead.assignedAgentId || ""));
-  const [waPhone, setWaPhone] = useState(lead.whatsappNumber || lead.phone || "");
-  const [showTemplates, setShowTemplates] = useState(false);
 
   useEffect(() => {
     authFetch(`/api/crm/leads/${lead.id}`)
@@ -199,6 +387,7 @@ function LeadDetailPanel({
         const interaction = await res.json();
         setInteractions(prev => [interaction, ...prev]);
         setNewNote("");
+        onUpdated();
       }
     } finally { setSaving(false); }
   };
@@ -220,7 +409,6 @@ function LeadDetailPanel({
   };
 
   const displayName = lead.profile?.name || lead.businessName || lead.email?.split("@")[0] || "Unknown";
-  const waNumber = (waPhone || lead.phone || "").replace(/\D/g, "");
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
@@ -258,6 +446,7 @@ function LeadDetailPanel({
               { label: "Tools Used", value: lead.toolsUsedArray.length > 0 ? lead.toolsUsedArray.join(", ") : null },
               { label: "Tools Viewed", value: lead.toolsViewedList.length > 0 ? `${lead.toolsViewedList.length} tools` : null },
               { label: "Clients Added", value: lead.customerCount > 0 ? `${lead.customerCount} clients` : null },
+              { label: "Account", value: lead.accountStatus },
               { label: "Signed Up", value: formatDate(lead.createdAt) },
               { label: "Last Active", value: relDate(lead.lastSeen) },
             ].filter(r => r.value).map(r => (
@@ -268,50 +457,12 @@ function LeadDetailPanel({
             ))}
           </div>
 
-          {/* WhatsApp quick-send */}
-          {waNumber && (
-            <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)" }}>
-              <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest">WhatsApp</p>
-              <div className="flex gap-2">
-                <input
-                  value={waPhone}
-                  onChange={e => setWaPhone(e.target.value)}
-                  placeholder="Phone number"
-                  className="flex-1 px-3 py-2 rounded-xl text-sm bg-background border border-border outline-none"
-                />
-                <a
-                  href={`https://wa.me/${waNumber}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/25 hover:bg-green-500/25 transition-colors whitespace-nowrap"
-                >
-                  <MessageSquare size={13} /> Open WA
-                </a>
-              </div>
-              {showTemplates ? (
-                <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-muted-foreground">Choose a template:</p>
-                  {templates.map(t => (
-                    <a
-                      key={t.id}
-                      href={`https://wa.me/${waNumber}?text=${buildWAMessage(t.content, lead)}`}
-                      target="_blank" rel="noopener noreferrer"
-                      onClick={() => setShowTemplates(false)}
-                      className="block p-3 rounded-xl text-xs bg-background border border-border hover:border-green-500/40 transition-colors"
-                    >
-                      <p className="font-bold text-green-400">{t.name}</p>
-                      <p className="text-muted-foreground mt-0.5 line-clamp-2">{t.content.replace(/\{\{name\}\}/g, displayName)}</p>
-                    </a>
-                  ))}
-                  <button onClick={() => setShowTemplates(false)} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
-                </div>
-              ) : (
-                <button onClick={() => setShowTemplates(true)}
-                  className="text-xs font-bold text-green-400 hover:text-green-300 flex items-center gap-1">
-                  <MessageCircle size={11} /> Use message template
-                </button>
-              )}
-            </div>
-          )}
+          {/* WhatsApp Composer */}
+          <WAComposer
+            lead={lead}
+            templates={templates}
+            onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
+          />
 
           {/* Status + assignment */}
           <div className="grid grid-cols-2 gap-3">
@@ -345,21 +496,27 @@ function LeadDetailPanel({
           {/* Add interaction */}
           <div className="space-y-3">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Log Interaction</p>
-            <select
-              value={noteType}
-              onChange={e => setNoteType(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl text-xs font-bold bg-background border border-border outline-none"
-            >
-              <option value="note">📝 Note</option>
-              <option value="call">📞 Call</option>
-              <option value="whatsapp">💬 WhatsApp</option>
-              <option value="email">📧 Email</option>
-            </select>
+            <div className="flex gap-2">
+              {(["note","call","whatsapp","email"] as const).map(t => {
+                const icons: Record<string, string> = { note: "📝", call: "📞", whatsapp: "💬", email: "📧" };
+                return (
+                  <button key={t} onClick={() => setNoteType(t)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors ${noteType === t ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:text-foreground"}`}>
+                    {icons[t]}
+                  </button>
+                );
+              })}
+            </div>
             <textarea
               rows={3}
               value={newNote}
               onChange={e => setNewNote(e.target.value)}
-              placeholder="Add a note, log a call, or record what was discussed…"
+              placeholder={
+                noteType === "call" ? "Describe the call outcome…" :
+                noteType === "whatsapp" ? "Log what was discussed on WhatsApp…" :
+                noteType === "email" ? "Summarise the email exchange…" :
+                "Add a note…"
+              }
               className="w-full px-3 py-2.5 rounded-xl text-sm bg-background border border-border outline-none resize-none focus:border-primary/50 transition-colors"
             />
             <button
@@ -391,7 +548,7 @@ function LeadDetailPanel({
                       <InteractionIcon type={i.type} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-foreground leading-relaxed">{i.content}</p>
+                      <p className="text-xs text-foreground leading-relaxed break-words">{i.content}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {i.agentName || i.agentType} · {relDate(i.createdAt)}
                       </p>
@@ -449,7 +606,10 @@ function LeadsTab({ agents, templates }: { agents: Agent[]; templates: Template[
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [includeConverted, setIncludeConverted] = useState(false);
+  const [myLeadsOnly, setMyLeadsOnly] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
+  const myAgentId = isAgent() ? getAgentIdFromToken() : null;
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -459,6 +619,7 @@ function LeadsTab({ agents, templates }: { agents: Agent[]; templates: Template[
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (scoreFilter !== "all") params.set("scoreFilter", scoreFilter);
       if (includeConverted) params.set("includeConverted", "true");
+      if (myLeadsOnly && myAgentId) params.set("agentId", String(myAgentId));
 
       const dateRange = datePreset === "custom"
         ? (customFrom ? { dateFrom: customFrom, dateTo: customTo || customFrom } : {})
@@ -473,7 +634,7 @@ function LeadsTab({ agents, templates }: { agents: Agent[]; templates: Template[
         setTotal(data.total || 0);
       }
     } finally { setLoading(false); }
-  }, [search, statusFilter, scoreFilter, datePreset, customFrom, customTo, includeConverted]);
+  }, [search, statusFilter, scoreFilter, datePreset, customFrom, customTo, includeConverted, myLeadsOnly, myAgentId]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
@@ -505,10 +666,19 @@ function LeadsTab({ agents, templates }: { agents: Agent[]; templates: Template[
           <option value="cold">🧊 Cold (&lt;40)</option>
         </select>
 
-        <button onClick={() => setIncludeConverted(!includeConverted)}
-          className={`px-3 py-2.5 rounded-xl text-sm font-bold border transition-colors ${includeConverted ? "bg-primary/10 border-primary text-primary" : "bg-background border-border text-muted-foreground"}`}>
-          {includeConverted ? "✓ " : ""}Incl. Converted
-        </button>
+        {isAgent() && (
+          <button onClick={() => setMyLeadsOnly(!myLeadsOnly)}
+            className={`px-3 py-2.5 rounded-xl text-sm font-bold border transition-colors ${myLeadsOnly ? "bg-primary/10 border-primary text-primary" : "bg-background border-border text-muted-foreground"}`}>
+            {myLeadsOnly ? "✓ " : ""}My Leads
+          </button>
+        )}
+
+        {!isAgent() && (
+          <button onClick={() => setIncludeConverted(!includeConverted)}
+            className={`px-3 py-2.5 rounded-xl text-sm font-bold border transition-colors ${includeConverted ? "bg-primary/10 border-primary text-primary" : "bg-background border-border text-muted-foreground"}`}>
+            {includeConverted ? "✓ " : ""}Incl. Converted
+          </button>
+        )}
 
         <button onClick={fetchLeads} className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm bg-background border border-border text-muted-foreground hover:text-foreground transition-colors">
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
@@ -554,7 +724,7 @@ function LeadsTab({ agents, templates }: { agents: Agent[]; templates: Template[
         <div className="space-y-2">
           {leads.map(lead => {
             const displayName = lead.profile?.name || lead.businessName || lead.email?.split("@")[0] || "Unknown";
-            const waNumber = (lead.whatsappNumber || lead.phone || "").replace(/\D/g, "");
+            const waNumber = cleanWANumber(lead.whatsappNumber || lead.phone || "");
             return (
               <div key={lead.id}
                 className="flex items-center gap-3 p-4 rounded-2xl cursor-pointer hover:border-primary/20 transition-all active:scale-[0.99]"
@@ -581,8 +751,8 @@ function LeadsTab({ agents, templates }: { agents: Agent[]; templates: Template[
                     {lead.interactionCount > 0 && (
                       <span className="text-[10px] text-primary">{lead.interactionCount} interactions</span>
                     )}
-                    {lead.totalUsageCount > 0 && (
-                      <span className="text-[10px] text-muted-foreground">{lead.totalUsageCount} tool uses</span>
+                    {lead.assignedAgentName && (
+                      <span className="text-[10px] text-muted-foreground">→ {lead.assignedAgentName}</span>
                     )}
                   </div>
                 </div>
@@ -613,7 +783,7 @@ function LeadsTab({ agents, templates }: { agents: Agent[]; templates: Template[
           agents={agents}
           templates={templates}
           onClose={() => setSelectedLead(null)}
-          onUpdated={() => { fetchLeads(); setSelectedLead(null); }}
+          onUpdated={() => fetchLeads()}
         />
       )}
     </div>
@@ -622,11 +792,14 @@ function LeadsTab({ agents, templates }: { agents: Agent[]; templates: Template[
 
 // ─── Tasks Tab ────────────────────────────────────────────────────────────────
 
-function TasksTab() {
+function TasksTab({ templates }: { templates: Template[] }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending");
   const [generating, setGenerating] = useState(false);
+  const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
+  const [taskComposerMsg, setTaskComposerMsg] = useState<Record<number, string>>({});
+  const [taskComposerTpl, setTaskComposerTpl] = useState<Record<number, number | "">>({});
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -657,6 +830,24 @@ function TasksTab() {
 
   const taskTypeLabel: Record<string, string> = { "24h": "24-Hour Follow-Up", "48h": "48-Hour Follow-Up", "72h": "72-Hour Follow-Up" };
   const isOverdue = (t: Task) => t.status === "pending" && new Date(t.triggerAt) < new Date();
+
+  const buildTaskMsg = (task: Task, template: string) => {
+    const name = task.user?.businessName || task.user?.email?.split("@")[0] || "there";
+    const business = task.user?.businessName || name;
+    const phone = task.user?.phone || "";
+    return template
+      .replace(/\{\{name\}\}/g, name)
+      .replace(/\{\{business\}\}/g, business)
+      .replace(/\{\{phone\}\}/g, phone);
+  };
+
+  const handleTaskTpl = (taskId: number, task: Task, tplId: number | "") => {
+    setTaskComposerTpl(prev => ({ ...prev, [taskId]: tplId }));
+    if (tplId !== "") {
+      const tpl = templates.find(t => t.id === tplId);
+      if (tpl) setTaskComposerMsg(prev => ({ ...prev, [taskId]: buildTaskMsg(task, tpl.content) }));
+    }
+  };
 
   return (
     <div>
@@ -695,38 +886,114 @@ function TasksTab() {
           {tasks.map(task => {
             const overdue = isOverdue(task);
             const name = task.user?.businessName || task.user?.email?.split("@")[0] || `User #${task.userId}`;
+            const waNum = cleanWANumber(task.user?.phone || "");
+            const isExpanded = expandedTaskId === task.id;
+            const msg = taskComposerMsg[task.id] || "";
+            const tplId = taskComposerTpl[task.id] ?? "";
+
             return (
-              <div key={task.id} className="flex items-center gap-4 p-4 rounded-2xl"
+              <div key={task.id} className="rounded-2xl overflow-hidden"
                 style={{ background: overdue ? "rgba(239,68,68,0.06)" : "hsl(218,44%,10%)", border: `1px solid ${overdue ? "rgba(239,68,68,0.3)" : "hsl(218,38%,18%)"}` }}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-bold">{name}</p>
-                    <span className="text-[10px] px-2 py-0.5 rounded-lg font-bold"
-                      style={{ background: "rgba(212,160,32,0.1)", color: "hsl(43,82%,55%)", border: "1px solid rgba(212,160,32,0.2)" }}>
-                      {taskTypeLabel[task.taskType] || task.taskType}
-                    </span>
-                    {overdue && <span className="text-[10px] px-2 py-0.5 rounded-lg font-bold bg-red-500/10 text-red-400 border border-red-500/20">OVERDUE</span>}
+
+                {/* Task header row */}
+                <div className="flex items-center gap-4 p-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-bold">{name}</p>
+                      <span className="text-[10px] px-2 py-0.5 rounded-lg font-bold"
+                        style={{ background: "rgba(212,160,32,0.1)", color: "hsl(43,82%,55%)", border: "1px solid rgba(212,160,32,0.2)" }}>
+                        {taskTypeLabel[task.taskType] || task.taskType}
+                      </span>
+                      {overdue && <span className="text-[10px] px-2 py-0.5 rounded-lg font-bold bg-red-500/10 text-red-400 border border-red-500/20">OVERDUE</span>}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {task.user?.phone && `${task.user.phone} · `}Due: {formatDate(task.triggerAt)}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {task.user?.phone && `${task.user.phone} · `}Trigger: {formatDate(task.triggerAt)}
-                  </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* WhatsApp quick-open (no message) */}
+                    {waNum && (
+                      <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer"
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 transition-colors"
+                        title="Open WhatsApp">
+                        <MessageSquare size={13} />
+                      </a>
+                    )}
+                    {/* Compose button */}
+                    {(waNum || templates.length > 0) && (
+                      <button
+                        onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-colors ${isExpanded ? "bg-green-500/20 border-green-500/30 text-green-400" : "bg-background border-border text-muted-foreground hover:text-foreground"}`}
+                        title="Compose message">
+                        <Pencil size={13} />
+                      </button>
+                    )}
+                    {task.status === "pending" && (
+                      <>
+                        <button onClick={() => updateTask(task.id, "completed")}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+                          <CheckCircle size={11} /> Done
+                        </button>
+                        <button onClick={() => updateTask(task.id, "dismissed")}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-muted/50 border border-border text-muted-foreground hover:text-foreground transition-colors">
+                          <XCircle size={11} /> Skip
+                        </button>
+                      </>
+                    )}
+                    {task.status !== "pending" && (
+                      <span className={`text-xs font-bold px-2 py-1 rounded-xl border ${task.status === "completed" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-slate-500/10 border-slate-500/20 text-slate-400"}`}>
+                        {task.status}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {task.status === "pending" && (
-                  <div className="flex gap-2 shrink-0">
-                    <button onClick={() => updateTask(task.id, "completed")}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
-                      <CheckCircle size={11} /> Done
-                    </button>
-                    <button onClick={() => updateTask(task.id, "dismissed")}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-muted/50 border border-border text-muted-foreground hover:text-foreground transition-colors">
-                      <XCircle size={11} /> Skip
-                    </button>
+
+                {/* Inline composer (expanded) */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/50">
+                    <p className="text-[10px] font-bold text-green-400 uppercase tracking-widest pt-3 flex items-center gap-1.5">
+                      <MessageSquare size={10} /> Compose Message
+                    </p>
+                    {templates.length > 0 && (
+                      <select
+                        value={tplId}
+                        onChange={e => handleTaskTpl(task.id, task, e.target.value === "" ? "" : Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-background border border-border outline-none focus:border-green-500/40"
+                      >
+                        <option value="">— Pick a template —</option>
+                        {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    )}
+                    <textarea
+                      rows={4}
+                      value={msg}
+                      onChange={e => setTaskComposerMsg(prev => ({ ...prev, [task.id]: e.target.value }))}
+                      placeholder="Type or pick a template above…"
+                      className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none resize-none focus:border-green-500/40"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { if (msg.trim()) { navigator.clipboard.writeText(msg); } }}
+                        disabled={!msg.trim()}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-background border border-border text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40">
+                        <Copy size={12} /> Copy
+                      </button>
+                      {waNum ? (
+                        <a
+                          href={`https://wa.me/${waNum}${msg.trim() ? `?text=${encodeURIComponent(msg)}` : ""}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all"
+                          style={{ background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.35)", color: "#4ade80" }}>
+                          <ExternalLink size={12} /> Open in WhatsApp
+                        </a>
+                      ) : (
+                        <span className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold opacity-40 border border-border text-muted-foreground">
+                          No phone number on record
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-                {task.status !== "pending" && (
-                  <span className={`text-xs font-bold px-2 py-1 rounded-xl border ${task.status === "completed" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-slate-500/10 border-slate-500/20 text-slate-400"}`}>
-                    {task.status}
-                  </span>
                 )}
               </div>
             );
@@ -780,10 +1047,14 @@ function TemplatesTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-sm font-bold text-muted-foreground">Configure reusable WhatsApp message templates. Use <code className="bg-muted px-1 rounded text-[11px]">{"{{name}}"}</code> for the lead's name.</p>
+      <div className="flex items-start justify-between mb-5 gap-4">
+        <div className="space-y-1">
+          <p className="text-sm font-bold text-muted-foreground">
+            Reusable WhatsApp message templates. Use <code className="bg-muted px-1 rounded text-[11px]">{"{{name}}"}</code>, <code className="bg-muted px-1 rounded text-[11px]">{"{{business}}"}</code>, <code className="bg-muted px-1 rounded text-[11px]">{"{{phone}}"}</code> as variables.
+          </p>
+        </div>
         {isAdmin() && (
-          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
+          <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap shrink-0">
             <Plus size={13} /> New Template
           </button>
         )}
@@ -794,8 +1065,8 @@ function TemplatesTab() {
           <h4 className="font-bold text-sm">{editingId ? "Edit Template" : "New Template"}</h4>
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Template name"
             className="w-full px-4 py-2.5 rounded-xl text-sm bg-background border border-border outline-none focus:border-primary/50" />
-          <textarea rows={4} value={content} onChange={e => setContent(e.target.value)}
-            placeholder={"Hello {{name}}, thank you for joining OneTailor..."}
+          <textarea rows={5} value={content} onChange={e => setContent(e.target.value)}
+            placeholder={"Hello {{name}}, thank you for joining OneTailor...\n\nUse {{business}} for business name, {{phone}} for phone."}
             className="w-full px-4 py-2.5 rounded-xl text-sm bg-background border border-border outline-none resize-none focus:border-primary/50" />
           <div className="flex gap-2">
             <button onClick={save} disabled={saving}
@@ -811,7 +1082,11 @@ function TemplatesTab() {
       {loading ? (
         <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-t-transparent border-primary rounded-full animate-spin" /></div>
       ) : templates.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground"><MessageSquare size={32} className="mx-auto mb-3 opacity-30" /><p className="text-sm">No templates yet</p></div>
+        <div className="text-center py-16 text-muted-foreground">
+          <MessageSquare size={32} className="mx-auto mb-3 opacity-30" />
+          <p className="text-sm">No templates yet</p>
+          <p className="text-xs mt-2">Create your first WhatsApp template to speed up follow-ups</p>
+        </div>
       ) : (
         <div className="space-y-3">
           {templates.map(t => (
@@ -819,7 +1094,8 @@ function TemplatesTab() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-primary">{t.name}</p>
-                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{t.content}</p>
+                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed whitespace-pre-wrap">{t.content}</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-2">Updated {relDate(t.createdAt)}</p>
                 </div>
                 {isAdmin() && (
                   <div className="flex gap-1.5 shrink-0">
@@ -842,6 +1118,7 @@ function AgentsTab() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [form, setForm] = useState({ username: "", password: "", name: "", phone: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -856,16 +1133,23 @@ function AgentsTab() {
 
   useEffect(() => { fetchAgents(); }, []);
 
-  const create = async () => {
-    if (!form.username || !form.password || !form.name) { setError("Username, password and name are required"); return; }
+  const openNew = () => { setEditingAgent(null); setForm({ username: "", password: "", name: "", phone: "" }); setShowForm(true); setError(""); };
+  const openEdit = (a: Agent) => { setEditingAgent(a); setForm({ username: a.username, password: "", name: a.name, phone: a.phone || "" }); setShowForm(true); setError(""); };
+
+  const save = async () => {
+    if (!form.name) { setError("Name is required"); return; }
+    if (!editingAgent && (!form.username || !form.password)) { setError("Username and password are required for new agents"); return; }
     setSaving(true); setError("");
     try {
-      const res = await authFetch("/api/admin/agents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (res.ok) { setShowForm(false); setForm({ username: "", password: "", name: "", phone: "" }); fetchAgents(); }
+      const body: Record<string, string> = { name: form.name, phone: form.phone };
+      if (!editingAgent) { body.username = form.username; body.password = form.password; }
+      else if (form.password) { body.password = form.password; }
+
+      const res = editingAgent
+        ? await authFetch(`/api/admin/agents/${editingAgent.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        : await authFetch("/api/admin/agents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+      if (res.ok) { setShowForm(false); setEditingAgent(null); fetchAgents(); }
       else { const d = await res.json(); setError(d.message); }
     } finally { setSaving(false); }
   };
@@ -883,7 +1167,7 @@ function AgentsTab() {
     <div>
       <div className="flex items-center justify-between mb-5">
         <p className="text-sm font-bold text-muted-foreground">Manage follow-up agents who can access the CRM and log interactions.</p>
-        <button onClick={() => setShowForm(!showForm)}
+        <button onClick={openNew}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
           <UserPlus size={13} /> Add Agent
         </button>
@@ -891,34 +1175,35 @@ function AgentsTab() {
 
       {showForm && (
         <div className="rounded-2xl p-5 mb-5 space-y-4" style={{ background: "hsl(218,44%,10%)", border: "1px solid hsl(218,38%,20%)" }}>
-          <h4 className="font-bold text-sm">New Follow-Up Agent</h4>
+          <h4 className="font-bold text-sm">{editingAgent ? `Edit: ${editingAgent.name}` : "New Follow-Up Agent"}</h4>
           {error && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl">{error}</p>}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { key: "name", label: "Full Name", placeholder: "Agent Name" },
-              { key: "username", label: "Username", placeholder: "login-username" },
-              { key: "password", label: "Password", placeholder: "secure password" },
-              { key: "phone", label: "Phone (optional)", placeholder: "08012345678" },
+              { key: "name", label: "Full Name", placeholder: "Agent Name", required: true },
+              { key: "username", label: "Username", placeholder: "login-username", required: !editingAgent },
+              { key: "password", label: editingAgent ? "New Password (leave blank to keep)" : "Password", placeholder: editingAgent ? "Leave blank to keep" : "secure password", required: !editingAgent },
+              { key: "phone", label: "Phone (optional)", placeholder: "08012345678", required: false },
             ].map(f => (
               <div key={f.key} className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{f.label}</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{f.label}{f.required ? " *" : ""}</label>
                 <input
                   type={f.key === "password" ? "password" : "text"}
                   value={(form as any)[f.key]}
                   onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                   placeholder={f.placeholder}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm bg-background border border-border outline-none focus:border-primary/50"
+                  disabled={editingAgent !== null && f.key === "username"}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm bg-background border border-border outline-none focus:border-primary/50 disabled:opacity-50"
                 />
               </div>
             ))}
           </div>
           <div className="flex gap-2">
-            <button onClick={create} disabled={saving}
+            <button onClick={save} disabled={saving}
               className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
               style={{ background: "hsl(43,82%,55%)", color: "hsl(218,44%,8%)" }}>
-              {saving ? "Creating…" : "Create Agent"}
+              {saving ? "Saving…" : editingAgent ? "Update Agent" : "Create Agent"}
             </button>
-            <button onClick={() => setShowForm(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold bg-muted/50 border border-border">Cancel</button>
+            <button onClick={() => { setShowForm(false); setEditingAgent(null); }} className="px-4 py-2.5 rounded-xl text-sm font-bold bg-muted/50 border border-border">Cancel</button>
           </div>
         </div>
       )}
@@ -936,12 +1221,18 @@ function AgentsTab() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm">{a.name}</p>
-                <p className="text-xs text-muted-foreground">@{a.username}{a.phone ? ` · ${a.phone}` : ""}</p>
+                <p className="text-xs text-muted-foreground">@{a.username}{a.phone ? ` · ${a.phone}` : ""} · joined {relDate(a.createdAt)}</p>
               </div>
-              <button onClick={() => toggleActive(a)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${a.isActive ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-red-500/10 border-red-500/20 text-red-400"}`}>
-                {a.isActive ? "Active" : "Inactive"}
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={() => openEdit(a)}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                  <Edit2 size={13} />
+                </button>
+                <button onClick={() => toggleActive(a)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${a.isActive ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20" : "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"}`}>
+                  {a.isActive ? "Active" : "Inactive"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -960,13 +1251,15 @@ export default function CRM() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     authFetch("/api/crm/stats").then(r => r.ok ? r.json() : null).then(d => { if (d) setStats(d); });
     authFetch("/api/crm/templates").then(r => r.ok ? r.json() : []).then(setTemplates);
     if (isAdmin()) {
       authFetch("/api/admin/agents").then(r => r.ok ? r.json() : []).then(setAgents);
     }
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const TABS: { id: Tab; label: string; icon: React.ElementType; adminOnly?: boolean }[] = [
     { id: "leads",     label: "Leads",     icon: Users },
@@ -978,9 +1271,14 @@ export default function CRM() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-black" style={{ color: "hsl(43,82%,55%)" }}>Lead CRM</h1>
-        <p className="text-sm text-muted-foreground mt-1">Follow up pre-unlock leads and convert them to premium</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black" style={{ color: "hsl(43,82%,55%)" }}>Lead CRM</h1>
+          <p className="text-sm text-muted-foreground mt-1">Follow up pre-unlock leads and convert them to premium</p>
+        </div>
+        <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs bg-background border border-border text-muted-foreground hover:text-foreground transition-colors shrink-0">
+          <RefreshCw size={12} /> Refresh All
+        </button>
       </div>
 
       {/* Stats */}
@@ -1000,7 +1298,7 @@ export default function CRM() {
 
       {/* Tab content */}
       {tab === "leads" && <LeadsTab agents={agents} templates={templates} />}
-      {tab === "tasks" && <TasksTab />}
+      {tab === "tasks" && <TasksTab templates={templates} />}
       {tab === "templates" && <TemplatesTab />}
       {tab === "agents" && isAdmin() && <AgentsTab />}
     </div>
