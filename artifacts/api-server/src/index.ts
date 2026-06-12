@@ -397,6 +397,7 @@ async function startServer() {
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
+    try { await db.execute(sql.raw(`ALTER TABLE tailor_notes ADD COLUMN IF NOT EXISTS image_data TEXT`)); } catch {}
 
     // CRM columns on existing tables
     const crmUserColumns = [

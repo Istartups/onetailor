@@ -1,0 +1,272 @@
+FEATURE REQUEST: MEASUREMENT AUTO-SAVE DRAFT RECOVERY (PWA SAFE MODE)
+
+IMPORTANT:
+
+This feature is ONLY for protecting unfinished measurement entries.
+
+Do NOT redesign measurement flow.
+
+Do NOT modify database schema unless absolutely necessary.
+
+Do NOT save unfinished drafts to backend/database.
+
+This feature should work locally inside the PWA.
+
+==================================================
+GOAL
+====
+
+Prevent tailors from losing unfinished measurement entries when:
+
+* Browser refreshes
+* Phone battery dies
+* App closes unexpectedly
+* User switches apps
+* Android kills background process
+* Browser tab reloads
+
+The system should automatically save unfinished measurement progress locally.
+
+==================================================
+APPLIES TO
+==========
+
+Only enable for measurement entry flows:
+
+* Add Quick Measurement
+* Manual Add Measurement
+
+Do NOT apply to:
+
+* Client Management
+* Notes
+* Pricing Tools
+* Fabric Tools
+
+Only measurement entry forms.
+
+==================================================
+AUTO SAVE BEHAVIOR
+==================
+
+While user is entering measurement fields:
+
+Automatically save draft every 2–3 seconds.
+
+Save locally using:
+
+Preferred:
+
+localStorage
+
+If data becomes large:
+
+IndexedDB
+
+==================================================
+SAVE THESE FIELDS
+=================
+
+Store current measurement session state:
+
+* Selected Customer ID
+* Customer Name
+* Selected Unit (inch/cm)
+* Selected Template
+* Current Step In Flow
+* All measurement fields entered
+* Timestamp of last save
+
+Example:
+
+{
+customerId: 25,
+unit: "inch",
+template: "Senator",
+measurements: {
+chest: 42,
+sleeve: 24,
+shoulder: 18
+},
+step: 3,
+savedAt: timestamp
+}
+
+==================================================
+DRAFT DETECTION
+===============
+
+When user reopens measurement page:
+
+Check local storage.
+
+If unfinished draft exists:
+
+Show recovery banner/modal.
+
+Example:
+
+Unfinished Measurement Found
+
+You have an unfinished measurement entry.
+
+Buttons:
+
+[ Continue ]
+
+[ Discard ]
+
+==================================================
+CONTINUE BUTTON
+===============
+
+If user clicks:
+
+Continue
+
+Restore everything exactly as it was.
+
+Restore:
+
+* Customer
+* Unit
+* Template
+* All measurement fields
+* Current step
+
+User continues where they stopped.
+
+==================================================
+DISCARD BUTTON
+==============
+
+If user clicks:
+
+Discard
+
+Delete local draft immediately.
+
+Start fresh measurement session.
+
+==================================================
+CLEAR AFTER SAVE
+================
+
+After successful measurement save:
+
+Automatically delete local draft.
+
+Flow:
+
+Measurement Saved Successfully
+
+↓
+
+Clear local storage draft
+
+No stale drafts should remain.
+
+==================================================
+INTELLIGENT SAVE RULES
+======================
+
+Do NOT save empty form.
+
+Start auto-save only after user enters first value.
+
+==================================================
+
+Do NOT overwrite draft after successful save.
+
+==================================================
+
+If user intentionally clicks:
+
+Cancel
+
+Delete draft immediately.
+
+==================================================
+MULTIPLE DRAFT SAFETY
+=====================
+
+Allow only ONE active draft.
+
+If new measurement flow starts:
+
+Replace old unfinished draft.
+
+Do NOT allow multiple draft sessions.
+
+==================================================
+UI REQUIREMENTS
+===============
+
+If draft exists:
+
+Show clean popup.
+
+Example:
+
+Resume Unfinished Measurement?
+
+We found an unfinished measurement you were working on.
+
+Buttons:
+
+Continue
+
+Discard
+
+==================================================
+PERFORMANCE RULES
+=================
+
+Do not trigger save on every keystroke.
+
+Use debounce.
+
+Save every:
+
+2–3 seconds
+
+or
+
+After field changes stop briefly.
+
+Avoid unnecessary writes.
+
+==================================================
+PWA OPTIMIZATION
+================
+
+This app runs as a Progressive Web App.
+
+Feature must survive:
+
+* Browser refresh
+* Device sleep
+* App reinstall session persistence if storage remains
+* Temporary offline state
+
+==================================================
+DO NOT
+======
+
+Do NOT save draft to backend.
+
+Do NOT create database records.
+
+Do NOT save incomplete measurements permanently.
+
+Do NOT affect existing measurement save logic.
+
+==================================================
+FINAL GOAL
+==========
+
+Protect tailors from losing measurement work if the app closes unexpectedly.
+
+The experience should feel reliable even on unstable mobile devices and poor network conditions.
+
+This feature should improve trust in the PWA and prevent data-entry frustration.

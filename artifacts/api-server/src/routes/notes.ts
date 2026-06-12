@@ -140,14 +140,14 @@ router.get("/notes", async (req, res) => {
 
 router.post("/notes", async (req, res) => {
   try {
-    const { deviceId, title, content, customerId, tags, isPinned = false } = req.body;
+    const { deviceId, title, content, customerId, tags, isPinned = false, imageData } = req.body;
     if (!deviceId || !title || !content) {
       return void res.status(400).json({ message: "deviceId, title, and content are required" });
     }
 
     const result = await db.execute(sql`
-      INSERT INTO tailor_notes (device_id, title, content, customer_id, tags, is_pinned)
-      VALUES (${deviceId}, ${title}, ${content}, ${customerId || null}, ${tags || null}, ${isPinned})
+      INSERT INTO tailor_notes (device_id, title, content, customer_id, tags, is_pinned, image_data)
+      VALUES (${deviceId}, ${title}, ${content}, ${customerId || null}, ${tags || null}, ${isPinned}, ${imageData || null})
       RETURNING *
     `);
 
@@ -161,7 +161,7 @@ router.post("/notes", async (req, res) => {
 router.put("/notes/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id as string);
-    const { deviceId, title, content, customerId, tags, isPinned, isArchived } = req.body;
+    const { deviceId, title, content, customerId, tags, isPinned, isArchived, imageData } = req.body;
     if (!deviceId) return void res.status(400).json({ message: "deviceId required" });
 
     // Build update using Drizzle sql tag — only set fields that were provided
@@ -172,6 +172,7 @@ router.put("/notes/:id", async (req, res) => {
     if (tags !== undefined)       updates.push(sql`tags = ${tags}`);
     if (isPinned !== undefined)   updates.push(sql`is_pinned = ${isPinned}`);
     if (isArchived !== undefined) updates.push(sql`is_archived = ${isArchived}`);
+    if (imageData !== undefined)  updates.push(sql`image_data = ${imageData || null}`);
 
     const setClause = sql.join(updates, sql`, `);
 

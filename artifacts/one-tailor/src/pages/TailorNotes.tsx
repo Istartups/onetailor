@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   NotebookPen, Plus, Search, Pin, Archive, Trash2, Edit2,
   X, Check, RotateCcw, Users, Tag, ChevronLeft, FileText,
-  User, Filter
+  User, ImageIcon, Camera
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ interface Note {
   tags: string | null;
   isPinned: boolean;
   isArchived: boolean;
+  imageData?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,13 +35,16 @@ type FilterType = "all" | "general" | "client" | "pinned" | "archived";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function timeAgo(dateStr: string) {
-  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+function safeTimeAgo(dateStr: string | null | undefined): string {
+  if (!dateStr) return "No date";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "No date";
+  const diff = (Date.now() - d.getTime()) / 1000;
   if (diff < 60) return "just now";
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(dateStr).toLocaleDateString();
+  return d.toLocaleDateString();
 }
 
 function parseTags(tags: string | null): string[] {
@@ -48,12 +52,40 @@ function parseTags(tags: string | null): string[] {
   return tags.split(",").map(t => t.trim()).filter(Boolean);
 }
 
+async function compressImage(file: File, maxPx = 900): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxPx || h > maxPx) {
+          if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+          else { w = Math.round(w * maxPx / h); h = maxPx; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.72));
+      };
+      img.onerror = reject;
+      img.src = e.target!.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 // ─── Note Form ────────────────────────────────────────────────────────────────
 
 interface NoteFormProps {
   initialNote?: Note | null;
   customers: Customer[];
-  onSave: (data: { title: string; content: string; customerId?: number | null; tags?: string; isPinned?: boolean }) => Promise<void>;
+  onSave: (data: {
+    title: string; content: string; customerId?: number | null;
+    tags?: string; isPinned?: boolean; imageData?: string | null;
+  }) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -63,14 +95,40 @@ function NoteForm({ initialNote, customers, onSave, onCancel }: NoteFormProps) {
   const [customerId, setCustomerId] = useState<number | null>(initialNote?.customerId ?? null);
   const [tags, setTags] = useState(initialNote?.tags || "");
   const [isPinned, setIsPinned] = useState(initialNote?.isPinned ?? false);
+  const [imageData, setImageData] = useState<string | null>(initialNote?.imageData ?? null);
+  const [imageLoading, setImageLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      alert("Only JPG, PNG, WEBP images are supported.");
+      return;
+    }
+    setImageLoading(true);
+    try {
+      const compressed = await compressImage(file);
+      setImageData(compressed);
+    } catch {
+      alert("Failed to process image.");
+    } finally {
+      setImageLoading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
     setSaving(true);
     try {
-      await onSave({ title: title.trim(), content: content.trim(), customerId: customerId || null, tags: tags.trim(), isPinned });
+      await onSave({
+        title: title.trim(), content: content.trim(),
+        customerId: customerId || null, tags: tags.trim(),
+        isPinned, imageData,
+      });
     } finally {
       setSaving(false);
     }
@@ -106,8 +164,58 @@ function NoteForm({ initialNote, customers, onSave, onCancel }: NoteFormProps) {
           value={content}
           onChange={e => setContent(e.target.value)}
           required
-          rows={6}
+          rows={5}
           className={inp}
+        />
+      </div>
+
+      {/* Image attachment */}
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1.5 block">
+          Attach Image (optional)
+        </label>
+        {imageData ? (
+          <div className="relative rounded-2xl overflow-hidden border border-border group">
+            <img src={imageData} alt="Note attachment" className="w-full max-h-52 object-cover" />
+            <button
+              type="button"
+              onClick={() => setImageData(null)}
+              className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="absolute bottom-2 right-2 px-3 py-1.5 bg-black/60 rounded-xl text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              Change
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={imageLoading}
+            className="w-full py-6 rounded-2xl border-2 border-dashed border-border hover:border-primary/40 flex flex-col items-center gap-2 text-muted-foreground hover:text-foreground transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {imageLoading ? (
+              <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin border-primary" />
+            ) : (
+              <>
+                <Camera size={22} className="opacity-40" />
+                <span className="text-xs font-bold">Tap to attach image</span>
+                <span className="text-[10px] opacity-50">JPG · PNG · WEBP</span>
+              </>
+            )}
+          </button>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleImage}
         />
       </div>
 
@@ -181,12 +289,32 @@ interface NoteCardProps {
 
 function NoteCard({ note, onEdit, onDelete, onTogglePin, onToggleArchive }: NoteCardProps) {
   const tags = parseTags(note.tags);
+  const [imgExpanded, setImgExpanded] = useState(false);
 
   return (
     <div className={`bg-card border rounded-2xl overflow-hidden transition-all group ${note.isPinned ? "border-primary/30 shadow-sm shadow-primary/10" : "border-border"}`}>
       {note.isPinned && (
         <div className="h-0.5 bg-gradient-to-r from-primary/60 to-primary/20" />
       )}
+
+      {/* Image preview */}
+      {note.imageData && (
+        <div
+          className={`overflow-hidden cursor-pointer transition-all ${imgExpanded ? "max-h-96" : "max-h-32"}`}
+          onClick={() => setImgExpanded(!imgExpanded)}
+        >
+          <img
+            src={note.imageData}
+            alt="Note attachment"
+            className="w-full object-cover"
+          />
+          <div className="flex items-center gap-1 px-3 py-1.5 bg-black/10 dark:bg-white/5">
+            <ImageIcon size={9} className="text-muted-foreground" />
+            <span className="text-[9px] text-muted-foreground font-bold">{imgExpanded ? "Tap to collapse" : "Tap to expand"}</span>
+          </div>
+        </div>
+      )}
+
       <div className="p-4 space-y-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -227,7 +355,7 @@ function NoteCard({ note, onEdit, onDelete, onTogglePin, onToggleArchive }: Note
           </div>
         )}
 
-        <p className="text-[9px] text-muted-foreground/50 pt-1">{timeAgo(note.updatedAt)}</p>
+        <p className="text-[9px] text-muted-foreground/50 pt-1">{safeTimeAgo(note.updatedAt)}</p>
       </div>
     </div>
   );
@@ -246,8 +374,6 @@ export default function TailorNotes() {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
-
-  // ── Fetch ─────────────────────────────────────────────────────────────────
 
   const fetchNotes = async () => {
     setLoading(true);
@@ -275,16 +401,15 @@ export default function TailorNotes() {
   useEffect(() => {
     fetchNotes();
     fetchCustomers();
-  }, [filter, search]);
-
-  // ── Filtered notes client-side (search already server-side but also local) ──
+  }, [filter, search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pinnedNotes = useMemo(() => notes.filter(n => n.isPinned), [notes]);
   const regularNotes = useMemo(() => notes.filter(n => !n.isPinned), [notes]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
-  const handleSave = async (data: { title: string; content: string; customerId?: number | null; tags?: string; isPinned?: boolean }) => {
+  const handleSave = async (data: {
+    title: string; content: string; customerId?: number | null;
+    tags?: string; isPinned?: boolean; imageData?: string | null;
+  }) => {
     try {
       if (editingNote) {
         const res = await fetch(`/api/notes/${editingNote.id}`, {
@@ -292,16 +417,24 @@ export default function TailorNotes() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ deviceId, ...data }),
         });
-        if (res.ok) { toast({ title: "Updated", description: "Note saved." }); setView("list"); setEditingNote(null); await fetchNotes(); }
-        else { toast({ title: "Error", description: "Failed to update note.", variant: "destructive" }); }
+        if (res.ok) {
+          toast({ title: "Updated", description: "Note saved." });
+          setView("list"); setEditingNote(null); await fetchNotes();
+        } else {
+          toast({ title: "Error", description: "Failed to update note.", variant: "destructive" });
+        }
       } else {
         const res = await fetch("/api/notes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ deviceId, ...data }),
         });
-        if (res.ok) { toast({ title: "Saved", description: "Note created." }); setView("list"); await fetchNotes(); }
-        else { toast({ title: "Error", description: "Failed to create note.", variant: "destructive" }); }
+        if (res.ok) {
+          toast({ title: "Saved", description: "Note created." });
+          setView("list"); await fetchNotes();
+        } else {
+          toast({ title: "Error", description: "Failed to create note.", variant: "destructive" });
+        }
       }
     } catch { toast({ title: "Error", description: "Connection error.", variant: "destructive" }); }
   };
@@ -338,8 +471,6 @@ export default function TailorNotes() {
     } catch { /* silent */ }
   };
 
-  // ── Filter tabs ───────────────────────────────────────────────────────────
-
   const FILTERS: { key: FilterType; label: string; icon: React.ReactNode }[] = [
     { key: "all",     label: "All",     icon: <FileText size={11} /> },
     { key: "general", label: "General", icon: <NotebookPen size={11} /> },
@@ -348,19 +479,15 @@ export default function TailorNotes() {
     { key: "archived",label: "Archive", icon: <Archive size={11} /> },
   ];
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <div className="min-h-screen bg-background">
       <PageHeader
         title="Tailor Notes"
         subtitle={notes.length > 0 ? `${notes.length} note${notes.length !== 1 ? "s" : ""}` : "Quick notes for your work"}
-        icon={<NotebookPen size={22} className="text-teal-500" />}
       />
 
       <div className="px-4 pb-24 space-y-4">
 
-        {/* Form view */}
         {(view === "form" || view === "edit") && (
           <NoteForm
             initialNote={view === "edit" ? editingNote : null}
@@ -370,10 +497,8 @@ export default function TailorNotes() {
           />
         )}
 
-        {/* List view */}
         {view === "list" && (
           <>
-            {/* Search */}
             <div className="relative">
               <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
               <input
@@ -389,7 +514,6 @@ export default function TailorNotes() {
               )}
             </div>
 
-            {/* Filter chips */}
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {FILTERS.map(f => (
                 <button
@@ -404,7 +528,6 @@ export default function TailorNotes() {
               ))}
             </div>
 
-            {/* Add button */}
             <button
               onClick={() => { setEditingNote(null); setView("form"); }}
               className="w-full py-4 rounded-2xl border-2 border-dashed border-primary/30 hover:border-primary/60 text-primary font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
@@ -412,22 +535,24 @@ export default function TailorNotes() {
               <Plus size={16} /> New Note
             </button>
 
-            {/* Notes list */}
             {loading ? (
               <div className="flex justify-center py-16">
                 <div className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: "hsl(173,80%,40%)", borderTopColor: "transparent" }} />
               </div>
             ) : notes.length === 0 ? (
-              <div className="text-center py-20 bg-card border border-dashed border-border rounded-3xl">
-                <NotebookPen size={36} className="mx-auto text-muted-foreground/20 mb-4" />
-                <p className="text-sm font-bold text-muted-foreground">No notes yet</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">
-                  {filter === "archived" ? "No archived notes." : "Tap \"New Note\" to capture your first note."}
+              <div className="text-center py-20 bg-card border border-dashed border-border rounded-3xl space-y-3">
+                <NotebookPen size={44} className="mx-auto text-muted-foreground/15" />
+                <p className="text-sm font-bold text-muted-foreground">
+                  {filter === "archived" ? "No archived notes." : search ? "No matching notes." : "No notes yet"}
                 </p>
+                {filter === "all" && !search && (
+                  <p className="text-xs text-muted-foreground/60 max-w-[200px] mx-auto leading-relaxed">
+                    Capture style sketches, fabric details, measurements, or reference photos.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Pinned section */}
                 {pinnedNotes.length > 0 && filter !== "archived" && (
                   <>
                     <div className="flex items-center gap-2 px-1">
@@ -451,8 +576,6 @@ export default function TailorNotes() {
                     )}
                   </>
                 )}
-
-                {/* Regular notes */}
                 {regularNotes.map(note => (
                   <NoteCard
                     key={note.id}
@@ -469,7 +592,6 @@ export default function TailorNotes() {
         )}
       </div>
 
-      {/* FAB */}
       {view === "list" && (
         <button
           onClick={() => { setEditingNote(null); setView("form"); }}

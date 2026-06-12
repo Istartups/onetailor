@@ -1,0 +1,462 @@
+ONETAILOR TOOLKIT – UX IMPROVEMENTS, BUG FIXES & WORKFLOW ENHANCEMENTS
+
+IMPORTANT:
+
+Do NOT redesign architecture.
+
+Do NOT change existing working backend systems unless required.
+
+Do NOT remove any current functionality.
+
+Focus only on improving workflow, fixing bugs, and making the product feel polished for real tailoring usage.
+
+==================================================
+
+1. TAILOR NOTES – ADD IMAGE SUPPORT
+   ==================================================
+
+Enhance Tailor Notes tool.
+
+Currently notes support text only.
+
+Add ability to attach image to note.
+
+Required:
+
+* Upload image when creating note
+* Support JPG, PNG, WEBP
+* Preview image inside note
+* Save image with note record
+* Image should remain visible when reopening note
+
+Use cases:
+
+* Save customer style sketch
+* Save handwritten measurement image
+* Save fabric image
+* Save reference photo
+
+Do NOT make image mandatory.
+
+Text-only note must still work.
+
+==================================================
+2. FIX INVALID DATE BUG IN NOTES
+================================
+
+Current issue:
+
+After saving note, UI shows:
+
+Invalid Date
+
+Example:
+
+hello world
+
+Invalid Date
+
+Problem:
+
+Date rendering is broken.
+
+Likely causes:
+
+* createdAt not saved properly
+* date parsing failure
+* undefined timestamp
+
+Required fix:
+
+Inspect note creation logic.
+
+Ensure createdAt is properly saved.
+
+Example:
+
+createdAt: new Date()
+
+Ensure UI safely renders date.
+
+If date missing:
+
+Show:
+
+No Date
+
+instead of:
+
+Invalid Date
+
+App should never display Invalid Date.
+
+==================================================
+3. CLIENT MEASUREMENT SEARCH/FILTER
+===================================
+
+Inside customer detail page:
+
+Currently user sees list of saved measurements.
+
+Problem:
+
+If customer has many measurements, hard to find specific garment.
+
+Add search/filter bar above measurement list.
+
+Allow searching by:
+
+* Garment Name
+* Measurement Template Name
+
+Example:
+
+Customer has:
+
+Senator Wear
+
+Trouser
+
+Agbada
+
+Kaftan
+
+Tailor should quickly search:
+
+"Agbada"
+
+Filter results instantly.
+
+Keep fast local filtering.
+
+No backend redesign needed.
+
+==================================================
+4. QUICK MEASUREMENT FLOW FIX
+=============================
+
+Current issue:
+
+After adding customer from quick flow:
+
+Popup asks:
+
+Add Measurement / Cancel
+
+Remove this popup completely.
+
+New behavior:
+
+When user clicks:
+
+Measure → Add Record
+
+Rename button:
+
+Add Quick Measurement
+
+==================================================
+
+Purpose:
+
+Fast instant recording of:
+
+Customer + Measurement
+
+==================================================
+
+New flow:
+
+Click:
+
+Add Quick Measurement
+
+↓
+
+Add Customer Details
+
+↓
+
+Automatically continue directly into measurement flow
+
+NO popup
+
+NO confirmation
+
+NO cancel option
+
+==================================================
+
+This flow is specifically for instant recording.
+
+==================================================
+5. ADD CUSTOMER NORMAL FLOW IMPROVEMENT
+=======================================
+
+Normal route:
+
+/add-customer
+
+This is standard customer creation.
+
+After customer is successfully added:
+
+Show popup:
+
+Choose next action
+
+Buttons:
+
+Upload Measurement
+
+Add Measurement
+
+Cancel
+
+==================================================
+
+Behavior:
+
+Upload Measurement
+
+→ Opens measurement image upload flow
+
+---
+
+Add Measurement
+
+→ Opens manual measurement flow
+
+---
+
+Cancel
+
+→ Stay on customer page
+
+==================================================
+6. NEW FEATURE – UPLOAD MEASUREMENT IMAGE
+=========================================
+
+Add a new measurement capture option.
+
+Purpose:
+
+Many tailors already have measurements written on paper.
+
+Instead of typing immediately, allow image upload.
+
+This stores measurement image under customer profile.
+
+==================================================
+
+When available:
+
+ONLY when user adds customer via:
+
+/add-customer
+
+NOT in Quick Measurement flow
+
+==================================================
+
+Flow:
+
+Add Customer
+
+↓
+
+Popup:
+
+Upload Measurement
+Add Measurement
+Cancel
+
+==================================================
+
+Upload Measurement
+
+↓
+
+Upload image
+
+Supported:
+
+* JPG
+* PNG
+* WEBP
+
+Save image inside customer profile.
+
+This acts as measurement record reference.
+
+==================================================
+
+Important:
+
+Do NOT ask for image upload inside Quick Measurement flow.
+
+Quick flow remains fast.
+
+==================================================
+7. REPLIT PORT CONFLICT PROTECTION
+==================================
+
+Current problem:
+
+When exporting project to Git
+
+Then importing into another Replit
+
+Port conflicts happen.
+
+App may fail because environment settings differ.
+
+==================================================
+
+Required fix:
+
+Create project portability system.
+
+==================================================
+
+Add README_SETUP.md
+
+Purpose:
+
+When project is imported elsewhere, developer immediately sees setup requirements.
+
+==================================================
+
+Include:
+
+Required environment variables
+
+Expected PORT configuration
+
+Frontend port
+
+Backend port
+
+Build commands
+
+Run commands
+
+Database requirements
+
+==================================================
+
+Example:
+
+PORT=5000
+
+VITE_API_URL=http://localhost:5000
+
+NODE_ENV=development
+
+==================================================
+
+==================================================
+
+Update server startup logic.
+
+Avoid hardcoded ports.
+
+Bad example:
+
+const PORT = 5000
+
+==================================================
+
+Use dynamic:
+
+const PORT = process.env.PORT || 5000
+
+==================================================
+
+Ensure frontend and backend use environment variables.
+
+==================================================
+
+Prevent project breaking when moved between:
+
+* GitHub
+* Replit
+* New Replit clones
+
+==================================================
+8. SMALL UI POLISH IMPROVEMENTS
+===============================
+
+Improve quality without changing functionality.
+
+==================================================
+
+Tailor Notes
+
+* Show image preview card
+* Better empty state if no notes
+
+==================================================
+
+Measurements List
+
+* Search field sticky at top
+* Instant filter while typing
+
+==================================================
+
+Quick Measurement
+
+* Change text:
+
+Add Record
+
+TO
+
+Add Quick Measurement
+
+==================================================
+
+Customer Creation
+
+Clear visual separation between:
+
+Normal Customer Add
+
+and
+
+Quick Measurement Flow
+
+==================================================
+9. STABILITY RULE
+=================
+
+Before completing changes:
+
+Verify:
+
+* Notes still save correctly
+* Image upload works
+* Customer creation works
+* Quick Measurement flow works
+* Measurement creation works
+* Existing customer records unaffected
+* Existing measurement records unaffected
+
+No regressions allowed.
+
+==================================================
+FINAL INSTRUCTION
+=================
+
+Prioritize stability.
+
+Make improvements only where requested.
+
+Do NOT invent extra features.
+
+Do NOT redesign architecture.
+
+Keep OneTailor Toolkit lightweight and reliable.
+
+Focus on workflow speed for real daily tailoring usage.

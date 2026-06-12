@@ -194,7 +194,7 @@ export default function Home() {
   const handleAddNewClientFromModal = () => {
     setShowMeasureModal(false);
     setModalSearch("");
-    handleNavigate("/add-customer?action=new_client");
+    handleNavigate("/add-customer?action=new_client&mode=quick");
   };
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -439,7 +439,7 @@ export default function Home() {
             <p className="text-xs font-black uppercase tracking-[0.15em] text-foreground/80">Client Management</p>
           </div>
           <button
-            onClick={() => handleNavigate("/customer-measurement")}
+            onClick={() => handleNavigate("/add-customer")}
             className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors"
           >
             View All <ChevronRight size={10} className="inline ml-0.5" />
@@ -450,7 +450,7 @@ export default function Home() {
         <div className="grid grid-cols-3 gap-2.5">
           {/* Clients Database */}
           <button
-            onClick={() => handleNavigate("/customer-measurement")}
+            onClick={() => handleNavigate("/add-customer")}
             className="group flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-gradient-to-br from-blue-600/10 to-blue-600/[0.02] border border-blue-500/20 active:scale-[0.97] transition-all"
           >
             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
@@ -472,7 +472,7 @@ export default function Home() {
             </div>
             <div className="text-center">
               <p className="text-[12px] font-black text-foreground leading-tight">Measure</p>
-              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight mt-0.5">Add Record</p>
+              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight mt-0.5">Quick Measurement</p>
             </div>
           </button>
 
@@ -503,7 +503,7 @@ export default function Home() {
               <p className="text-xs font-black uppercase tracking-[0.15em] text-foreground/80">Recent Measurements</p>
             </div>
             <button
-              onClick={() => handleNavigate("/customer-measurement")}
+              onClick={() => handleNavigate("/add-customer")}
               className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors"
             >
               All Clients <ChevronRight size={10} className="inline ml-0.5" />
@@ -536,7 +536,7 @@ export default function Home() {
             {filteredRecentMeasurements.map(m => (
               <button
                 key={m.id}
-                onClick={() => handleNavigate(`/customer-measurement?action=new_measurement&customerId=${m.customerId}`)}
+                onClick={() => handleNavigate(`/add-customer?action=new_measurement&customerId=${m.customerId}`)}
                 className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-card border border-border hover:border-primary/20 active:scale-[0.98] transition-all text-left"
               >
                 <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">

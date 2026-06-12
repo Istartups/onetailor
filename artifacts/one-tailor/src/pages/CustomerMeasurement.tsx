@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Users, UserPlus, Search, Ruler, X, Edit2, Trash2,
   ChevronRight, Contact, Plus, LayoutGrid, CheckCircle2,
   Phone, Mail, MapPin, Crown, ShieldCheck,
   ChevronDown, ChevronUp, MessageCircle, ExternalLink,
-  Layers, RefreshCw, SlidersHorizontal, NotebookPen, Pin, Archive, RotateCcw, ChevronLeft
+  Layers, RefreshCw, SlidersHorizontal, NotebookPen, Pin, Archive, RotateCcw, ChevronLeft,
+  Camera, ImageIcon, Upload
 } from "lucide-react";
 import { SYSTEM_TEMPLATES_META } from "@/lib/measurement-data";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -47,7 +48,8 @@ type View =
   | "edit_client"
   | "add_measurement"
   | "edit_measurement"
-  | "measurement_cards";
+  | "measurement_cards"
+  | "upload_measurement_image";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -71,6 +73,19 @@ export default function CustomerMeasurement() {
   const [showOptional, setShowOptional] = useState(false);
   const [genderFilter, setGenderFilter]     = useState<"all" | Gender>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [measurementSearch, setMeasurementSearch] = useState("");
+  const [isQuickMode, setIsQuickMode] = useState(false);
+
+  // ── Draft recovery state ──
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [draftCustomerName, setDraftCustomerName] = useState<string | null>(null);
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Upload measurement image state ──
+  const [uploadImgData, setUploadImgData] = useState<string | null>(null);
+  const [uploadImgLoading, setUploadImgLoading] = useState(false);
+  const [uploadImgLabel, setUploadImgLabel] = useState("Measurement Photo");
+  const uploadImgFileRef = useRef<HTMLInputElement>(null);
 
   // ── Data state ──
   const [customers, setCustomers]         = useState<Customer[]>([]);
@@ -196,6 +211,8 @@ export default function CustomerMeasurement() {
     const params = new URLSearchParams(window.location.search);
     const action = params.get("action");
     const cIdParam = params.get("customerId");
+    const mode = params.get("mode");
+    if (mode === "quick") setIsQuickMode(true);
 
     if (action === "new_client") {
       setView("add_client");
@@ -221,7 +238,38 @@ export default function CustomerMeasurement() {
         })
         .catch(console.error);
     }
+
+    // Check for saved draft
+    const raw = localStorage.getItem("measurement_draft");
+    if (raw) {
+      try {
+        const draft = JSON.parse(raw);
+        if (draft?.customerName) {
+          setDraftCustomerName(draft.customerName);
+          setShowDraftModal(true);
+        }
+      } catch { /* ignore corrupt draft */ }
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Auto-save measurement draft ────────────────────────────────────────────
+  useEffect(() => {
+    if (view !== "add_measurement" || !selectedCustomer) return;
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      const draft = {
+        customerName: selectedCustomer.name,
+        customerId: selectedCustomer.id,
+        measurementForm,
+        measureAddStep,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem("measurement_draft", JSON.stringify(draft));
+    }, 2500);
+    return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
+  }, [view, selectedCustomer, measurementForm, measureAddStep]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const clearDraft = () => localStorage.removeItem("measurement_draft");
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -254,10 +302,17 @@ export default function CustomerMeasurement() {
     [measurements]
   );
 
-  const displayedMeasurements = useMemo(() =>
-    categoryFilter === "all" ? measurements : measurements.filter(m => m.category === categoryFilter),
-    [measurements, categoryFilter]
-  );
+  const displayedMeasurements = useMemo(() => {
+    let base = categoryFilter === "all" ? measurements : measurements.filter(m => m.category === categoryFilter);
+    if (measurementSearch.trim()) {
+      const q = measurementSearch.toLowerCase();
+      base = base.filter(m =>
+        m.label.toLowerCase().includes(q) ||
+        m.category.toLowerCase().includes(q)
+      );
+    }
+    return base;
+  }, [measurements, categoryFilter, measurementSearch]);
 
   const parseMeasurements = (valStr: string) => {
     try {
@@ -317,10 +372,19 @@ export default function CustomerMeasurement() {
         toast({ title: "Saved", description: "Customer profile saved." });
         await fetchCustomers();
         if (isNew) {
-          // For new customers: show "add measurement?" prompt instead of going to list
           resetForms();
-          setPromptCustomer(saved);
-          setShowAddMeasurePrompt(true);
+          if (isQuickMode) {
+            // Quick mode: skip popup, go straight to measurement form
+            setSelectedCustomer(saved);
+            fetchMeasurements(saved.id);
+            setMeasurementForm({ id: undefined, label: "Initial Measurement", category: "", unit: "Inches", values: {}, customFields: [] });
+            setMeasureAddStep("unit");
+            setView("add_measurement");
+          } else {
+            // Normal mode: show 3-button prompt
+            setPromptCustomer(saved);
+            setShowAddMeasurePrompt(true);
+          }
         } else {
           // For edits: go back to client detail
           setSelectedCustomer(saved);
@@ -389,6 +453,7 @@ export default function CustomerMeasurement() {
       });
       if (res.ok) {
         toast({ title: "Saved", description: measurementForm.id ? "Record updated." : "Record saved." });
+        clearDraft();
         fetchMeasurements(selectedCustomer.id);
         setView("client_detail");
       }
@@ -430,11 +495,15 @@ export default function CustomerMeasurement() {
       setSelectedCustomer(null);
       setView("clients");
     } else if (view === "add_measurement" || view === "edit_measurement") {
+      clearDraft();
       setView("client_detail");
     } else if (view === "add_client" || view === "edit_client") {
       setView(selectedCustomer ? "client_detail" : "clients");
     } else if (view === "measurement_cards") {
       setView("client_detail");
+    } else if (view === "upload_measurement_image") {
+      setUploadImgData(null);
+      setView(selectedCustomer ? "client_detail" : "clients");
     } else {
       setLocation("/all-tools?cat=clients");
     }
@@ -448,6 +517,7 @@ export default function CustomerMeasurement() {
     add_measurement: "Add Measurement",
     edit_measurement: "Edit Measurement",
     measurement_cards: "Measurement Cards",
+    upload_measurement_image: "Upload Measurement Photo",
   }[view] ?? "Clients";
 
   // ─── Gender badge ─────────────────────────────────────────────────────────
@@ -479,20 +549,10 @@ export default function CustomerMeasurement() {
                 </p>
                 <p className="text-xs text-muted-foreground pt-1">Would you like to add a measurement record now?</p>
               </div>
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="space-y-2 pt-2">
                 <button
                   onClick={() => {
-                    setShowAddMeasurePrompt(false);
-                    setPromptCustomer(null);
-                    setView("clients");
-                  }}
-                  className="py-3 rounded-2xl border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const c = promptCustomer;
+                    const c = promptCustomer!;
                     setShowAddMeasurePrompt(false);
                     setPromptCustomer(null);
                     setSelectedCustomer(c);
@@ -501,9 +561,92 @@ export default function CustomerMeasurement() {
                     setMeasureAddStep("unit");
                     setView("add_measurement");
                   }}
+                  className="w-full py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  <Ruler size={15} /> Add Measurement
+                </button>
+                <button
+                  onClick={() => {
+                    const c = promptCustomer!;
+                    setShowAddMeasurePrompt(false);
+                    setPromptCustomer(null);
+                    setSelectedCustomer(c);
+                    setUploadImgData(null);
+                    setUploadImgLabel("Measurement Photo");
+                    setView("upload_measurement_image");
+                  }}
+                  className="w-full py-3 rounded-2xl border border-primary/30 bg-primary/5 text-primary text-sm font-bold active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  <Camera size={15} /> Upload Measurement Photo
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddMeasurePrompt(false);
+                    setPromptCustomer(null);
+                    setView("clients");
+                  }}
+                  className="w-full py-3 rounded-2xl border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-all"
+                >
+                  Skip for Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Draft recovery modal ─────────────────────────────────────────── */}
+      {showDraftModal && draftCustomerName && (
+        <div className="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm flex items-center justify-center p-5 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-border animate-in zoom-in-95 duration-200">
+            <div className="p-6 space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto">
+                <Ruler size={26} className="text-amber-500" />
+              </div>
+              <div className="text-center space-y-1.5">
+                <h3 className="text-base font-black">Draft Found</h3>
+                <p className="text-sm text-muted-foreground">
+                  You have an unsaved measurement draft for <span className="font-bold text-foreground">{draftCustomerName}</span>.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    clearDraft();
+                    setShowDraftModal(false);
+                    setDraftCustomerName(null);
+                  }}
+                  className="py-3 rounded-2xl border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-all"
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDraftModal(false);
+                    setDraftCustomerName(null);
+                    const raw = localStorage.getItem("measurement_draft");
+                    if (!raw) return;
+                    try {
+                      const draft = JSON.parse(raw);
+                      fetch(`/api/tailoring/customers?deviceId=${getDeviceId()}`)
+                        .then(r => r.json())
+                        .then((all: Customer[]) => {
+                          setCustomers(all);
+                          const c = all.find((x: Customer) => x.id === draft.customerId);
+                          if (c) {
+                            setSelectedCustomer(c);
+                            fetchMeasurements(c.id);
+                            setMeasurementForm(draft.measurementForm);
+                            setMeasureAddStep(draft.measureAddStep || "unit");
+                            setView("add_measurement");
+                          } else { clearDraft(); }
+                        })
+                        .catch(() => clearDraft());
+                    } catch { clearDraft(); }
+                  }}
                   className="py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
                 >
-                  Add Measurement
+                  Restore
                 </button>
               </div>
             </div>
@@ -873,7 +1016,7 @@ export default function CustomerMeasurement() {
                           </div>
                         </div>
                         <p className="text-[9px] text-muted-foreground/40 mt-2">
-                          {(() => { const d = (Date.now() - new Date(note.updatedAt).getTime()) / 1000; if (d < 60) return "just now"; if (d < 3600) return `${Math.floor(d / 60)}m ago`; if (d < 86400) return `${Math.floor(d / 3600)}h ago`; return new Date(note.updatedAt).toLocaleDateString(); })()}
+                          {(() => { const t = new Date(note.updatedAt); if (isNaN(t.getTime())) return "No date"; const d = (Date.now() - t.getTime()) / 1000; if (d < 60) return "just now"; if (d < 3600) return `${Math.floor(d / 60)}m ago`; if (d < 86400) return `${Math.floor(d / 3600)}h ago`; return t.toLocaleDateString(); })()}
                         </p>
                       </div>
                     ))}
@@ -891,6 +1034,24 @@ export default function CustomerMeasurement() {
                 </h3>
                 <span className="text-[10px] text-muted-foreground">{measurements.length} record{measurements.length !== 1 ? "s" : ""}</span>
               </div>
+
+              {/* Measurement search */}
+              {measurements.length > 0 && (
+                <div className="relative">
+                  <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                  <input
+                    placeholder="Search measurements..."
+                    value={measurementSearch}
+                    onChange={e => setMeasurementSearch(e.target.value)}
+                    className="w-full pl-9 pr-9 py-2.5 text-sm bg-card border border-border rounded-xl outline-none focus:border-primary/50 transition-all"
+                  />
+                  {measurementSearch && (
+                    <button onClick={() => setMeasurementSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted">
+                      <X size={11} className="text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Category filter chips */}
               {uniqueCategories.length > 1 && (
@@ -930,64 +1091,80 @@ export default function CustomerMeasurement() {
                   )}
                 </div>
               ) : (
-                displayedMeasurements.map(m => (
-                  <div key={m.id} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:border-primary/20 transition-all">
-                    <div className="p-4 bg-muted/10 flex justify-between items-center border-b border-border">
-                      <div>
-                        <p className="text-xs font-black">{m.label}</p>
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-widest">{m.category}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => setLocation(`/measurement-card?customerId=${selectedCustomer.id}&recordId=${m.id}`)}
-                          className="p-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                          title="Generate Card"
-                        >
-                          <LayoutGrid size={12} />
-                        </button>
-                        <button
-                          onClick={() => handleRepeatMeasurement(m)}
-                          className="p-1.5 rounded-md bg-muted/50 hover:bg-muted text-muted-foreground transition-colors"
-                          title="Repeat (new record with same template)"
-                        >
-                          <RefreshCw size={12} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            const vals = parseMeasurements(m.values);
-                            setMeasurementForm({
-                              id: m.id,
-                              label: m.label,
-                              category: m.category,
-                              unit: (m as any).unit || "Inches",
-                              values: vals,
-                              customFields: []
-                            });
-                            setView("edit_measurement");
-                          }}
-                          className="p-1.5 rounded-md hover:bg-muted text-foreground"
-                          title="Edit"
-                        >
-                          <Edit2 size={12} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteMeasurement(m.id)}
-                          className="p-1.5 rounded-md hover:bg-red-500/10 text-red-500"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-2">
-                      {Object.entries(parseMeasurements(m.values)).map(([k, v]) => (
-                        <div key={k} className="flex justify-between border-b border-border/30 pb-1.5">
-                          <span className="text-[10px] text-muted-foreground font-medium">{k}</span>
-                          <span className="text-[10px] font-bold">{v as string}{(m as any).unit === "CM" ? "cm" : '"'}</span>
+                displayedMeasurements.map(m => {
+                  const vals = parseMeasurements(m.values);
+                  const isImageRecord = m.category === "Image Upload" && vals.__image__;
+                  return (
+                    <div key={m.id} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:border-primary/20 transition-all">
+                      <div className="p-4 bg-muted/10 flex justify-between items-center border-b border-border">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            {isImageRecord && <ImageIcon size={11} className="text-primary" />}
+                            <p className="text-xs font-black">{m.label}</p>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-widest">{m.category}</p>
                         </div>
-                      ))}
+                        <div className="flex items-center gap-1.5">
+                          {!isImageRecord && (
+                            <>
+                              <button
+                                onClick={() => setLocation(`/measurement-card?customerId=${selectedCustomer.id}&recordId=${m.id}`)}
+                                className="p-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                title="Generate Card"
+                              >
+                                <LayoutGrid size={12} />
+                              </button>
+                              <button
+                                onClick={() => handleRepeatMeasurement(m)}
+                                className="p-1.5 rounded-md bg-muted/50 hover:bg-muted text-muted-foreground transition-colors"
+                                title="Repeat"
+                              >
+                                <RefreshCw size={12} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setMeasurementForm({
+                                    id: m.id,
+                                    label: m.label,
+                                    category: m.category,
+                                    unit: (m as any).unit || "Inches",
+                                    values: vals,
+                                    customFields: []
+                                  });
+                                  setView("edit_measurement");
+                                }}
+                                className="p-1.5 rounded-md hover:bg-muted text-foreground"
+                                title="Edit"
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleDeleteMeasurement(m.id)}
+                            className="p-1.5 rounded-md hover:bg-red-500/10 text-red-500"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                      {isImageRecord ? (
+                        <div className="overflow-hidden">
+                          <img src={vals.__image__ as string} alt={m.label} className="w-full max-h-64 object-cover" />
+                        </div>
+                      ) : (
+                        <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-2">
+                          {Object.entries(vals).map(([k, v]) => (
+                            <div key={k} className="flex justify-between border-b border-border/30 pb-1.5">
+                              <span className="text-[10px] text-muted-foreground font-medium">{k}</span>
+                              <span className="text-[10px] font-bold">{v as string}{(m as any).unit === "CM" ? "cm" : '"'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
             )} {/* end detailTab === "measurements" */}
@@ -1303,7 +1480,149 @@ export default function CustomerMeasurement() {
           </form>
         )}
 
-        {/* ── 5. PREMIUM TEASER ────────────────────────────────────────────── */}
+        {/* ── 5. UPLOAD MEASUREMENT IMAGE ──────────────────────────────────── */}
+        {view === "upload_measurement_image" && selectedCustomer && (
+          <div className="space-y-5 animate-in fade-in duration-300">
+            <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
+              <p className="text-xs text-muted-foreground">
+                Uploading photo for <span className="font-bold text-foreground">{selectedCustomer.name}</span>
+              </p>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1.5 block">Label</label>
+              <input
+                value={uploadImgLabel}
+                onChange={e => setUploadImgLabel(e.target.value)}
+                placeholder="e.g. Shirt measurements, Body photo..."
+                className={`${inp} py-3`}
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1.5 block">Photo *</label>
+              {uploadImgData ? (
+                <div className="relative rounded-2xl overflow-hidden border border-border group">
+                  <img src={uploadImgData} alt="Measurement" className="w-full max-h-72 object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setUploadImgData(null)}
+                    className="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full flex items-center justify-center text-white"
+                  >
+                    <X size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => uploadImgFileRef.current?.click()}
+                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-black/60 rounded-xl text-white text-[10px] font-bold"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => uploadImgFileRef.current?.click()}
+                  disabled={uploadImgLoading}
+                  className="w-full py-12 rounded-2xl border-2 border-dashed border-border hover:border-primary/40 flex flex-col items-center gap-3 text-muted-foreground hover:text-foreground transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {uploadImgLoading ? (
+                    <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin border-primary" />
+                  ) : (
+                    <>
+                      <Camera size={32} className="opacity-30" />
+                      <span className="text-sm font-bold">Tap to add photo</span>
+                      <span className="text-[10px] opacity-50">JPG · PNG · WEBP (max ~5 MB)</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <input
+                ref={uploadImgFileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploadImgLoading(true);
+                  try {
+                    const compressed = await new Promise<string>((resolve, reject) => {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const img = new Image();
+                        img.onload = () => {
+                          let w = img.width, h = img.height;
+                          const MAX = 900;
+                          if (w > MAX || h > MAX) {
+                            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                            else { w = Math.round(w * MAX / h); h = MAX; }
+                          }
+                          const canvas = document.createElement("canvas");
+                          canvas.width = w; canvas.height = h;
+                          const ctx = canvas.getContext("2d")!;
+                          ctx.drawImage(img, 0, 0, w, h);
+                          resolve(canvas.toDataURL("image/jpeg", 0.72));
+                        };
+                        img.onerror = reject;
+                        img.src = ev.target!.result as string;
+                      };
+                      reader.onerror = reject;
+                      reader.readAsDataURL(file);
+                    });
+                    setUploadImgData(compressed);
+                  } catch { toast({ title: "Error", description: "Failed to process image.", variant: "destructive" }); }
+                  finally { setUploadImgLoading(false); if (uploadImgFileRef.current) uploadImgFileRef.current.value = ""; }
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setUploadImgData(null); setView(selectedCustomer ? "client_detail" : "clients"); }}
+                className="py-3.5 rounded-2xl border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!uploadImgData || loading}
+                onClick={async () => {
+                  if (!uploadImgData || !selectedCustomer) return;
+                  setLoading(true);
+                  try {
+                    const res = await fetch("/api/tailoring/measurements", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        customerId: selectedCustomer.id,
+                        label: uploadImgLabel.trim() || "Measurement Photo",
+                        category: "Image Upload",
+                        unit: "Inches",
+                        values: { __image__: uploadImgData }
+                      })
+                    });
+                    if (res.ok) {
+                      toast({ title: "Saved", description: "Photo saved as measurement record." });
+                      fetchMeasurements(selectedCustomer.id);
+                      setUploadImgData(null);
+                      setView("client_detail");
+                    } else {
+                      toast({ title: "Error", description: "Failed to save photo.", variant: "destructive" });
+                    }
+                  } catch { toast({ title: "Error", description: "Connection error.", variant: "destructive" }); }
+                  finally { setLoading(false); }
+                }}
+                className="py-3.5 rounded-2xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading ? "Saving..." : <><Upload size={15} /> Save Photo</>}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── 6. PREMIUM TEASER ────────────────────────────────────────────── */}
         {(view === "clients" || view === "client_detail") && (
           isPremium ? (
             <div className="mt-12 p-6 rounded-3xl bg-primary/5 border border-primary/10 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
