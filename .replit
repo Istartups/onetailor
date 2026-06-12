@@ -44,13 +44,13 @@ outputType = "console"
 name = "OneTailor PWA"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd artifacts/one-tailor && pnpm dev"
 waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[workflows.workflow]]
 name = "Admin Portal"
@@ -82,11 +82,7 @@ externalPort = 3002
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
-
-[[ports]]
-localPort = 5174
-externalPort = 3003
+externalPort = 80
 
 [[ports]]
 localPort = 8080
