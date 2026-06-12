@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --import tsx --watch src/index.ts | pino-pretty",
+    "dev": "node --import tsx --watch src/index.ts | ./node_modules/.bin/pino-pretty",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "test": "vitest run",
