@@ -89,7 +89,7 @@ export default function MeasurementCardGenerator() {
   // ── Fetch records when customer chosen ────────────────────────────────────
   useEffect(() => {
     if (!selectedCustomer) return;
-    fetch(`/api/tailoring/measurements?customerId=${selectedCustomer.id}`)
+    fetch(`/api/tailoring/measurements/${selectedCustomer.id}`)
       .then(r => r.json())
       .then(data => Array.isArray(data) ? setRecords(data) : setRecords([]))
       .catch(() => setRecords([]));
