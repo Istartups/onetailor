@@ -24,10 +24,6 @@ args = "API Server"
 task = "workflow.run"
 args = "OneTailor PWA"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Admin Portal"
-
 [[workflows.workflow]]
 name = "API Server"
 author = "agent"
@@ -44,22 +40,10 @@ outputType = "console"
 name = "OneTailor PWA"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd artifacts/one-tailor && pnpm dev"
 waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Admin Portal"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd artifacts/admin-portal && pnpm dev"
-waitForPort = 5174
 
 [workflows.workflow.metadata]
 outputType = "webview"
@@ -82,11 +66,7 @@ externalPort = 6800
 
 [[ports]]
 localPort = 5000
-externalPort = 6000
-
-[[ports]]
-localPort = 5173
-externalPort = 5173
+externalPort = 80
 
 [[ports]]
 localPort = 5174
