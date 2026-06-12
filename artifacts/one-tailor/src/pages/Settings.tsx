@@ -1,5 +1,5 @@
 import { 
-  Moon, Sun, Trash2, Info, Crown, Download, Upload,
+  Moon, Sun, Trash2, Info, Crown, ChevronRight, Download, Upload,
   Monitor, Palette, Save, ShieldCheck, User, Settings as SettingsIcon, Database, 
   Smartphone, Mail, Phone, Instagram, Facebook,
   Pipette, Loader2
@@ -252,7 +252,7 @@ export default function Settings() {
 
       {/* Tabs Navigation */}
       <div className="relative sticky top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border">
-        <div ref={tabsRef} className="flex overflow-x-auto gap-1 px-4 py-2 no-scrollbar">
+        <div ref={tabsRef} className="flex overflow-x-auto gap-1 px-4 py-2 no-scrollbar md:pr-4 pr-10">
           {[
             { id: "brandkit",   label: "Brand Kit",  icon: Palette },
             { id: "general",    label: "General",    icon: SettingsIcon },
@@ -270,6 +270,13 @@ export default function Settings() {
             </button>
           ))}
         </div>
+        <button
+          onClick={() => tabsRef.current?.scrollBy({ left: 120, behavior: "smooth" })}
+          className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center shadow-sm z-10 active:scale-90 transition-all"
+          aria-label="Scroll tabs"
+        >
+          <ChevronRight size={14} className="text-muted-foreground" />
+        </button>
       </div>
 
       <div className="px-4 py-5 space-y-6">

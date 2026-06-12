@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
-import { Search, Star, X, Plus, Database, Ruler } from "lucide-react";
+import { Search, Star, X, Plus, Database, Ruler, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useAppStore } from "@/store/useAppStore";
 import { ALL_TOOLS, CATEGORY_META, searchTools, type ToolCategory } from "@/lib/tools";
@@ -35,12 +35,28 @@ export default function AllTools() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const recentTools = useAppStore((s) => s.recentTools);
+
   const displayed = useMemo(() => {
     if (query.trim()) return searchTools(query);
     if (activeFilter === "fav") return ALL_TOOLS.filter((t) => favorites.includes(t.id));
     if (activeFilter === "all") return null;
     return ALL_TOOLS.filter((t) => t.category === activeFilter);
   }, [query, activeFilter, favorites]);
+
+  // Suggested tools for the empty-favourites state:
+  // prioritise recently-used tools, then popular tools, max 6
+  const suggestedTools = useMemo(() => {
+    const recentIds = recentTools.filter(id => !favorites.includes(id));
+    const fromRecent = recentIds
+      .map(id => ALL_TOOLS.find(t => t.id === id))
+      .filter((t): t is (typeof ALL_TOOLS)[number] => !!t)
+      .slice(0, 4);
+    const popularFallback = ALL_TOOLS
+      .filter(t => t.popular && !favorites.includes(t.id) && !recentIds.includes(t.id))
+      .slice(0, 6 - fromRecent.length);
+    return [...fromRecent, ...popularFallback].slice(0, 6);
+  }, [recentTools, favorites]);
 
   const handleOpen = (toolId: string, path: string) => {
     addRecentTool(toolId);
@@ -194,8 +210,80 @@ export default function AllTools() {
           </div>
         )}
 
+        {/* Favourites empty state */}
+        {!query && activeFilter === "fav" && favorites.length === 0 && (
+          <div className="space-y-5 pt-2">
+            {/* Hero empty state */}
+            <div className="text-center py-10 rounded-3xl border border-dashed"
+              style={{ borderColor: "rgba(212,160,32,0.25)", background: "rgba(212,160,32,0.03)" }}>
+              <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                style={{ background: "rgba(212,160,32,0.12)", border: "1px solid rgba(212,160,32,0.25)" }}>
+                <Star size={26} style={{ color: "hsl(43,82%,55%)" }} />
+              </div>
+              <p className="text-base font-black" style={{ color: "hsl(43,25%,90%)" }}>No favourites yet</p>
+              <p className="text-xs text-muted-foreground mt-1 px-8 leading-relaxed">
+                Tap the ⭐ on any tool to pin it here for one-tap access
+              </p>
+            </div>
+
+            {/* Suggestions section */}
+            {suggestedTools.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <Sparkles size={13} style={{ color: "hsl(43,82%,55%)" }} />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    {recentTools.length > 0 ? "Based on your usage" : "Popular tools to star"}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {suggestedTools.map(tool => {
+                    const Icon = tool.icon;
+                    return (
+                      <div key={tool.id}
+                        className="flex items-center gap-3 p-3.5 rounded-2xl transition-all"
+                        style={{
+                          background: "linear-gradient(135deg, hsl(218,44%,11%) 0%, hsl(218,40%,12%) 100%)",
+                          border: `1px solid ${tool.borderColor}`,
+                        }}>
+                        <button className="flex items-center gap-3 flex-1 min-w-0 text-left active:scale-[0.98] transition-transform"
+                          onClick={() => handleOpen(tool.id, tool.path)}>
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ background: tool.iconBg, border: `1px solid ${tool.borderColor}` }}>
+                            <Icon size={18} strokeWidth={2} style={{ color: tool.iconColor }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-bold text-sm" style={{ color: "hsl(43,25%,90%)" }}>{tool.name}</p>
+                              {tool.popular && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                                  style={{ background: "rgba(212,160,32,0.12)", color: "hsl(43,82%,55%)", border: "1px solid rgba(212,160,32,0.2)" }}>
+                                  POPULAR
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">{tool.description}</p>
+                          </div>
+                        </button>
+                        <button onClick={() => toggleFavorite(tool.id)}
+                          className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all active:scale-90"
+                          style={{ background: "rgba(212,160,32,0.08)", borderColor: "rgba(212,160,32,0.25)", color: "hsl(43,82%,55%)" }}>
+                          <Star size={12} fill="none" strokeWidth={2} style={{ color: "hsl(43,82%,55%)" }} />
+                          <span className="text-[10px] font-bold">Star</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-center text-[10px] text-muted-foreground mt-4 px-4">
+                  Starred tools appear here instantly — works offline too
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Filtered / search list */}
-        {(query || activeFilter !== "all") && (
+        {(query || (activeFilter !== "all" && !(activeFilter === "fav" && favorites.length === 0))) && (
           <div className="space-y-2">
             {(!displayed || displayed.length === 0) ? (
               <div className="text-center py-12">
