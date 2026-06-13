@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   Search, Star, Crown, ChevronRight, Grid3X3, Clock, ArrowRight,
   ShieldCheck, X, ExternalLink, Users, Ruler, LayoutGrid,
-  ChevronDown, MoreHorizontal, MessageSquareText, Send
+  ChevronDown, MoreHorizontal
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { ALL_TOOLS, CATEGORY_LABELS, type ToolCategory, getToolById } from "@/lib/tools";
@@ -113,13 +113,6 @@ export default function Home() {
   const [homeCategoryFilter,   setHomeCategoryFilter]   = useState("all");
   const [totalCustomers,       setTotalCustomers]       = useState<number | null>(null);
 
-  // ── Bulk message modal ──────────────────────────────────────────────────────
-  const [showBulkModal,        setShowBulkModal]        = useState(false);
-  const [bulkMessage,          setBulkMessage]          = useState("Hello, hope you're doing well! Just reaching out from our tailoring service. 😊");
-  const [bulkCustomers,        setBulkCustomers]        = useState<HomeCustomer[]>([]);
-  const [bulkLoading,          setBulkLoading]          = useState(false);
-  const [bulkSentIdx,          setBulkSentIdx]          = useState<number>(-1);
-
   // Fetch recent measurements on mount
   useEffect(() => {
     if (!deviceId) return;
@@ -138,31 +131,6 @@ export default function Home() {
       .then((all: HomeCustomer[]) => setTotalCustomers(all.length))
       .catch(() => setTotalCustomers(0));
   }, [deviceId]);
-
-  // Load customers for bulk messaging modal
-  const handleOpenBulkModal = () => {
-    setShowBulkModal(true);
-    setBulkSentIdx(-1);
-    setBulkLoading(true);
-    const did = deviceId || getDeviceId();
-    fetch(`/api/tailoring/customers?deviceId=${did}&limit=9999`)
-      .then(r => r.ok ? r.json() : [])
-      .then((all: HomeCustomer[]) => { setBulkCustomers(all.filter(c => !!c.phone)); setBulkLoading(false); })
-      .catch(() => { setBulkCustomers([]); setBulkLoading(false); });
-  };
-
-  const sendBulkOne = (c: HomeCustomer) => {
-    const phone = c.phone.replace(/\D/g, "");
-    if (!phone) return;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(bulkMessage)}`, "_blank");
-  };
-
-  const sendBulkAll = () => {
-    bulkCustomers.forEach((c, i) => {
-      setTimeout(() => sendBulkOne(c), i * 800);
-    });
-    setBulkSentIdx(bulkCustomers.length - 1);
-  };
 
   // Fetch customers for modal
   useEffect(() => {
@@ -436,66 +404,6 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Bulk Message Modal */}
-      {showBulkModal && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-end justify-center" onClick={() => setShowBulkModal(false)}>
-          <div className="bg-card w-full max-w-lg rounded-t-3xl border border-border border-b-0 shadow-2xl pb-safe max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-center pt-3 pb-1 shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="px-5 pt-2 pb-4 shrink-0">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="text-base font-black">Bulk WhatsApp Message</h3>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{bulkLoading ? "Loading…" : `${bulkCustomers.length} client${bulkCustomers.length !== 1 ? "s" : ""} with phone numbers`}</p>
-                </div>
-                <button onClick={() => setShowBulkModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/50"><X size={15} /></button>
-              </div>
-              <textarea
-                value={bulkMessage}
-                onChange={e => setBulkMessage(e.target.value)}
-                rows={3}
-                className="w-full rounded-xl bg-muted/20 border border-border p-3 text-sm resize-none outline-none focus:border-primary/50"
-                placeholder="Type your message…"
-              />
-              <button
-                onClick={sendBulkAll}
-                disabled={bulkLoading || bulkCustomers.length === 0 || !bulkMessage.trim()}
-                className="w-full mt-3 py-3.5 bg-green-500 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.134.558 4.134 1.535 5.867L0 24l6.335-1.66A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.655-.502-5.186-1.381l-.372-.221-3.863 1.013 1.032-3.764-.242-.389A9.937 9.937 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-                Send to All {bulkCustomers.length > 0 ? `(${bulkCustomers.length})` : ""} — Opens WhatsApp
-              </button>
-              <p className="text-[9px] text-muted-foreground text-center mt-2">Each client opens in a new WhatsApp tab with your message pre-filled.</p>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 pb-6">
-              {bulkLoading ? (
-                <div className="flex items-center justify-center py-8 text-muted-foreground"><div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin border-primary" /></div>
-              ) : bulkCustomers.length === 0 ? (
-                <p className="text-center text-xs text-muted-foreground py-8">No clients with phone numbers found.</p>
-              ) : (
-                <div className="space-y-2">
-                  {bulkCustomers.map((c, i) => (
-                    <div key={c.id} className="flex items-center gap-3 p-3 rounded-2xl bg-muted/20 border border-border">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${c.gender === "female" ? "bg-pink-500/10 text-pink-500" : "bg-blue-500/10 text-blue-500"}`}>
-                        {c.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold truncate">{c.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{c.phone}</p>
-                      </div>
-                      <button onClick={() => sendBulkOne(c)} className="shrink-0 w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-400 border border-green-500/20 active:scale-90 transition-transform">
-                        <Send size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Payment Status Banner */}
       <PremiumStatusBanner />
 
@@ -636,20 +544,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Bulk WhatsApp Message button */}
-        <button
-          onClick={handleOpenBulkModal}
-          className="w-full mt-2.5 flex items-center gap-3 p-3.5 rounded-2xl bg-green-500/5 border border-green-500/20 active:scale-[0.98] transition-all"
-        >
-          <div className="w-8 h-8 rounded-xl bg-green-500/15 flex items-center justify-center shrink-0">
-            <MessageSquareText size={16} className="text-green-400" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-[12px] font-black text-foreground leading-tight">Bulk WhatsApp Message</p>
-            <p className="text-[9px] text-muted-foreground font-bold mt-0.5">Send a message to all your clients at once</p>
-          </div>
-          <ChevronRight size={14} className="text-muted-foreground shrink-0" />
-        </button>
       </section>
 
       {/* ── Recent Measurements Widget ──────────────────────────────────────── */}

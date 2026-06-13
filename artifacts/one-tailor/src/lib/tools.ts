@@ -1,7 +1,7 @@
 import {
   Ruler, Calculator,
   CalendarClock, ScanLine, Shirt,
-  Tag, Palette, Users, LayoutGrid, Layers, NotebookPen
+  Tag, Palette, Users, LayoutGrid, Layers, NotebookPen, MessageSquareText
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -36,6 +36,19 @@ export const ALL_TOOLS: Tool[] = [
     borderColor: "rgba(59,130,246,0.18)",
     glow: "rgba(59,130,246,0.04)",
     popular: true,
+  },
+  {
+    id: "message-center",
+    path: "/message-center",
+    name: "Message Center",
+    description: "Send WhatsApp, SMS & email messages to all your clients.",
+    category: "clients",
+    icon: MessageSquareText,
+    iconBg: "rgba(34,197,94,0.12)",
+    iconColor: "hsl(142,71%,45%)",
+    borderColor: "rgba(34,197,94,0.18)",
+    glow: "rgba(34,197,94,0.04)",
+    isNew: true,
   },
   {
     id: "tailor-notes",

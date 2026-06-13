@@ -31,6 +31,7 @@ const FabricColorMatcher          = lazy(() => import("@/pages/FabricColorMatche
 const InviteTailors               = lazy(() => import("@/pages/InviteTailors"));
 const Account                     = lazy(() => import("@/pages/Account"));
 const TailorNotes                 = lazy(() => import("@/pages/TailorNotes"));
+const MessageCenter               = lazy(() => import("@/pages/MessageCenter"));
 const NotFound                    = lazy(() => import("@/pages/not-found"));
 
 function LoadingFallback() {
@@ -79,6 +80,7 @@ function Router() {
         <Route path="/invite"             component={InviteTailors} />
         <Route path="/account"            component={Account} />
         <Route path="/notes"              component={TailorNotes} />
+        <Route path="/message-center"     component={MessageCenter} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
