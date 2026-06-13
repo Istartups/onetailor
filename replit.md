@@ -14,7 +14,7 @@ A full-stack business tools platform for tailors (PWA) with an admin dashboard f
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5 (port 8080 via workflow, path `/api`)
+- API: Express 5 (port 3000, proxied as `/api`)
 - DB: PostgreSQL + Drizzle ORM (13 tables)
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
@@ -23,8 +23,8 @@ A full-stack business tools platform for tailors (PWA) with an admin dashboard f
 
 ## Where things live
 
-- `artifacts/one-tailor/` — PWA for tailors (port 25497, path `/`)
-- `artifacts/admin-portal/` — Admin dashboard (port 25580, path `/admin-portal/`)
+- `artifacts/one-tailor/` — PWA for tailors (port 5000, path `/` — default preview)
+- `artifacts/admin-portal/` — Admin dashboard (port 3002, path `/admin-portal/`)
 - `artifacts/api-server/src/routes/` — Express route handlers (admin, license, payment, user, tailoring, notification)
 - `lib/db/src/schema/index.ts` — Drizzle schema (source of truth for all 13 tables)
 - `lib/api-spec/openapi.yaml` — OpenAPI spec
@@ -53,26 +53,52 @@ When you export this project to GitHub and import it into a new Replit:
    - `DATABASE_URL` — provision a new PostgreSQL database (Replit Database tab) and paste the connection string
    - `SESSION_SECRET` — any long random string (e.g. `openssl rand -hex 32`)
 
-2. **Install dependencies** — run `pnpm install` once from the workspace root after import.
+2. **Install dependencies** — open the Shell tab and run `pnpm install` from the workspace root. This is required on every fresh import — workflows will fail silently with `node_modules missing` until this is done.
 
-3. **No port conflicts** — ports are configured via env vars and handled by Replit's proxy automatically:
-   - API server: `8080` (hardcoded in `artifacts/api-server/src/index.ts`)
-   - Admin Portal: `3002` (set via `PORT=3002` in the workflow command; change if needed)
-   - PWA: `5000` (default; change `PORT` env in the workflow command if needed)
+3. **Restart all three workflows** — after install completes, restart `API Server`, `Admin Portal`, and `OneTailor PWA` from the Workflows panel. The preview will be blank until all three are running.
 
-4. **Workflows are preserved** — the `.replit` file is committed, so all three workflows (API Server, Admin Portal, OneTailor PWA) restore automatically.
+4. **Hard-refresh the preview** — wait ~5 seconds after workflows show "Running", then press Ctrl+Shift+R (Cmd+Shift+R on Mac) in the Replit preview pane.
 
-5. **First boot** — the API server auto-migrates all tables on startup. The default admin account (`admin` / `admin123`) is created on the first request if no admin exists.
+5. **Ports** — handled automatically by Replit's proxy:
+   - PWA: port `5000` → default preview URL (path `/`)
+   - Admin Portal: port `3002` → path `/admin-portal/`
+   - API Server: port `3000` → proxied as `/api`
+
+6. **First boot** — the API server auto-migrates all tables on startup. The default admin account (`admin` / `admin123`) is created on first request if no admin exists.
 
 ## FIXLIVE — App Blank / Preview Not Showing
 
-If the PWA or Admin Portal appears blank or the preview iframe shows nothing:
+**Most common cause after a fresh import: `node_modules` are missing.** Run `pnpm install` in the Shell, then restart all workflows.
 
-1. **Restart the workflows** — Go to the Workflows panel and restart both `OneTailor PWA` and `Admin Portal`. The Vite dev servers sometimes lose their HMR connection after inactivity or a container sleep.
-2. **Confirm all three are running** — API Server, Admin Portal, and OneTailor PWA must all show "Running" with output in their logs. If a workflow shows no log output, it has silently exited — restart it.
-3. **Hard-refresh the preview** — After restarting, wait ~5 seconds then hard-refresh (Ctrl+Shift+R / Cmd+Shift+R) in the Replit preview pane.
-4. **Check the correct port** — Admin Portal runs on port `3002` (path `/admin-portal/`); PWA runs on port `5000` (path `/`). If the Replit preview pane is pointing at the wrong port, switch it using the port selector at the top of the preview pane.
-5. **API Server down** — If the apps load but show empty data or 500 errors, check the API Server workflow. It runs on port `3000` internally (proxied as `/api`). Restart it and wait for the `🚀 Backend Server running` log line.
+### Step-by-step fix
+
+1. **Install packages first** (fresh import only) — open the Shell tab and run:
+   ```
+   pnpm install
+   ```
+   Wait for `Done in Xs` before proceeding. If workflows were already started before install, they will have failed — that's expected.
+
+2. **Restart all three workflows** — go to the Workflows panel and restart each one:
+   - `API Server`
+   - `Admin Portal`
+   - `OneTailor PWA`
+   
+   Each must show **"Running"** with log output. A workflow showing no logs has silently exited — restart it.
+
+3. **Confirm the API server booted** — check the `API Server` workflow log for this line:
+   ```
+   🚀 Backend Server running at http://127.0.0.1:3000
+   ```
+   If missing, the API server crashed — check its log for errors.
+
+4. **Hard-refresh the preview** — after all three are running, wait ~5 seconds then press **Ctrl+Shift+R** (or Cmd+Shift+R on Mac) in the Replit preview pane.
+
+5. **Check you're on the right port** — use the port selector at the top of the preview pane:
+   - **PWA** (default preview): port `5000` — path `/`
+   - **Admin Portal**: port `3002` — path `/admin-portal/`
+   - Logging in to Admin: `admin` / `admin123`
+
+6. **Apps load but show no data / 500 errors** — the API Server workflow is down. Restart it and wait for the `🚀 Backend Server running` log line before refreshing the frontend.
 
 ## Gotchas
 
