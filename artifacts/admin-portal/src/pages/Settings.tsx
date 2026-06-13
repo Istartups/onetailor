@@ -532,30 +532,31 @@ export default function Settings() {
 
                   <div className="border-t border-border/50 pt-6 space-y-4">
                     <h3 className="text-sm font-bold text-primary flex items-center gap-2">
-                      <Zap className="w-4 h-4" /> Unlock OneTailor Pro Configuration
+                      <Zap className="w-4 h-4" /> Free User Premium Text
                     </h3>
+                    <p className="text-xs text-muted-foreground -mt-1">Text shown on the upgrade lock screen to free users only.</p>
                     <div className="grid grid-cols-1 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Popup Title</label>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Lock Screen Title</label>
                         <Input
                           value={settings.proUpgradeTitle || ""}
                           onChange={(e) => setSettings({...settings, proUpgradeTitle: e.target.value})}
-                          placeholder="e.g. Unlock OneTailor Pro"
+                          placeholder="e.g. Unlock Premium"
                           className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Pro Upgrade Popup Message</label>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Body Text</label>
                         <Textarea 
                           value={settings.proUpgradeMessage || ""}
                           onChange={(e) => setSettings({...settings, proUpgradeMessage: e.target.value})}
                           className="min-h-[100px] rounded-xl bg-muted/30 border-border font-medium leading-relaxed text-foreground"
-                          placeholder="Enter the message users see when clicking 'Unlock Premium'..."
+                          placeholder="e.g. Unlock professional features: unlimited client records, full measurement history..."
                         />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Button Link</label>
+                          <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Button Link (optional)</label>
                           <div className="relative">
                             <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/40" />
                             <Input 
@@ -567,10 +568,11 @@ export default function Settings() {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Button Text</label>
+                          <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">CTA Button Text</label>
                           <Input 
                             value={settings.proUpgradeButtonText || ""}
                             onChange={(e) => setSettings({...settings, proUpgradeButtonText: e.target.value})}
+                            placeholder="e.g. Unlock Premium Now"
                             className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
                           />
                         </div>

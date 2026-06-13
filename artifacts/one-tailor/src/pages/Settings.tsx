@@ -13,7 +13,7 @@ import { validateName, validatePhone } from "@/lib/utils";
 
 const APP_VERSION = "2.0.0";
 
-type SettingsTab = "general" | "brandkit" | "backup" | "appearance" | "about";
+type SettingsTab = "general" | "brandkit" | "backup" | "appearance" | "about" | "messages";
 
 // ─── Backup Tab Component ─────────────────────────────────────────────────────
 
@@ -434,6 +434,7 @@ export default function Settings() {
             { id: "general",    label: "General",    icon: SettingsIcon },
             { id: "appearance", label: "Display",    icon: Monitor },
             { id: "backup",     label: "Backup",     icon: Database },
+            { id: "messages",   label: "Messages",   icon: MessageCircle },
             { id: "about",      label: "About",      icon: Info },
           ].map(tab => (
             <button
@@ -892,25 +893,6 @@ export default function Settings() {
           <BackupTab isPremium={isPremium} toast={toast} />
         )}
 
-        {activeTab === "backup_old_placeholder" && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-             <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-4 ml-1">Danger Zone</p>
-                <button 
-                  onClick={handleClearData} 
-                  className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${showClearConfirm ? "bg-red-500 text-white" : "bg-red-500/10 text-red-500"}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Trash2 size={18} />
-                    <div className="text-left">
-                      <p className="text-xs font-black uppercase tracking-widest">{showClearConfirm ? "TAP TO CONFIRM" : "CLEAR ALL DATA"}</p>
-                    </div>
-                  </div>
-                  <ChevronRight size={16} />
-                </button>
-             </div>
-          </div>
-        )}
 
         {/* 5. ABOUT TAB */}
         {activeTab === "about" && (
@@ -928,6 +910,142 @@ export default function Settings() {
                    <span className="text-[10px] font-medium text-muted-foreground/50">© 2026 OneTailor Digital Services</span>
                 </div>
              </div>
+          </div>
+        )}
+
+        {/* 6. MESSAGES TAB */}
+        {activeTab === "messages" && (
+          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+
+            {/* WhatsApp Templates */}
+            <div className="bg-card border border-border rounded-3xl overflow-hidden">
+              <div className="p-4 border-b border-border bg-green-500/5 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center">
+                  <MessageCircle size={16} className="text-green-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-black">WhatsApp Templates</p>
+                  <p className="text-[9px] text-muted-foreground font-medium">Tap to open WhatsApp with prefilled text</p>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                {[
+                  {
+                    name: "Order Ready",
+                    text: `Hello! Your order is ready for pickup. Please come in at your earliest convenience. Thank you for choosing ${businessProfile?.name || appName || "us"}! 🙏`,
+                  },
+                  {
+                    name: "Appointment Reminder",
+                    text: `Hi! Just a friendly reminder about your upcoming appointment with ${businessProfile?.name || appName || "us"}. Please let us know if you need to reschedule. 😊`,
+                  },
+                  {
+                    name: "Thank You",
+                    text: `Thank you for choosing ${businessProfile?.name || appName || "us"}! It was a pleasure serving you. We hope you love your outfit. Please reach out anytime! ✨`,
+                  },
+                ].map((tpl, i) => (
+                  <div key={i} className="bg-muted/30 rounded-2xl p-4 space-y-2.5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-green-600">{tpl.name}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{tpl.text}</p>
+                    <button
+                      onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(tpl.text)}`, '_blank')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-600 rounded-xl text-[10px] font-bold transition-all active:scale-95"
+                    >
+                      <MessageCircle size={11} /> Send via WhatsApp
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Email Templates */}
+            <div className="bg-card border border-border rounded-3xl overflow-hidden">
+              <div className="p-4 border-b border-border bg-blue-500/5 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <Mail size={16} className="text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-black">Email Templates</p>
+                  <p className="text-[9px] text-muted-foreground font-medium">Tap to open your mail app with prefilled text</p>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                {[
+                  {
+                    name: "Order Ready",
+                    subject: "Your Order is Ready for Pickup!",
+                    body: `Dear Customer,\n\nWe are delighted to inform you that your order is ready for pickup.\n\nPlease visit us at your earliest convenience.\n\nKind regards,\n${businessProfile?.name || appName || "OneTailor"}`,
+                  },
+                  {
+                    name: "Appointment Confirmed",
+                    subject: "Appointment Confirmed",
+                    body: `Dear Customer,\n\nYour appointment with ${businessProfile?.name || appName || "us"} has been confirmed.\n\nWe look forward to seeing you soon!\n\nKind regards,\n${businessProfile?.name || appName || "OneTailor"}`,
+                  },
+                  {
+                    name: "Payment Received",
+                    subject: "Payment Received – Thank You!",
+                    body: `Dear Customer,\n\nWe have received your payment. Thank you so much for your business!\n\nPlease keep this email for your records.\n\nKind regards,\n${businessProfile?.name || appName || "OneTailor"}`,
+                  },
+                ].map((tpl, i) => (
+                  <div key={i} className="bg-muted/30 rounded-2xl p-4 space-y-2.5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">{tpl.name}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground">Subject: {tpl.subject}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">{tpl.body}</p>
+                    <button
+                      onClick={() => window.open(`mailto:?subject=${encodeURIComponent(tpl.subject)}&body=${encodeURIComponent(tpl.body)}`, '_blank')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-xl text-[10px] font-bold transition-all active:scale-95"
+                    >
+                      <Mail size={11} /> Open in Mail App
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SMS Templates */}
+            <div className="bg-card border border-border rounded-3xl overflow-hidden">
+              <div className="p-4 border-b border-border bg-purple-500/5 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                  <Smartphone size={16} className="text-purple-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-black">SMS Templates</p>
+                  <p className="text-[9px] text-muted-foreground font-medium">Tap to open SMS app with prefilled text (max 159 chars)</p>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                {[
+                  {
+                    name: "Order Ready",
+                    text: "Your order is ready! Please come pick it up at your earliest. Thank you for choosing us!",
+                  },
+                  {
+                    name: "Appointment Reminder",
+                    text: "Reminder: Your appointment is coming up. Please confirm or call us to reschedule. Thank you!",
+                  },
+                  {
+                    name: "Thank You",
+                    text: "Thank you for choosing us! Your order is in progress and will be ready soon. We will notify you!",
+                  },
+                ].map((tpl, i) => (
+                  <div key={i} className="bg-muted/30 rounded-2xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-purple-600">{tpl.name}</p>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${tpl.text.length > 159 ? "bg-red-500/10 text-red-500" : "bg-muted text-muted-foreground"}`}>
+                        {tpl.text.length}/159
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{tpl.text}</p>
+                    <button
+                      onClick={() => window.open(`sms:?body=${encodeURIComponent(tpl.text)}`)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 rounded-xl text-[10px] font-bold transition-all active:scale-95"
+                    >
+                      <Smartphone size={11} /> Open in SMS App
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         )}
 

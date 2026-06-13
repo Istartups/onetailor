@@ -277,10 +277,10 @@ export const useAppStore = create<AppState>()(
       upgradeLink: "",
       measurementLimit: 25,
       proUpgradeMessage:
-        "Want to backup your customer measurement and never lose them if you phone or device is broken stolen etc. Unlock Premium to access more features beyond measurement, manage order, delivery, payment, inventory, finance, expense and so much more.",
+        "Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools.",
       proUpgradeLink: "",
-      proUpgradeButtonText: "⭐ Unlock OneTailor Pro",
-      proUpgradeTitle: "OneTailor Pro",
+      proUpgradeButtonText: "Unlock Premium Now",
+      proUpgradeTitle: "Unlock Premium",
       pendingTitle: "",
       pendingBody: "",
       pendingCTA: "",

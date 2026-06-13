@@ -503,8 +503,9 @@ async function startServer() {
         accountName: "OneTailor Technologies",
         instructions: "Pay into the account above and send proof of payment to support.",
         measurementLimit: 25,
-        proUpgradeMessage: "Unlock Premium to access all professional tools.",
-        proUpgradeButtonText: "⭐ Unlock Premium",
+        proUpgradeTitle: "Unlock Premium",
+        proUpgradeMessage: "Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools.",
+        proUpgradeButtonText: "Unlock Premium Now",
       });
     }
 

@@ -88,6 +88,11 @@ export default function CustomerMeasurement() {
   const [uploadImgLabel, setUploadImgLabel] = useState("Measurement Photo");
   const uploadImgFileRef = useRef<HTMLInputElement>(null);
 
+  // ── Edit measurement reference image ──
+  const [editRefImage, setEditRefImage] = useState<string | null>(null);
+  const [editRefImageLoading, setEditRefImageLoading] = useState(false);
+  const editRefImageRef = useRef<HTMLInputElement>(null);
+
   // ── Data state ──
   const [customers, setCustomers]         = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -448,12 +453,14 @@ export default function CustomerMeasurement() {
       }
     }
     const finalValues = { ...measurementForm.values };
+    delete finalValues['_refImage'];
     measurementForm.customFields.forEach(cf => {
       if (cf.name.trim()) {
         finalValues[cf.name.trim()] = cf.value;
         addCustomMeasurementField(cf.name.trim());
       }
     });
+    if (editRefImage) finalValues['_refImage'] = editRefImage;
     setLoading(true);
     try {
       const res = await fetch("/api/tailoring/measurements", {
@@ -1197,6 +1204,7 @@ export default function CustomerMeasurement() {
                               </button>
                               <button
                                 onClick={() => {
+                                  setEditRefImage(typeof vals._refImage === 'string' ? vals._refImage : null);
                                   setMeasurementForm({
                                     id: m.id,
                                     label: m.label,
@@ -1227,14 +1235,24 @@ export default function CustomerMeasurement() {
                           <img src={vals.__image__ as string} alt={m.label} className="w-full max-h-64 object-cover" />
                         </div>
                       ) : (
-                        <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-2">
-                          {Object.entries(vals).map(([k, v]) => (
-                            <div key={k} className="flex justify-between border-b border-border/30 pb-1.5">
-                              <span className="text-[10px] text-muted-foreground font-medium">{k}</span>
-                              <span className="text-[10px] font-bold">{v as string}{(m as any).unit === "CM" ? "cm" : '"'}</span>
+                        <>
+                          <div className="p-4 grid grid-cols-2 gap-x-6 gap-y-2">
+                            {Object.entries(vals).filter(([k]) => !k.startsWith('_')).map(([k, v]) => (
+                              <div key={k} className="flex justify-between border-b border-border/30 pb-1.5">
+                                <span className="text-[10px] text-muted-foreground font-medium">{k}</span>
+                                <span className="text-[10px] font-bold">{v as string}{(m as any).unit === "CM" ? "cm" : '"'}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {vals._refImage && typeof vals._refImage === 'string' && (
+                            <div className="px-4 pb-4">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1.5">Reference Photo</p>
+                              <div className="rounded-xl overflow-hidden border border-border">
+                                <img src={vals._refImage as string} alt="Reference" className="w-full max-h-36 object-cover" />
+                              </div>
                             </div>
-                          ))}
-                        </div>
+                          )}
+                        </>
                       )}
                     </div>
                   );
@@ -1546,6 +1564,68 @@ export default function CustomerMeasurement() {
                 </div>
               )}
             </div>
+            {/* Reference Image */}
+            <div className="space-y-3 border-t border-border/50 pt-5">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Reference Image</p>
+                {editRefImage && (
+                  <button type="button" onClick={() => setEditRefImage(null)} className="text-[10px] font-bold text-red-500">Remove</button>
+                )}
+              </div>
+              {editRefImage ? (
+                <div className="relative rounded-2xl overflow-hidden border border-border">
+                  <img src={editRefImage} alt="Reference" className="w-full max-h-44 object-cover" />
+                  <button type="button" onClick={() => editRefImageRef.current?.click()}
+                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-black/60 rounded-xl text-white text-[10px] font-bold">
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => editRefImageRef.current?.click()}
+                  disabled={editRefImageLoading}
+                  className="w-full py-7 rounded-2xl border-2 border-dashed border-border hover:border-primary/40 flex flex-col items-center gap-2 text-muted-foreground transition-all active:scale-[0.98]">
+                  {editRefImageLoading ? (
+                    <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin border-primary" />
+                  ) : (
+                    <>
+                      <Camera size={24} className="opacity-30" />
+                      <span className="text-xs font-bold">Add Reference Photo</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <input ref={editRefImageRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]; if (!file) return;
+                  setEditRefImageLoading(true);
+                  try {
+                    const compressed = await new Promise<string>((resolve, reject) => {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const img = new Image();
+                        img.onload = () => {
+                          let w = img.width, h = img.height;
+                          const MAX = 900;
+                          if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h * MAX / w); w = MAX; } else { w = Math.round(w * MAX / h); h = MAX; } }
+                          const canvas = document.createElement("canvas");
+                          canvas.width = w; canvas.height = h;
+                          const ctx = canvas.getContext("2d")!;
+                          ctx.drawImage(img, 0, 0, w, h);
+                          resolve(canvas.toDataURL("image/jpeg", 0.72));
+                        };
+                        img.onerror = reject;
+                        img.src = ev.target!.result as string;
+                      };
+                      reader.onerror = reject;
+                      reader.readAsDataURL(file);
+                    });
+                    setEditRefImage(compressed);
+                  } catch { toast({ title: "Error", description: "Failed to process image.", variant: "destructive" }); }
+                  finally { setEditRefImageLoading(false); if (editRefImageRef.current) editRefImageRef.current.value = ""; }
+                }}
+              />
+            </div>
+
             <button type="submit" disabled={loading || !measurementForm.category}
               className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50">
               {loading ? "Saving..." : "Update Record"}
