@@ -617,7 +617,7 @@ export default function Home() {
             </div>
             <div className="text-center">
               <p className="text-[12px] font-black text-foreground leading-tight">Measure</p>
-              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight mt-0.5">Quick Measurement</p>
+              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight mt-0.5">Add Quick Measurement</p>
             </div>
           </button>
 
@@ -759,7 +759,7 @@ export default function Home() {
         <div className="flex items-center justify-between mb-2.5">
           <p className="text-[10px] font-bold" style={{ color: "rgba(212,160,32,0.55)", letterSpacing: "0.2em", textTransform: "uppercase" }}>Categories</p>
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {CATEGORIES.map(({ id, emoji }) => {
             const count = ALL_TOOLS.filter((t) => t.category === id).length;
             return (
