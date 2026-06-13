@@ -147,23 +147,6 @@ export default function PremiumDetails() {
         </p>
       </div>
 
-      {/* Features */}
-      <div className="space-y-2">
-        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1 mb-3">What you get</p>
-        {PREMIUM_FEATURES.map((f, i) => (
-          <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-card border border-border hover:border-primary/30 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <f.icon size={20} />
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="text-sm font-bold">{f.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{f.desc}</p>
-            </div>
-            <Check size={15} className="text-emerald-500 shrink-0 mt-1 ml-auto" />
-          </div>
-        ))}
-      </div>
-
       {/* CTA */}
       <div className="space-y-3 pt-2">
         {!account ? (
@@ -209,6 +192,23 @@ export default function PremiumDetails() {
             </p>
           </>
         )}
+      </div>
+
+      {/* Features */}
+      <div className="space-y-2">
+        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1 mb-3">What you get</p>
+        {PREMIUM_FEATURES.map((f, i) => (
+          <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-card border border-border hover:border-primary/30 transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <f.icon size={20} />
+            </div>
+            <div className="flex-1 text-left">
+              <h3 className="text-sm font-bold">{f.title}</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{f.desc}</p>
+            </div>
+            <Check size={15} className="text-emerald-500 shrink-0 mt-1 ml-auto" />
+          </div>
+        ))}
       </div>
     </div>
   );

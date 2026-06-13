@@ -536,34 +536,34 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tagline (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Tailored for excellence"
-                      value={brandForm.tagline}
-                      onChange={e => setBrandForm({...brandForm, tagline: e.target.value})}
-                      maxLength={60}
-                      className="w-full px-4 py-3.5 rounded-2xl bg-muted/30 border border-border outline-none focus:border-primary font-medium text-sm"
-                    />
-                    <p className="text-[9px] text-muted-foreground ml-1">Shown below your business name on measurement cards</p>
-                  </div>
+                {/* Tagline — full width, own line */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tagline (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Tailored for excellence"
+                    value={brandForm.tagline}
+                    onChange={e => setBrandForm({...brandForm, tagline: e.target.value})}
+                    maxLength={60}
+                    className="w-full px-4 py-3.5 rounded-2xl bg-muted/30 border border-border outline-none focus:border-primary font-medium text-sm"
+                  />
+                  <p className="text-[9px] text-muted-foreground ml-1">Shown below your business name on measurement cards</p>
+                </div>
+
+                {/* Client ID Prefix + Business Phone — same row */}
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Client ID Prefix</label>
                     <input
                       type="text"
-                      placeholder="e.g. RS (→ RS-0001)"
+                      placeholder="e.g. RS"
                       value={brandForm.clientIdPrefix}
                       onChange={e => setBrandForm({...brandForm, clientIdPrefix: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5)})}
                       maxLength={5}
                       className="w-full px-4 py-3.5 rounded-2xl bg-muted/30 border border-border outline-none focus:border-primary font-mono font-bold text-sm"
                     />
-                    <p className="text-[9px] text-muted-foreground ml-1">Prefix for client IDs on cards (default: OT)</p>
+                    <p className="text-[9px] text-muted-foreground ml-1">Prefix for client IDs (default: OT)</p>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Business Phone</label>
                     <div className="relative">
@@ -590,6 +590,10 @@ export default function Settings() {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* WhatsApp + Email — same row */}
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">WhatsApp Number</label>
                     <div className="relative">
@@ -615,11 +619,8 @@ export default function Settings() {
                         className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-muted/30 border border-border outline-none focus:border-primary font-bold text-sm"
                       />
                     </div>
-                    <p className="text-[9px] text-muted-foreground ml-1">At least Phone or WhatsApp required</p>
+                    <p className="text-[9px] text-muted-foreground ml-1">Phone or WhatsApp required</p>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email (Optional)</label>
                     <div className="relative">

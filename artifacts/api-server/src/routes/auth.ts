@@ -315,7 +315,13 @@ router.get("/auth/me", async (req, res) => {
     return void res.json({
       user: sanitizeUser({ ...user, isPremium: isCurrentlyPremium }),
       profile: profile ?? null,
-      license: activeLicense ? { status: activeLicense.status, licenseType: activeLicense.licenseType } : null,
+      license: activeLicense ? {
+        status: activeLicense.status,
+        licenseType: activeLicense.licenseType,
+        createdAt: activeLicense.createdAt,
+        deviceLimit: activeLicense.deviceLimit,
+        method: activeLicense.method,
+      } : null,
       pendingPremiumRequest: premiumRequest
         ? {
             status: premiumRequest.status,

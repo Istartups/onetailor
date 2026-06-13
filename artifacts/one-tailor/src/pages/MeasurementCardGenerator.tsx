@@ -590,9 +590,6 @@ export default function MeasurementCardGenerator() {
                 {/* ══════════════════════════ STANDARD ══════════════════════════ */}
                 {selectedCardStyle === "standard" && (
                   <div className="p-8 space-y-8 relative">
-                    <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.03] pointer-events-none">
-                      {appLogo && <img src={appLogo} className="w-full h-full object-contain" alt="" crossOrigin="anonymous" />}
-                    </div>
                     <div className={`pb-5 border-b ${theme.border}`}>
                       <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-start">
                         <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${theme.border} bg-white shrink-0 shadow-sm`}>
@@ -607,8 +604,8 @@ export default function MeasurementCardGenerator() {
                               {socials?.whatsapp && <span className="text-[10px] font-bold opacity-70 flex items-center gap-1"><MessageCircle size={10} className="opacity-60 shrink-0" />{socials.whatsapp}</span>}
                             </div>
                           )}
-                          {addrLandmark && <p className="text-[10px] font-bold opacity-70 flex items-center gap-1"><MapPin size={10} className="opacity-50 shrink-0" />{addrLandmark}</p>}
-                          {addrStateCountry && <p className="text-[10px] font-bold opacity-60 ml-4">{addrStateCountry}</p>}
+                          {addrLandmark && <p className="text-[10px] font-bold opacity-70 flex items-center gap-1"><MapPin size={10} className="opacity-50 shrink-0" />{addrLandmark}{addrStateCountry ? `, ${addrStateCountry}` : ""}</p>}
+                          {!addrLandmark && addrStateCountry && <p className="text-[10px] font-bold opacity-60">{addrStateCountry}</p>}
                           {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[10px] font-bold opacity-70 flex items-start gap-1"><MapPin size={10} className="opacity-50 shrink-0 mt-0.5" /><span className="leading-tight">{businessProfile.address}</span></p>}
                           {(socials?.instagram || socials?.facebook || socials?.youtube) && (
                             <div className="flex flex-wrap gap-1 pt-0.5">
@@ -685,8 +682,8 @@ export default function MeasurementCardGenerator() {
                       <div className="flex items-center gap-4 mt-3 pt-3 flex-wrap" style={{borderTop:"1px solid rgba(255,255,255,0.08)"}}>
                         {businessProfile?.phone && <span className="text-[10px] font-bold opacity-60 flex items-center gap-1"><Phone size={9} />{businessProfile.phone}</span>}
                         {socials?.whatsapp && <span className="text-[10px] font-bold opacity-60 flex items-center gap-1"><MessageCircle size={9} />{socials.whatsapp}</span>}
-                        {addrLandmark && <span className="text-[10px] font-bold opacity-60 flex items-center gap-1"><MapPin size={9} />{addrLandmark}</span>}
-                        {addrStateCountry && <span className="text-[10px] font-bold opacity-40">{addrStateCountry}</span>}
+                        {addrLandmark && <span className="text-[10px] font-bold opacity-60 flex items-center gap-1"><MapPin size={9} />{addrLandmark}{addrStateCountry ? `, ${addrStateCountry}` : ""}</span>}
+                        {!addrLandmark && addrStateCountry && <span className="text-[10px] font-bold opacity-40">{addrStateCountry}</span>}
                         {!addrLandmark && !addrStateCountry && businessProfile?.address && <span className="text-[10px] font-bold opacity-60 flex items-center gap-1"><MapPin size={9} />{businessProfile.address}</span>}
                       </div>
                     </div>
@@ -746,8 +743,8 @@ export default function MeasurementCardGenerator() {
                             {socials?.whatsapp && <span className="text-[10px] opacity-55 flex items-center gap-1"><MessageCircle size={9} />{socials.whatsapp}</span>}
                           </div>
                         )}
-                        {addrLandmark && <p className="text-[10px] opacity-45 flex items-center gap-1"><MapPin size={9} />{addrLandmark}</p>}
-                        {addrStateCountry && <p className="text-[10px] opacity-35">{addrStateCountry}</p>}
+                        {addrLandmark && <p className="text-[10px] opacity-45 flex items-center gap-1"><MapPin size={9} />{addrLandmark}{addrStateCountry ? `, ${addrStateCountry}` : ""}</p>}
+                        {!addrLandmark && addrStateCountry && <p className="text-[10px] opacity-35">{addrStateCountry}</p>}
                         {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[10px] opacity-45 flex items-center gap-1"><MapPin size={9} />{businessProfile.address}</p>}
                       </div>
                     </div>
@@ -804,8 +801,8 @@ export default function MeasurementCardGenerator() {
                             {businessProfile?.phone && <span className="text-[10px] opacity-45 flex items-center gap-1"><Phone size={9} />{businessProfile.phone}</span>}
                             {socials?.whatsapp && <span className="text-[10px] opacity-45 flex items-center gap-1"><MessageCircle size={9} />{socials.whatsapp}</span>}
                           </div>
-                          {addrLandmark && <p className="text-[10px] opacity-40 flex items-center gap-1 mt-1"><MapPin size={9} />{addrLandmark}</p>}
-                          {addrStateCountry && <p className="text-[10px] opacity-30 mt-0.5 ml-4">{addrStateCountry}</p>}
+                          {addrLandmark && <p className="text-[10px] opacity-40 flex items-center gap-1 mt-1"><MapPin size={9} />{addrLandmark}{addrStateCountry ? `, ${addrStateCountry}` : ""}</p>}
+                          {!addrLandmark && addrStateCountry && <p className="text-[10px] opacity-30 mt-0.5">{addrStateCountry}</p>}
                           {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[10px] opacity-40 flex items-center gap-1 mt-1"><MapPin size={9} />{businessProfile.address}</p>}
                         </div>
                       </div>
@@ -848,8 +845,8 @@ export default function MeasurementCardGenerator() {
                       <div className="flex items-center gap-5 mt-3 flex-wrap">
                         {businessProfile?.phone && <span className="text-[10px] opacity-35">{businessProfile.phone}</span>}
                         {socials?.whatsapp && <span className="text-[10px] opacity-35">{socials.whatsapp}</span>}
-                        {addrLandmark && <span className="text-[10px] opacity-35">{addrLandmark}</span>}
-                        {addrStateCountry && <span className="text-[10px] opacity-25">{addrStateCountry}</span>}
+                        {addrLandmark && <span className="text-[10px] opacity-35">{addrLandmark}{addrStateCountry ? `, ${addrStateCountry}` : ""}</span>}
+                        {!addrLandmark && addrStateCountry && <span className="text-[10px] opacity-25">{addrStateCountry}</span>}
                         {!addrLandmark && !addrStateCountry && businessProfile?.address && <span className="text-[10px] opacity-35">{businessProfile.address}</span>}
                       </div>
                     </div>
@@ -891,8 +888,8 @@ export default function MeasurementCardGenerator() {
                         {businessProfile?.phone && <span className="text-[9px] opacity-45">{businessProfile.phone}</span>}
                         {socials?.whatsapp && <span className="text-[9px] opacity-45">{socials.whatsapp}</span>}
                       </div>
-                      {addrLandmark && <p className="text-[9px] opacity-38 mt-1 text-center">{addrLandmark}</p>}
-                      {addrStateCountry && <p className="text-[9px] opacity-28 text-center">{addrStateCountry}</p>}
+                      {addrLandmark && <p className="text-[9px] opacity-38 mt-1 text-center">{addrLandmark}{addrStateCountry ? `, ${addrStateCountry}` : ""}</p>}
+                      {!addrLandmark && addrStateCountry && <p className="text-[9px] opacity-28 text-center">{addrStateCountry}</p>}
                       {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[9px] opacity-38 mt-1 text-center">{businessProfile.address}</p>}
                     </div>
                     <div className="px-8 py-3 flex items-center gap-3" style={{borderBottom:`1px solid ${theme.hexAccent}18`}}>
@@ -947,8 +944,8 @@ export default function MeasurementCardGenerator() {
                         {businessProfile?.phone && <span className="flex items-center gap-1"><Phone size={8} />{businessProfile.phone}</span>}
                         {socials?.whatsapp && <span className="flex items-center gap-1"><MessageCircle size={8} />{socials.whatsapp}</span>}
                       </div>
-                      {addrLandmark && <p className="text-[10px] opacity-38 flex items-center justify-center gap-1"><MapPin size={8} />{addrLandmark}</p>}
-                      {addrStateCountry && <p className="text-[10px] opacity-28">{addrStateCountry}</p>}
+                      {addrLandmark && <p className="text-[10px] opacity-38 flex items-center justify-center gap-1"><MapPin size={8} />{addrLandmark}{addrStateCountry ? `, ${addrStateCountry}` : ""}</p>}
+                      {!addrLandmark && addrStateCountry && <p className="text-[10px] opacity-28 text-center">{addrStateCountry}</p>}
                       {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[10px] opacity-38 flex items-center justify-center gap-1"><MapPin size={8} />{businessProfile.address}</p>}
                     </div>
                     <div className="flex items-center gap-2 my-3">
