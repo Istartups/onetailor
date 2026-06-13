@@ -20,6 +20,7 @@ import {
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import SystemHealthBanner from "@/components/SystemHealthBanner";
 
 export default function Dashboard({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -178,6 +179,7 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="flex-1 overflow-auto">
+          <SystemHealthBanner />
           {children}
         </main>
       </div>
