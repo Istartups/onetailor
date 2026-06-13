@@ -126,6 +126,9 @@ async function startServer() {
       { name: "pwa_splash_data",             type: "TEXT" },
       { name: "premium_user_title",          type: "TEXT" },
       { name: "premium_user_message",        type: "TEXT" },
+      { name: "free_upgrade_title",          type: "TEXT" },
+      { name: "free_upgrade_message",        type: "TEXT" },
+      { name: "free_upgrade_cta",            type: "TEXT" },
     ];
     for (const col of settingsColumns) {
       try { await db.execute(sql.raw(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`)); } catch {}

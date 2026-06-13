@@ -222,9 +222,9 @@ router.get("/payment-info", async (req, res) => {
         accountNumber: "1234567890", accountName: "OneTailor Technologies",
         instructions: "Pay into the account above and send proof of payment to support.",
         isPaystackEnabled: true, isManualEnabled: true,
-        proUpgradeTitle: "Unlock Premium",
-        proUpgradeMessage: "Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools.",
-        proUpgradeButtonText: "Unlock OneTailor Pro",
+        proUpgradeTitle: "Unlock OneTailor Pro",
+        proUpgradeMessage: "Take your fashion and tailoring business to the next level with a complete business management suite — built for professionals who refuse to settle for ordinary.",
+        proUpgradeButtonText: "Learn About OneTailor Pro",
       };
       try { await db.insert(paymentSettingsTable).values(defaultSettings as any).onConflictDoNothing(); } catch {}
       settings = [defaultSettings as any];
@@ -586,6 +586,7 @@ router.put("/payment-info", authenticateAdmin as any, async (req, res) => {
       "pendingTitle", "pendingBody", "pendingCTA",
       "adminNotificationPhone", "adminNotificationMessage",
       "premiumUserTitle", "premiumUserMessage",
+      "freeUpgradeTitle", "freeUpgradeMessage", "freeUpgradeCTA",
     ];
 
     for (const key of allowedFields) {

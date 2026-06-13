@@ -81,6 +81,9 @@ export default function Home() {
   const isPremium              = useAppStore((s) => s.isPremium);
   const premiumUserTitle       = useAppStore((s) => s.premiumUserTitle);
   const premiumUserMessage     = useAppStore((s) => s.premiumUserMessage);
+  const freeUpgradeTitle       = useAppStore((s) => s.freeUpgradeTitle);
+  const freeUpgradeMessage     = useAppStore((s) => s.freeUpgradeMessage);
+  const freeUpgradeCTA         = useAppStore((s) => s.freeUpgradeCTA);
   const pendingPremiumRequest  = useAppStore((s) => s.pendingPremiumRequest);
   const appName                = useAppStore((s) => s.appName);
   const appLogo                = useAppStore((s) => s.appLogo);
@@ -681,13 +684,20 @@ export default function Home() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-black text-white leading-tight">
-                ⭐ {pendingPremiumRequest ? "Resume Upgrade" : "Unlock Premium"}
+                ⭐ {pendingPremiumRequest ? "Resume Upgrade" : (freeUpgradeTitle || "Unlock Premium")}
               </h3>
-              <p className="text-xs text-amber-200/60 mt-1">
-                {pendingPremiumRequest ? "Finish your payment to activate Premium" : "Unlock all professional tailoring tools"}
+              <p className="text-xs text-amber-200/60 mt-1 line-clamp-2">
+                {pendingPremiumRequest
+                  ? "Finish your payment to activate Premium"
+                  : (freeUpgradeMessage || "Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools.")}
               </p>
+              {!pendingPremiumRequest && (freeUpgradeCTA || "Unlock Premium Now") && (
+                <span className="inline-block mt-2 text-[11px] font-black text-amber-400 uppercase tracking-wider">
+                  {freeUpgradeCTA || "Unlock Premium Now"} →
+                </span>
+              )}
             </div>
-            <ChevronRight className="text-amber-400" />
+            <ChevronRight className="text-amber-400 shrink-0" />
           </div>
         </div>
       )}

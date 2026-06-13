@@ -38,6 +38,7 @@ import {
   AlertTriangle,
   Palette,
   ShieldAlert,
+  ShieldCheck,
   RefreshCw,
   Smartphone,
   ImageIcon,
@@ -71,6 +72,9 @@ interface PaymentInfo {
   proUpgradeTitle: string;
   premiumUserTitle: string;
   premiumUserMessage: string;
+  freeUpgradeTitle: string;
+  freeUpgradeMessage: string;
+  freeUpgradeCTA: string;
   pendingTitle: string;
   pendingBody: string;
   pendingCTA: string;
@@ -195,6 +199,9 @@ export default function Settings() {
     proUpgradeTitle: "",
     premiumUserTitle: "",
     premiumUserMessage: "",
+    freeUpgradeTitle: "",
+    freeUpgradeMessage: "",
+    freeUpgradeCTA: "",
     pendingTitle: "",
     pendingBody: "",
     pendingCTA: "",
@@ -268,6 +275,9 @@ export default function Settings() {
           proUpgradeTitle: data.proUpgradeTitle || "",
           premiumUserTitle: data.premiumUserTitle || "",
           premiumUserMessage: data.premiumUserMessage || "",
+          freeUpgradeTitle: data.freeUpgradeTitle || "",
+          freeUpgradeMessage: data.freeUpgradeMessage || "",
+          freeUpgradeCTA: data.freeUpgradeCTA || "",
           pendingTitle: data.pendingTitle || "",
           pendingBody: data.pendingBody || "",
           pendingCTA: data.pendingCTA || "",
@@ -534,6 +544,42 @@ export default function Settings() {
                         onChange={(e) => setSettings({...settings, measurementLimit: parseInt(e.target.value) || 0})}
                         className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
                       />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border/50 pt-6 space-y-4">
+                    <h3 className="text-sm font-bold text-primary flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-amber-400" /> Free User Upgrade Teaser
+                    </h3>
+                    <p className="text-xs text-muted-foreground -mt-1">Teaser card shown on the home screen to <strong>Free users only</strong> — encouraging upgrade to Premium. Leave blank to use defaults.</p>
+                    <div className="grid grid-cols-1 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Title</label>
+                        <Input
+                          value={settings.freeUpgradeTitle || ""}
+                          onChange={(e) => setSettings({...settings, freeUpgradeTitle: e.target.value})}
+                          placeholder="e.g. Unlock Premium"
+                          className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Body Text</label>
+                        <Textarea
+                          value={settings.freeUpgradeMessage || ""}
+                          onChange={(e) => setSettings({...settings, freeUpgradeMessage: e.target.value})}
+                          className="min-h-[80px] rounded-xl bg-muted/30 border-border font-medium leading-relaxed text-foreground"
+                          placeholder="e.g. Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">CTA Button Text</label>
+                        <Input
+                          value={settings.freeUpgradeCTA || ""}
+                          onChange={(e) => setSettings({...settings, freeUpgradeCTA: e.target.value})}
+                          placeholder="e.g. Unlock Premium Now"
+                          className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
+                        />
+                      </div>
                     </div>
                   </div>
 

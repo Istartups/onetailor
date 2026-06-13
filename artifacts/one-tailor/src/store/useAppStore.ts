@@ -189,6 +189,9 @@ export interface AppState {
   adminNotificationMessage: string;
   premiumUserTitle: string;
   premiumUserMessage: string;
+  freeUpgradeTitle: string;
+  freeUpgradeMessage: string;
+  freeUpgradeCTA: string;
 
   setSelectedDeviceCount: (count: number) => void;
   setIsPremium: (status: boolean, key?: string) => void;
@@ -228,6 +231,9 @@ export interface AppState {
     paymentLink?: string;
     premiumUserTitle?: string;
     premiumUserMessage?: string;
+    freeUpgradeTitle?: string;
+    freeUpgradeMessage?: string;
+    freeUpgradeCTA?: string;
   }) => void;
   importData: (data: { customers: Customer[]; measurements: MeasurementRecord[] }) => void;
   clearData: () => void;
@@ -281,10 +287,10 @@ export const useAppStore = create<AppState>()(
       upgradeLink: "",
       measurementLimit: 25,
       proUpgradeMessage:
-        "Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools.",
+        "Take your fashion and tailoring business to the next level with a complete business management suite — built for professionals who refuse to settle for ordinary.",
       proUpgradeLink: "",
-      proUpgradeButtonText: "Unlock Premium Now",
-      proUpgradeTitle: "Unlock Premium",
+      proUpgradeButtonText: "Learn About OneTailor Pro",
+      proUpgradeTitle: "Unlock OneTailor Pro",
       pendingTitle: "",
       pendingBody: "",
       pendingCTA: "",
@@ -292,6 +298,9 @@ export const useAppStore = create<AppState>()(
       adminNotificationMessage: "",
       premiumUserTitle: "",
       premiumUserMessage: "",
+      freeUpgradeTitle: "",
+      freeUpgradeMessage: "",
+      freeUpgradeCTA: "",
       mediaWorkspace: null,
       referralCode: "",
       successfulInvites: 0,
@@ -442,6 +451,9 @@ export const useAppStore = create<AppState>()(
           adminNotificationMessage: s.adminNotificationMessage ?? state.adminNotificationMessage,
           upgradeLink: s.paymentLink ?? state.upgradeLink,
           premiumUserTitle: s.premiumUserTitle ?? state.premiumUserTitle,
+          freeUpgradeTitle: s.freeUpgradeTitle ?? state.freeUpgradeTitle,
+          freeUpgradeMessage: s.freeUpgradeMessage ?? state.freeUpgradeMessage,
+          freeUpgradeCTA: s.freeUpgradeCTA ?? state.freeUpgradeCTA,
           premiumUserMessage: s.premiumUserMessage ?? state.premiumUserMessage,
         })),
       importData: (data) =>

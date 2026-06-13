@@ -125,6 +125,9 @@ function App() {
           adminNotificationMessage: data.adminNotificationMessage,
           premiumUserTitle: data.premiumUserTitle,
           premiumUserMessage: data.premiumUserMessage,
+          freeUpgradeTitle: data.freeUpgradeTitle,
+          freeUpgradeMessage: data.freeUpgradeMessage,
+          freeUpgradeCTA: data.freeUpgradeCTA,
         });
         if (data.currencySymbol && data.currencyCode) {
           setCurrency(data.currencySymbol, data.currencyCode);

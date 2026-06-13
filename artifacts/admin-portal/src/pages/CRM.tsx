@@ -354,9 +354,11 @@ function buildEmailBody(tpl: typeof EMAIL_TEMPLATES[0], lead: Lead) {
 
 function EmailComposer({
   lead,
+  templates,
   onInteractionLogged,
 }: {
   lead: Lead;
+  templates?: Template[];
   onInteractionLogged: (i: Interaction) => void;
 }) {
   const [toEmail, setToEmail]       = useState(lead.email || "");
@@ -367,11 +369,17 @@ function EmailComposer({
   const [sent, setSent]             = useState(false);
   const [error, setError]           = useState<string | null>(null);
 
+  // Use DB templates (filtered by "📧 " prefix) when available, else fall back to hardcoded
+  const dbEmailTpls = (templates ?? []).filter(t => t.name.startsWith("📧 "));
+  const resolvedEmailTpls = dbEmailTpls.length > 0
+    ? dbEmailTpls.map(t => ({ id: t.id, name: t.name.replace("📧 ", ""), subject: t.name.replace("📧 ", ""), body: t.content }))
+    : EMAIL_TEMPLATES;
+
   const handleSelectTpl = (id: number | "") => {
     setTplId(id);
     if (id !== "") {
-      const tpl = EMAIL_TEMPLATES.find(t => t.id === id);
-      if (tpl) { setSubject(tpl.subject); setBody(buildEmailBody(tpl, lead)); }
+      const tpl = resolvedEmailTpls.find(t => t.id === id);
+      if (tpl) { setSubject(tpl.subject); setBody(buildEmailBody(tpl as any, lead)); }
     }
   };
 
@@ -403,7 +411,7 @@ function EmailComposer({
 
       {/* Quick-send template buttons */}
       <div className="grid grid-cols-3 gap-1.5">
-        {EMAIL_TEMPLATES.map(t => (
+        {resolvedEmailTpls.map(t => (
           <button
             key={t.id}
             onClick={() => handleSelectTpl(t.id)}
@@ -483,9 +491,11 @@ function buildSMSBody(tpl: typeof SMS_TEMPLATES[0], lead: Lead) {
 
 function SMSComposer({
   lead,
+  templates,
   onInteractionLogged,
 }: {
   lead: Lead;
+  templates?: Template[];
   onInteractionLogged: (i: Interaction) => void;
 }) {
   const [phone, setPhone]     = useState(lead.phone || "");
@@ -494,11 +504,17 @@ function SMSComposer({
   const [copied, setCopied]   = useState(false);
   const copyTimer             = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Use DB templates (filtered by "📱 " prefix) when available, else fall back to hardcoded
+  const dbSmsTpls = (templates ?? []).filter(t => t.name.startsWith("📱 "));
+  const resolvedSmsTpls = dbSmsTpls.length > 0
+    ? dbSmsTpls.map(t => ({ id: t.id, name: t.name.replace("📱 ", ""), body: t.content }))
+    : SMS_TEMPLATES;
+
   const handleSelectTpl = (id: number | "") => {
     setTplId(id);
     if (id !== "") {
-      const tpl = SMS_TEMPLATES.find(t => t.id === id);
-      if (tpl) setMsg(buildSMSBody(tpl, lead));
+      const tpl = resolvedSmsTpls.find(t => t.id === id);
+      if (tpl) setMsg(buildSMSBody(tpl as any, lead));
     }
   };
 
@@ -539,7 +555,7 @@ function SMSComposer({
 
       {/* Quick-send template buttons */}
       <div className="grid grid-cols-3 gap-1.5">
-        {SMS_TEMPLATES.map(t => (
+        {resolvedSmsTpls.map(t => (
           <button
             key={t.id}
             onClick={() => handleSelectTpl(t.id)}
@@ -745,11 +761,13 @@ function LeadDetailPanel({
               {/* Email Templates */}
               <EmailComposer
                 lead={lead}
+                templates={templates}
                 onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
               />
               {/* SMS Templates */}
               <SMSComposer
                 lead={lead}
+                templates={templates}
                 onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
               />
             </div>
