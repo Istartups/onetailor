@@ -68,10 +68,7 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <aside
-        className={cn(
-          "hidden md:flex flex-col w-56 shrink-0 transition-all duration-300",
-          mobileMenuOpen && "flex fixed inset-y-0 left-0 z-50 w-56"
-        )}
+        className="hidden md:flex flex-col w-56 shrink-0"
         style={sidebarStyle}
       >
         {/* Logo */}

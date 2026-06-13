@@ -123,6 +123,8 @@ function App() {
           pendingCTA: data.pendingCTA,
           adminNotificationPhone: data.adminNotificationPhone,
           adminNotificationMessage: data.adminNotificationMessage,
+          premiumUserTitle: data.premiumUserTitle,
+          premiumUserMessage: data.premiumUserMessage,
         });
         if (data.currencySymbol && data.currencyCode) {
           setCurrency(data.currencySymbol, data.currencyCode);

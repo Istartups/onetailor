@@ -113,8 +113,19 @@ async function startServer() {
       { name: "email_from_name",       type: "TEXT" },
       { name: "email_from_addr",       type: "TEXT" },
       { name: "resend_api_key",        type: "TEXT" },
-      { name: "is_smtp_enabled",       type: "BOOLEAN NOT NULL DEFAULT TRUE" },
-      { name: "is_resend_enabled",     type: "BOOLEAN NOT NULL DEFAULT TRUE" },
+      { name: "is_smtp_enabled",             type: "BOOLEAN NOT NULL DEFAULT TRUE" },
+      { name: "is_resend_enabled",           type: "BOOLEAN NOT NULL DEFAULT TRUE" },
+      { name: "pro_upgrade_title",           type: "TEXT" },
+      { name: "pending_title",               type: "TEXT" },
+      { name: "pending_body",                type: "TEXT" },
+      { name: "pending_cta",                 type: "TEXT" },
+      { name: "admin_notification_phone",    type: "TEXT" },
+      { name: "admin_notification_message",  type: "TEXT" },
+      { name: "pwa_logo_data",               type: "TEXT" },
+      { name: "pwa_favicon_data",            type: "TEXT" },
+      { name: "pwa_splash_data",             type: "TEXT" },
+      { name: "premium_user_title",          type: "TEXT" },
+      { name: "premium_user_message",        type: "TEXT" },
     ];
     for (const col of settingsColumns) {
       try { await db.execute(sql.raw(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`)); } catch {}

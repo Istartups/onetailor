@@ -187,6 +187,8 @@ export interface AppState {
   pendingCTA: string;
   adminNotificationPhone: string;
   adminNotificationMessage: string;
+  premiumUserTitle: string;
+  premiumUserMessage: string;
 
   setSelectedDeviceCount: (count: number) => void;
   setIsPremium: (status: boolean, key?: string) => void;
@@ -224,6 +226,8 @@ export interface AppState {
     adminNotificationPhone?: string;
     adminNotificationMessage?: string;
     paymentLink?: string;
+    premiumUserTitle?: string;
+    premiumUserMessage?: string;
   }) => void;
   importData: (data: { customers: Customer[]; measurements: MeasurementRecord[] }) => void;
   clearData: () => void;
@@ -286,6 +290,8 @@ export const useAppStore = create<AppState>()(
       pendingCTA: "",
       adminNotificationPhone: "",
       adminNotificationMessage: "",
+      premiumUserTitle: "",
+      premiumUserMessage: "",
       mediaWorkspace: null,
       referralCode: "",
       successfulInvites: 0,
@@ -435,6 +441,8 @@ export const useAppStore = create<AppState>()(
           adminNotificationPhone: s.adminNotificationPhone ?? state.adminNotificationPhone,
           adminNotificationMessage: s.adminNotificationMessage ?? state.adminNotificationMessage,
           upgradeLink: s.paymentLink ?? state.upgradeLink,
+          premiumUserTitle: s.premiumUserTitle ?? state.premiumUserTitle,
+          premiumUserMessage: s.premiumUserMessage ?? state.premiumUserMessage,
         })),
       importData: (data) =>
         set((state) => ({

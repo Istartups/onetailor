@@ -585,6 +585,7 @@ router.put("/payment-info", authenticateAdmin as any, async (req, res) => {
       "proUpgradeTitle",
       "pendingTitle", "pendingBody", "pendingCTA",
       "adminNotificationPhone", "adminNotificationMessage",
+      "premiumUserTitle", "premiumUserMessage",
     ];
 
     for (const key of allowedFields) {

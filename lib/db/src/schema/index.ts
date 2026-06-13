@@ -148,6 +148,9 @@ export const paymentSettingsTable = pgTable("payment_settings", {
   // Admin payment notification
   adminNotificationPhone: text("admin_notification_phone"),
   adminNotificationMessage: text("admin_notification_message"),
+  // Premium user banner (shown only to premium users)
+  premiumUserTitle: text("premium_user_title"),
+  premiumUserMessage: text("premium_user_message"),
 });
 
 export const businessProfilesTable = pgTable("business_profiles", {

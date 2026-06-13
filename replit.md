@@ -64,6 +64,16 @@ When you export this project to GitHub and import it into a new Replit:
 
 5. **First boot** — the API server auto-migrates all tables on startup. The default admin account (`admin` / `admin123`) is created on the first request if no admin exists.
 
+## FIXLIVE — App Blank / Preview Not Showing
+
+If the PWA or Admin Portal appears blank or the preview iframe shows nothing:
+
+1. **Restart the workflows** — Go to the Workflows panel and restart both `OneTailor PWA` and `Admin Portal`. The Vite dev servers sometimes lose their HMR connection after inactivity or a container sleep.
+2. **Confirm all three are running** — API Server, Admin Portal, and OneTailor PWA must all show "Running" with output in their logs. If a workflow shows no log output, it has silently exited — restart it.
+3. **Hard-refresh the preview** — After restarting, wait ~5 seconds then hard-refresh (Ctrl+Shift+R / Cmd+Shift+R) in the Replit preview pane.
+4. **Check the correct port** — Admin Portal runs on port `3002` (path `/admin-portal/`); PWA runs on port `5000` (path `/`). If the Replit preview pane is pointing at the wrong port, switch it using the port selector at the top of the preview pane.
+5. **API Server down** — If the apps load but show empty data or 500 errors, check the API Server workflow. It runs on port `3000` internally (proxied as `/api`). Restart it and wait for the `🚀 Backend Server running` log line.
+
 ## Gotchas
 
 - The `@xenova/transformers` + `@ffmpeg/*` packages are NOT installed (package firewall 403). They are shimmed via Vite aliases. If those video/ML features are needed, they must be replaced with environment-compatible alternatives.

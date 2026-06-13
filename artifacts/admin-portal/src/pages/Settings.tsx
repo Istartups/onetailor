@@ -32,6 +32,7 @@ import {
   Lock, 
   Building2,
   Zap,
+  Crown,
   Link as LinkIcon,
   Trash2,
   AlertTriangle,
@@ -68,6 +69,8 @@ interface PaymentInfo {
   proUpgradeLink: string;
   proUpgradeButtonText: string;
   proUpgradeTitle: string;
+  premiumUserTitle: string;
+  premiumUserMessage: string;
   pendingTitle: string;
   pendingBody: string;
   pendingCTA: string;
@@ -190,6 +193,8 @@ export default function Settings() {
     proUpgradeLink: "",
     proUpgradeButtonText: "",
     proUpgradeTitle: "",
+    premiumUserTitle: "",
+    premiumUserMessage: "",
     pendingTitle: "",
     pendingBody: "",
     pendingCTA: "",
@@ -261,6 +266,8 @@ export default function Settings() {
           proUpgradeLink: data.proUpgradeLink || "",
           proUpgradeButtonText: data.proUpgradeButtonText || "",
           proUpgradeTitle: data.proUpgradeTitle || "",
+          premiumUserTitle: data.premiumUserTitle || "",
+          premiumUserMessage: data.premiumUserMessage || "",
           pendingTitle: data.pendingTitle || "",
           pendingBody: data.pendingBody || "",
           pendingCTA: data.pendingCTA || "",
@@ -532,9 +539,36 @@ export default function Settings() {
 
                   <div className="border-t border-border/50 pt-6 space-y-4">
                     <h3 className="text-sm font-bold text-primary flex items-center gap-2">
-                      <Zap className="w-4 h-4" /> Free User Premium Text
+                      <Crown className="w-4 h-4 text-amber-500" /> Premium User Message
                     </h3>
-                    <p className="text-xs text-muted-foreground -mt-1">Text shown on the upgrade lock screen to free users only.</p>
+                    <p className="text-xs text-muted-foreground -mt-1">Banner shown on the PWA home screen to <strong>Premium users only</strong>. Leave blank to hide.</p>
+                    <div className="grid grid-cols-1 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Banner Title</label>
+                        <Input
+                          value={settings.premiumUserTitle || ""}
+                          onChange={(e) => setSettings({...settings, premiumUserTitle: e.target.value})}
+                          placeholder="e.g. Welcome, Premium Member!"
+                          className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Banner Message</label>
+                        <Textarea
+                          value={settings.premiumUserMessage || ""}
+                          onChange={(e) => setSettings({...settings, premiumUserMessage: e.target.value})}
+                          className="min-h-[80px] rounded-xl bg-muted/30 border-border font-medium leading-relaxed text-foreground"
+                          placeholder="e.g. Thank you for upgrading! You now have unlimited access to all professional tools."
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border/50 pt-6 space-y-4">
+                    <h3 className="text-sm font-bold text-primary flex items-center gap-2">
+                      <Zap className="w-4 h-4" /> Unlock OneTailor Pro Configuration
+                    </h3>
+                    <p className="text-xs text-muted-foreground -mt-1">Text shown on the upgrade lock screen to <strong>Free users only</strong>.</p>
                     <div className="grid grid-cols-1 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Lock Screen Title</label>

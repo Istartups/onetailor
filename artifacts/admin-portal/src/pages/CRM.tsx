@@ -342,9 +342,9 @@ function WAComposer({
 // ─── Email Composer ───────────────────────────────────────────────────────────
 
 const EMAIL_TEMPLATES = [
-  { id: 1, name: "Welcome Follow-up",  subject: "Welcome to OneTailor!",              body: "Hi {{name}},\n\nThank you for checking out OneTailor! We noticed you've been exploring our tools for tailors.\n\nOneTailor Pro unlocks unlimited customers, measurements, order management, payments, and much more.\n\nWould you like to learn more about upgrading?\n\nBest regards,\nOneTailor Team" },
-  { id: 2, name: "Upgrade Reminder",   subject: "Ready to unlock OneTailor Pro?",     body: "Hi {{name}},\n\nYou've been getting great use out of OneTailor — great to see!\n\nUpgrading to OneTailor Pro gives you:\n• Unlimited customers & measurements\n• Order management\n• Payment collection\n• Business analytics\n• And much more\n\nOpen the app anytime to upgrade.\n\nBest regards,\nOneTailor Team" },
-  { id: 3, name: "Special Offer",      subject: "Exclusive offer just for you",       body: "Hi {{name}},\n\nWe have an exclusive offer! Upgrade to OneTailor Pro at a special rate and grow your tailoring business with the right tools.\n\nReply to this email or open the app to upgrade.\n\nBest regards,\nOneTailor Team" },
+  { id: 1, name: "Order Ready",          subject: "Your Order is Ready for Pickup!",  body: "Dear {{name}},\n\nWe are delighted to inform you that your order is ready for pickup.\n\nPlease visit us at your earliest convenience.\n\nKind regards,\nOneTailor Team" },
+  { id: 2, name: "Appt. Confirmed",      subject: "Appointment Confirmed",             body: "Dear {{name}},\n\nYour appointment with us has been confirmed.\n\nWe look forward to seeing you soon!\n\nKind regards,\nOneTailor Team" },
+  { id: 3, name: "Payment Received",     subject: "Payment Received – Thank You!",    body: "Dear {{name}},\n\nWe have received your payment. Thank you so much for your business!\n\nPlease keep this email for your records.\n\nKind regards,\nOneTailor Team" },
 ];
 
 function buildEmailBody(tpl: typeof EMAIL_TEMPLATES[0], lead: Lead) {
@@ -471,9 +471,9 @@ function EmailComposer({
 // ─── SMS / Phone Composer ─────────────────────────────────────────────────────
 
 const SMS_TEMPLATES = [
-  { id: 1, name: "Quick Check-in",   body: "Hi {{name}}, OneTailor here. Still interested in upgrading your tailoring tools? Reply YES and we'll help you get started!" },
-  { id: 2, name: "Upgrade Offer",    body: "Hi {{name}}, unlock OneTailor Pro! Unlimited customers, order tracking & more. Open the app to upgrade today!" },
-  { id: 3, name: "Payment Reminder", body: "Hi {{name}}, you started upgrading to OneTailor Pro but haven't completed payment. Open the app anytime to finish!" },
+  { id: 1, name: "Order Ready",         body: "Hi {{name}}, your order is ready for pickup! Please come in at your earliest convenience. Thank you for choosing us!" },
+  { id: 2, name: "Appt. Reminder",      body: "Hi {{name}}, reminder: your appointment is coming up. Please confirm or call us to reschedule. Thank you!" },
+  { id: 3, name: "Thank You",           body: "Hi {{name}}, thank you for choosing us! Your order is in progress and we will notify you when it is ready!" },
 ];
 
 function buildSMSBody(tpl: typeof SMS_TEMPLATES[0], lead: Lead) {

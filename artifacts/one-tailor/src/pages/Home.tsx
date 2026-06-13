@@ -79,6 +79,8 @@ export default function Home() {
   const [, setLocation] = useLocation();
 
   const isPremium              = useAppStore((s) => s.isPremium);
+  const premiumUserTitle       = useAppStore((s) => s.premiumUserTitle);
+  const premiumUserMessage     = useAppStore((s) => s.premiumUserMessage);
   const pendingPremiumRequest  = useAppStore((s) => s.pendingPremiumRequest);
   const appName                = useAppStore((s) => s.appName);
   const appLogo                = useAppStore((s) => s.appLogo);
@@ -370,6 +372,21 @@ export default function Home() {
 
       {/* Payment Status Banner */}
       <PremiumStatusBanner />
+
+      {/* Premium User Message Banner — admin-customizable, shown only to premium users */}
+      {isPremium && premiumUserMessage && (
+        <div className="mb-4 rounded-2xl p-4 flex gap-3" style={{ background: "rgba(212,160,32,0.07)", border: "1px solid rgba(212,160,32,0.22)" }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(212,160,32,0.12)", border: "1px solid rgba(212,160,32,0.25)" }}>
+            <Crown size={18} style={{ color: "hsl(43,82%,55%)" }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black uppercase tracking-wider mb-0.5" style={{ color: "hsl(43,82%,55%)" }}>
+              {premiumUserTitle || "From OneTailor"}
+            </p>
+            <p className="text-xs text-foreground/80 leading-relaxed">{premiumUserMessage}</p>
+          </div>
+        </div>
+      )}
 
       {/* Search bar */}
       <form onSubmit={handleSearch} className="mb-6">

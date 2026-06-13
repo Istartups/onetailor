@@ -12,3 +12,4 @@
 - [Sensitive key save guard](sensitive-key-save-guard.md) — PUT /api/payment-info skips updating paystackSecretKey, smtpPass, resendApiKey if value is empty; GET strips them so admin save would wipe otherwise.
 - [Email settings DB-driven](email-settings-db.md) — notifications.ts loads email config from DB (resendApiKey, smtpHost/Port/User/Pass, emailFromName/Addr) with 60s cache; call invalidateEmailSettingsCache() after admin saves.
 - [CRM system architecture](crm-architecture.md) — CRM auth, token strategy, lead scoring, table structure, and agent role for the full lead CRM system.
+- [Payment settings message fields](payment-settings-messages.md) — proUpgrade* = free user lock screen; premiumUser* = premium user home banner; both stored in payment_settings, served via GET /api/payment-info, set via setSystemSettings in PWA store.
