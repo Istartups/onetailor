@@ -505,49 +505,28 @@ export default function PreUnlock() {
             </motion.div>
           )}
 
-          {/* ── PAYMENT REJECTED — RE-UPLOAD ──────────────────────────────────── */}
+          {/* ── PAYMENT REJECTED ──────────────────────────────────────────────── */}
           {step === "rejected_reupload" && (
             <motion.div key="rejected_reupload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <div className="flex items-start gap-3 p-5 bg-red-500/10 border border-red-500/25 rounded-3xl">
                 <AlertCircle size={20} className="text-red-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-black text-red-400 uppercase tracking-wider mb-1">Payment Not Verified</p>
-                  <p className="text-sm text-foreground/80 leading-relaxed">Your previous payment proof could not be verified. Please upload a clearer receipt and add any helpful context.</p>
+                  <p className="text-sm text-foreground/80 leading-relaxed">Your previous payment could not be verified. You can retry payment — select your preferred payment method and pay again, or upload a clearer proof if you already paid.</p>
                 </div>
               </div>
-              <div className="space-y-4">
-                <h3 className="font-bold text-base">Upload New Payment Proof</h3>
-                {!evidencePreview ? (
-                  <div onClick={() => fileRef.current?.click()} className="h-44 rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 cursor-pointer bg-card hover:bg-muted/50 transition-all">
-                    <Upload className="text-muted-foreground" size={28} />
-                    <p className="text-sm font-medium text-muted-foreground">Tap to upload receipt / screenshot</p>
-                    <p className="text-xs text-muted-foreground/60">JPG, PNG or PDF</p>
-                    <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={e => {
-                      const f = e.target.files?.[0];
-                      if (f) { setEvidence(f); setEvidencePreview(f.type.startsWith("image/") ? URL.createObjectURL(f) : "pdf"); }
-                    }} />
-                  </div>
-                ) : (
-                  <div className="relative rounded-2xl overflow-hidden border border-border">
-                    {evidencePreview === "pdf"
-                      ? <div className="h-44 flex items-center justify-center text-sm font-bold">📄 PDF Selected ✓</div>
-                      : <img src={evidencePreview} className="w-full h-44 object-cover" alt="Evidence" />}
-                    <button onClick={() => { setEvidence(null); setEvidencePreview(null); }} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center"><X size={16} /></button>
-                  </div>
-                )}
-                <div className="space-y-1.5">
-                  <label className={lbl}>Additional Notes <span className="normal-case font-normal text-muted-foreground/60">(optional)</span></label>
-                  <textarea value={rejectNotes} onChange={e => setRejectNotes(e.target.value)}
-                    placeholder="e.g. I paid on June 10 at 2pm via GTBank USSD..."
-                    className="w-full px-4 py-3 rounded-2xl bg-card border border-border outline-none focus:border-primary text-sm resize-none min-h-[100px]" />
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <button onClick={() => navigate("/home")} className="flex-1 py-4 bg-secondary text-secondary-foreground rounded-2xl font-bold">Back</button>
-                <button onClick={handleRejectResubmit} disabled={processing || !evidence} className="flex-[2] py-4 bg-primary text-primary-foreground rounded-2xl font-bold flex items-center justify-center gap-2 disabled:opacity-50">
-                  {processing ? <Loader2 className="animate-spin" size={18} /> : "Resubmit Proof"}
+              <div className="space-y-3">
+                <button
+                  onClick={() => navigate("/premium-details")}
+                  className="w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all"
+                >
+                  <ShieldCheck size={18} /> Retry Payment
                 </button>
+                <p className="text-center text-xs text-muted-foreground">
+                  Select your payment method, pay, and upload your proof again.
+                </p>
               </div>
+              <button onClick={() => navigate("/home")} className="w-full py-3 bg-secondary text-secondary-foreground rounded-2xl font-bold text-sm">Back to Home</button>
             </motion.div>
           )}
 

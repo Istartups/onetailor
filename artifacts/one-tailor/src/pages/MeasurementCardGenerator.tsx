@@ -615,9 +615,9 @@ export default function MeasurementCardGenerator() {
                 <div className={`pb-5 border-b ${theme.border}`}>
                   <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-start">
 
-                    {/* Logo */}
-                    <div className={`w-16 h-16 rounded-2xl overflow-hidden border ${theme.border} bg-white shrink-0 shadow-sm p-1`}>
-                      {appLogo && <img src={appLogo} className="w-full h-full object-contain" alt="Logo" crossOrigin="anonymous" />}
+                    {/* Logo — circular for universal fit */}
+                    <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${theme.border} bg-white shrink-0 shadow-sm`}>
+                      {appLogo && <img src={appLogo} className="w-full h-full object-cover" alt="Logo" crossOrigin="anonymous" />}
                     </div>
 
                     {/* Business Info */}
@@ -631,18 +631,22 @@ export default function MeasurementCardGenerator() {
                         </p>
                       )}
 
-                      {/* WhatsApp first, then Phone */}
-                      {businessProfile?.socials?.whatsapp && (
-                        <p className="text-[10px] font-bold opacity-70 flex items-center gap-1">
-                          <MessageCircle size={10} className="opacity-60 shrink-0" />
-                          {businessProfile.socials.whatsapp}
-                        </p>
-                      )}
-                      {businessProfile?.phone && (
-                        <p className="text-[10px] font-bold opacity-70 flex items-center gap-1">
-                          <Phone size={10} className="opacity-60 shrink-0" />
-                          {businessProfile.phone}
-                        </p>
+                      {/* Phone first, then WhatsApp — both on same line */}
+                      {(businessProfile?.phone || businessProfile?.socials?.whatsapp) && (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {businessProfile?.phone && (
+                            <span className="text-[10px] font-bold opacity-70 flex items-center gap-1">
+                              <Phone size={10} className="opacity-60 shrink-0" />
+                              {businessProfile.phone}
+                            </span>
+                          )}
+                          {businessProfile?.socials?.whatsapp && (
+                            <span className="text-[10px] font-bold opacity-70 flex items-center gap-1">
+                              <MessageCircle size={10} className="opacity-60 shrink-0" />
+                              {businessProfile.socials.whatsapp}
+                            </span>
+                          )}
+                        </div>
                       )}
                       {businessProfile?.address && (
                         <p className="text-[10px] font-bold opacity-70 flex items-start gap-1">

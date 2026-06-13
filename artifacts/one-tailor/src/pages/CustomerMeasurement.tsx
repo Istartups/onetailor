@@ -62,6 +62,7 @@ export default function CustomerMeasurement() {
   const proUpgradeMessage   = useAppStore(s => s.proUpgradeMessage);
   const proUpgradeLink      = useAppStore(s => s.proUpgradeLink);
   const proUpgradeButtonText = useAppStore(s => s.proUpgradeButtonText);
+  const proUpgradeTitle     = useAppStore(s => s.proUpgradeTitle);
   const customTemplates          = useAppStore(s => s.customTemplates);
   const customMeasurementFields  = useAppStore(s => s.customMeasurementFields);
   const addCustomMeasurementField = useAppStore(s => s.addCustomMeasurementField);
@@ -1645,16 +1646,16 @@ export default function CustomerMeasurement() {
             <div className="mt-12 p-6 rounded-3xl bg-amber-500/5 border border-amber-500/10 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="flex items-center gap-3 text-amber-600">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center"><ShieldCheck size={20} /></div>
-                <h3 className="text-sm font-black uppercase tracking-wider">Unlock Premium</h3>
+                <h3 className="text-sm font-black uppercase tracking-wider">{proUpgradeTitle || "Unlock Premium"}</h3>
               </div>
               <p className="text-xs text-foreground font-medium leading-relaxed opacity-80">
-                Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools.
+                {proUpgradeMessage || "Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools."}
               </p>
               <button
                 onClick={() => setLocation("/pre-unlock")}
                 className="flex items-center justify-center gap-2 w-full py-4 bg-amber-500 text-amber-950 rounded-2xl font-bold text-xs shadow-lg shadow-amber-500/20 hover:scale-[1.01] active:scale-95 transition-all"
               >
-                <Crown size={14} /> Unlock Premium Now
+                <Crown size={14} /> {proUpgradeButtonText || "Unlock Premium Now"}
               </button>
             </div>
           )

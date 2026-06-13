@@ -345,8 +345,6 @@ const EMAIL_TEMPLATES = [
   { id: 1, name: "Welcome Follow-up",  subject: "Welcome to OneTailor!",              body: "Hi {{name}},\n\nThank you for checking out OneTailor! We noticed you've been exploring our tools for tailors.\n\nOneTailor Pro unlocks unlimited customers, measurements, order management, payments, and much more.\n\nWould you like to learn more about upgrading?\n\nBest regards,\nOneTailor Team" },
   { id: 2, name: "Upgrade Reminder",   subject: "Ready to unlock OneTailor Pro?",     body: "Hi {{name}},\n\nYou've been getting great use out of OneTailor — great to see!\n\nUpgrading to OneTailor Pro gives you:\n• Unlimited customers & measurements\n• Order management\n• Payment collection\n• Business analytics\n• And much more\n\nOpen the app anytime to upgrade.\n\nBest regards,\nOneTailor Team" },
   { id: 3, name: "Special Offer",      subject: "Exclusive offer just for you",       body: "Hi {{name}},\n\nWe have an exclusive offer! Upgrade to OneTailor Pro at a special rate and grow your tailoring business with the right tools.\n\nReply to this email or open the app to upgrade.\n\nBest regards,\nOneTailor Team" },
-  { id: 4, name: "Payment Follow-up",  subject: "Your OneTailor Pro payment",         body: "Hi {{name}},\n\nWe noticed you started the upgrade process but haven't completed it yet.\n\nIf you had any issues with payment, please don't hesitate to reach out — we're here to help.\n\nYou can complete your payment anytime from the app.\n\nBest regards,\nOneTailor Team" },
-  { id: 5, name: "Re-engagement",      subject: "We miss you at OneTailor!",          body: "Hi {{name}},\n\nIt's been a while since we've seen you! Your tailoring business deserves the best tools.\n\nCome back and explore what's new — and consider upgrading to Pro for the full experience.\n\nBest regards,\nOneTailor Team" },
 ];
 
 function buildEmailBody(tpl: typeof EMAIL_TEMPLATES[0], lead: Lead) {
@@ -377,32 +375,47 @@ function EmailComposer({
     }
   };
 
-  const handleSend = async () => {
+  const openInEmailApp = async () => {
     if (!toEmail.trim() || !subject.trim() || !body.trim()) return;
-    setSending(true); setError(null);
+    const mailtoUrl = `mailto:${encodeURIComponent(toEmail.trim())}?subject=${encodeURIComponent(subject.trim())}&body=${encodeURIComponent(body.trim())}`;
+    window.open(mailtoUrl, "_self");
+    setSent(true);
+    setTimeout(() => setSent(false), 3000);
     try {
-      const res = await authFetch(`/api/crm/leads/${lead.id}/send-email`, {
+      const snippet = subject + " — " + body.slice(0, 80) + (body.length > 80 ? "…" : "");
+      const res = await authFetch(`/api/crm/leads/${lead.id}/interactions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ toEmail: toEmail.trim(), subject: subject.trim(), body: body.trim() }),
+        body: JSON.stringify({ type: "email", content: `Email opened: "${snippet}"` }),
       });
       if (res.ok) {
-        const data = await res.json();
-        if (data.interaction) onInteractionLogged(data.interaction);
-        setSent(true);
-        setTimeout(() => setSent(false), 3000);
-      } else {
-        const err = await res.json();
-        setError(err.message || "Failed to send email");
+        const interaction = await res.json();
+        onInteractionLogged(interaction);
       }
-    } finally { setSending(false); }
+    } catch {}
   };
 
   return (
     <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.22)" }}>
       <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-1.5">
-        <Mail size={11} /> Email Composer
+        <Mail size={11} /> Email Templates
       </p>
+
+      {/* Quick-send template buttons */}
+      <div className="grid grid-cols-3 gap-1.5">
+        {EMAIL_TEMPLATES.map(t => (
+          <button
+            key={t.id}
+            onClick={() => handleSelectTpl(t.id)}
+            className="px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-all active:scale-[0.97] border"
+            style={tplId === t.id
+              ? { background: "rgba(59,130,246,0.22)", borderColor: "rgba(59,130,246,0.5)", color: "#60a5fa" }
+              : { background: "rgba(59,130,246,0.06)", borderColor: "rgba(59,130,246,0.18)", color: "#94a3b8" }}
+          >
+            {t.name}
+          </button>
+        ))}
+      </div>
 
       <input
         value={toEmail}
@@ -410,15 +423,6 @@ function EmailComposer({
         placeholder="recipient@email.com"
         className="w-full px-3 py-2 rounded-xl text-xs bg-background border border-border outline-none focus:border-blue-500/40 transition-colors"
       />
-
-      <select
-        value={tplId}
-        onChange={e => handleSelectTpl(e.target.value === "" ? "" : Number(e.target.value))}
-        className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none focus:border-blue-500/40 transition-colors"
-      >
-        <option value="">— Pick an email template —</option>
-        {EMAIL_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-      </select>
 
       <input
         value={subject}
@@ -429,10 +433,10 @@ function EmailComposer({
 
       <div className="relative">
         <textarea
-          rows={6}
+          rows={5}
           value={body}
           onChange={e => { setBody(e.target.value); setTplId(""); }}
-          placeholder="Compose your email or pick a template above. Supports {{name}}, {{business}}."
+          placeholder="Pick a template above or type your message. Supports {{name}}."
           className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none resize-none focus:border-blue-500/40 transition-colors leading-relaxed"
         />
         {body && (
@@ -445,14 +449,14 @@ function EmailComposer({
       {error && <p className="text-[10px] text-red-400 flex items-center gap-1"><AlertCircle size={10} /> {error}</p>}
 
       <button
-        onClick={handleSend}
-        disabled={!toEmail.trim() || !subject.trim() || !body.trim() || sending}
+        onClick={openInEmailApp}
+        disabled={!toEmail.trim() || !subject.trim() || !body.trim()}
         className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-40"
         style={sent
           ? { background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.35)", color: "#4ade80" }
           : { background: "rgba(59,130,246,0.18)", border: "1px solid rgba(59,130,246,0.35)", color: "#60a5fa" }}
       >
-        {sending ? "Sending…" : sent ? <><CheckCheck size={12} /> Email Sent!</> : <><Send size={12} /> Send Email</>}
+        {sent ? <><CheckCheck size={12} /> Opened!</> : <><ExternalLink size={12} /> Open in Email App</>}
       </button>
 
       {!lead.email && !toEmail.trim() && (
@@ -467,11 +471,9 @@ function EmailComposer({
 // ─── SMS / Phone Composer ─────────────────────────────────────────────────────
 
 const SMS_TEMPLATES = [
-  { id: 1, name: "Quick Check-in",      body: "Hi {{name}}, this is OneTailor following up. Are you still interested in upgrading your tailoring business tools? Reply YES and we'll help you get started!" },
-  { id: 2, name: "Upgrade Offer",       body: "Hi {{name}}, ready to unlock OneTailor Pro? Manage unlimited customers, track orders & grow your business. Open the app to upgrade today!" },
-  { id: 3, name: "Payment Reminder",    body: "Hi {{name}}, we noticed you started upgrading to OneTailor Pro but haven't completed payment yet. Open the app anytime to finish. Need help? Reply here." },
-  { id: 4, name: "Welcome",             body: "Hi {{name}}, welcome to OneTailor! You've taken the first step to managing your tailoring business better. Explore all our tools in the app." },
-  { id: 5, name: "Re-engagement",       body: "Hi {{name}}, we miss you at OneTailor! Your tailoring business deserves the best tools. Come back and see what's new." },
+  { id: 1, name: "Quick Check-in",   body: "Hi {{name}}, OneTailor here. Still interested in upgrading your tailoring tools? Reply YES and we'll help you get started!" },
+  { id: 2, name: "Upgrade Offer",    body: "Hi {{name}}, unlock OneTailor Pro! Unlimited customers, order tracking & more. Open the app to upgrade today!" },
+  { id: 3, name: "Payment Reminder", body: "Hi {{name}}, you started upgrading to OneTailor Pro but haven't completed payment. Open the app anytime to finish!" },
 ];
 
 function buildSMSBody(tpl: typeof SMS_TEMPLATES[0], lead: Lead) {
@@ -532,8 +534,24 @@ function SMSComposer({
   return (
     <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.22)" }}>
       <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-        <Phone size={11} /> SMS / Phone
+        <Phone size={11} /> SMS Templates
       </p>
+
+      {/* Quick-send template buttons */}
+      <div className="grid grid-cols-3 gap-1.5">
+        {SMS_TEMPLATES.map(t => (
+          <button
+            key={t.id}
+            onClick={() => handleSelectTpl(t.id)}
+            className="px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-all active:scale-[0.97] border"
+            style={tplId === t.id
+              ? { background: "rgba(251,191,36,0.22)", borderColor: "rgba(251,191,36,0.5)", color: "#fbbf24" }
+              : { background: "rgba(251,191,36,0.06)", borderColor: "rgba(251,191,36,0.18)", color: "#94a3b8" }}
+          >
+            {t.name}
+          </button>
+        ))}
+      </div>
 
       <div className="flex gap-2">
         <input
@@ -553,28 +571,17 @@ function SMSComposer({
         )}
       </div>
 
-      <select
-        value={tplId}
-        onChange={e => handleSelectTpl(e.target.value === "" ? "" : Number(e.target.value))}
-        className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none focus:border-amber-500/40 transition-colors"
-      >
-        <option value="">— Pick an SMS template —</option>
-        {SMS_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-      </select>
-
       <div className="relative">
         <textarea
           rows={4}
           value={msg}
-          onChange={e => { setMsg(e.target.value); setTplId(""); }}
-          placeholder="Type your SMS message or pick a template above. Supports {{name}}."
+          onChange={e => { setMsg(e.target.value.slice(0, 159)); setTplId(""); }}
+          placeholder="Pick a template above or type your SMS (max 159 chars). Supports {{name}}."
           className="w-full px-3 py-2.5 rounded-xl text-xs bg-background border border-border outline-none resize-none focus:border-amber-500/40 transition-colors leading-relaxed"
         />
-        {msg && (
-          <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground/50 pointer-events-none">
-            {msg.length} chars
-          </span>
-        )}
+        <span className={`absolute bottom-2 right-3 text-[10px] pointer-events-none ${msg.length > 140 ? "text-amber-400" : "text-muted-foreground/50"}`}>
+          {msg.length}/159
+        </span>
       </div>
 
       <div className="flex gap-2">
@@ -592,7 +599,7 @@ function SMSComposer({
           style={{ background: "rgba(251,191,36,0.18)", border: "1px solid rgba(251,191,36,0.35)", color: "#fbbf24" }}
         >
           <Send size={12} />
-          {msg.trim() ? "Send SMS" : "Open SMS App"}
+          {msg.trim() ? "Open SMS App" : "Open SMS App"}
         </button>
       </div>
 
@@ -723,24 +730,30 @@ function LeadDetailPanel({
             ))}
           </div>
 
-          {/* WhatsApp Composer */}
-          <WAComposer
-            lead={lead}
-            templates={templates}
-            onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
-          />
-
-          {/* Email Composer */}
-          <EmailComposer
-            lead={lead}
-            onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
-          />
-
-          {/* SMS / Phone Composer */}
-          <SMSComposer
-            lead={lead}
-            onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
-          />
+          {/* ── Message Center ──────────────────────────────────────────── */}
+          <div className="rounded-2xl border border-border/50 overflow-hidden">
+            <div className="px-4 py-2.5 bg-muted/30 border-b border-border/50">
+              <p className="text-[10px] font-black uppercase tracking-widest text-foreground/60">Message Center</p>
+            </div>
+            <div className="p-3 space-y-3">
+              {/* WhatsApp Templates */}
+              <WAComposer
+                lead={lead}
+                templates={templates}
+                onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
+              />
+              {/* Email Templates */}
+              <EmailComposer
+                lead={lead}
+                onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
+              />
+              {/* SMS Templates */}
+              <SMSComposer
+                lead={lead}
+                onInteractionLogged={interaction => setInteractions(prev => [interaction, ...prev])}
+              />
+            </div>
+          </div>
 
           {/* Status + assignment */}
           <div className="grid grid-cols-2 gap-3">

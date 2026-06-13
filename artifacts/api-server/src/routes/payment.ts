@@ -222,7 +222,8 @@ router.get("/payment-info", async (req, res) => {
         accountNumber: "1234567890", accountName: "OneTailor Technologies",
         instructions: "Pay into the account above and send proof of payment to support.",
         isPaystackEnabled: true, isManualEnabled: true,
-        proUpgradeMessage: "Unlock Premium to access more features.",
+        proUpgradeTitle: "Unlock Premium",
+        proUpgradeMessage: "Unlock professional features: unlimited client records, full measurement history, custom templates, and advanced tailoring tools.",
         proUpgradeButtonText: "Unlock OneTailor Pro",
       };
       try { await db.insert(paymentSettingsTable).values(defaultSettings as any).onConflictDoNothing(); } catch {}

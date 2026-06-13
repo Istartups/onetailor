@@ -129,7 +129,7 @@ export default function AllTools() {
 
         {/* Filter pills */}
         {!query && (
-          <div className="flex gap-2 pb-1 overflow-x-auto no-scrollbar">
+          <div className="flex flex-wrap gap-2 pb-1">
             {([
               { id: "all",          label: "All",          count: ALL_TOOLS.length },
               { id: "fav",          label: "⭐ Favs",       count: favorites.length },
