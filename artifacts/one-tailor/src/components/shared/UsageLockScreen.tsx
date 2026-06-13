@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Zap, Lock, ArrowRight, ShieldCheck, Database, LayoutGrid, Palette, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { useAppStore } from "@/store/useAppStore";
 
 interface UsageLockScreenProps {
   isOpen: boolean;
@@ -18,8 +19,15 @@ const PREMIUM_FEATURES = [
 
 export function UsageLockScreen({ isOpen }: UsageLockScreenProps) {
   const [, setLocation] = useLocation();
+  const proUpgradeTitle      = useAppStore(s => s.proUpgradeTitle);
+  const proUpgradeMessage    = useAppStore(s => s.proUpgradeMessage);
+  const proUpgradeButtonText = useAppStore(s => s.proUpgradeButtonText);
 
   if (!isOpen) return null;
+
+  const heading = proUpgradeTitle || "Unlock Premium";
+  const subtext = proUpgradeMessage || "You've done amazing work! To keep growing your business and accessing these tools without limits, let's take the next step together.";
+  const ctaText = proUpgradeButtonText || "Unlock Premium Now";
 
   return (
     <AnimatePresence>
@@ -45,10 +53,10 @@ export function UsageLockScreen({ isOpen }: UsageLockScreenProps) {
                 <Lock className="w-10 h-10 text-primary" />
               </div>
               <h2 className="text-3xl font-black tracking-tight" style={{ fontFamily: "var(--font-serif)" }}>
-                Your free uses are <span className="gold-shimmer">finished</span>
+                {heading}
               </h2>
               <p className="text-muted-foreground text-sm font-medium leading-relaxed">
-                You've done amazing work! To keep growing your business and accessing these tools without limits, let's take the next step together.
+                {subtext}
               </p>
             </div>
 
@@ -73,7 +81,7 @@ export function UsageLockScreen({ isOpen }: UsageLockScreenProps) {
                 onClick={() => setLocation("/pre-unlock")}
                 className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all group"
               >
-                Unlock Premium Experience
+                {ctaText}
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
 

@@ -97,10 +97,11 @@ export default function CustomerMeasurement() {
   const [detailTab, setDetailTab] = useState<"measurements" | "notes">("measurements");
 
   // ── Customer notes ──
-  interface CustomerNote { id: number; title: string; content: string; tags: string | null; isPinned: boolean; isArchived: boolean; updatedAt: string; }
+  interface CustomerNote { id: number; title: string; content: string; tags: string | null; isPinned: boolean; isArchived: boolean; imageData?: string | null; updatedAt: string; createdAt?: string; }
   const [customerNotes, setCustomerNotes] = useState<CustomerNote[]>([]);
-  const [noteForm, setNoteForm] = useState({ show: false, title: "", content: "", tags: "" });
+  const [noteForm, setNoteForm] = useState({ show: false, title: "", content: "", tags: "", imageData: null as string | null });
   const [noteSaving, setNoteSaving] = useState(false);
+  const noteImageRef = useRef<HTMLInputElement>(null);
 
   // ── Client form ──
   const [customerForm, setCustomerForm] = useState({
@@ -152,7 +153,20 @@ export default function CustomerMeasurement() {
   const fetchCustomerNotes = async (customerId: number) => {
     try {
       const res = await fetch(`/api/notes?deviceId=${getDeviceId()}&customerId=${customerId}&archived=false`);
-      if (res.ok) setCustomerNotes(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setCustomerNotes((data as any[]).map(n => ({
+          id: n.id,
+          title: n.title ?? "",
+          content: n.content ?? "",
+          tags: n.tags ?? null,
+          isPinned: n.is_pinned ?? n.isPinned ?? false,
+          isArchived: n.is_archived ?? n.isArchived ?? false,
+          imageData: n.image_data ?? n.imageData ?? null,
+          updatedAt: n.updated_at ?? n.updatedAt ?? "",
+          createdAt: n.created_at ?? n.createdAt ?? "",
+        })));
+      }
     } catch { /* silent */ }
   };
 
@@ -169,10 +183,12 @@ export default function CustomerMeasurement() {
           content: noteForm.content.trim(),
           tags: noteForm.tags.trim() || undefined,
           customerId: selectedCustomer.id,
+          imageData: noteForm.imageData || undefined,
         }),
       });
       if (res.ok) {
-        setNoteForm({ show: false, title: "", content: "", tags: "" });
+        setNoteForm({ show: false, title: "", content: "", tags: "", imageData: null });
+        if (noteImageRef.current) noteImageRef.current.value = "";
         await fetchCustomerNotes(selectedCustomer.id);
         toast({ title: "Note saved" });
       }
@@ -944,7 +960,7 @@ export default function CustomerMeasurement() {
                       autoFocus
                     />
                     <textarea
-                      placeholder="Note content..."
+                      placeholder="Note body..."
                       value={noteForm.content}
                       onChange={e => setNoteForm(f => ({ ...f, content: e.target.value }))}
                       rows={4}
@@ -956,9 +972,63 @@ export default function CustomerMeasurement() {
                       onChange={e => setNoteForm(f => ({ ...f, tags: e.target.value }))}
                       className="w-full text-sm rounded-xl px-4 py-2.5 bg-muted/50 border border-border outline-none focus:border-primary/50 transition-all"
                     />
+                    {/* Image upload */}
+                    <input
+                      ref={noteImageRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const maxPx = 900;
+                        const dataUrl = await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const img = new Image();
+                            img.onload = () => {
+                              let w = img.width, h = img.height;
+                              if (w > maxPx || h > maxPx) {
+                                if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+                                else { w = Math.round(w * maxPx / h); h = maxPx; }
+                              }
+                              const canvas = document.createElement("canvas");
+                              canvas.width = w; canvas.height = h;
+                              canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+                              resolve(canvas.toDataURL("image/jpeg", 0.82));
+                            };
+                            img.onerror = reject;
+                            img.src = ev.target!.result as string;
+                          };
+                          reader.onerror = reject;
+                          reader.readAsDataURL(f);
+                        });
+                        setNoteForm(prev => ({ ...prev, imageData: dataUrl }));
+                      }}
+                    />
+                    {noteForm.imageData ? (
+                      <div className="relative rounded-xl overflow-hidden">
+                        <img src={noteForm.imageData} alt="Note" className="w-full h-28 object-cover rounded-xl" />
+                        <button
+                          type="button"
+                          onClick={() => { setNoteForm(prev => ({ ...prev, imageData: null })); if (noteImageRef.current) noteImageRef.current.value = ""; }}
+                          className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => noteImageRef.current?.click()}
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted/50 border border-dashed border-border text-muted-foreground text-xs font-medium hover:bg-muted transition-colors w-full justify-center"
+                      >
+                        <Camera size={13} /> Add Image (optional)
+                      </button>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => setNoteForm({ show: false, title: "", content: "", tags: "" })}
+                        onClick={() => { setNoteForm({ show: false, title: "", content: "", tags: "", imageData: null }); if (noteImageRef.current) noteImageRef.current.value = ""; }}
                         className="py-3 rounded-xl border border-border text-sm font-bold text-muted-foreground hover:bg-muted transition-all"
                       >
                         Cancel
@@ -1016,8 +1086,11 @@ export default function CustomerMeasurement() {
                             </button>
                           </div>
                         </div>
+                        {note.imageData && (
+                          <img src={note.imageData} alt="Note" className="w-full h-28 object-cover rounded-xl mt-2" />
+                        )}
                         <p className="text-[9px] text-muted-foreground/40 mt-2">
-                          {(() => { const t = new Date(note.updatedAt); if (isNaN(t.getTime())) return "No date"; const d = (Date.now() - t.getTime()) / 1000; if (d < 60) return "just now"; if (d < 3600) return `${Math.floor(d / 60)}m ago`; if (d < 86400) return `${Math.floor(d / 3600)}h ago`; return t.toLocaleDateString(); })()}
+                          {(() => { const ds = note.updatedAt || note.createdAt || ""; if (!ds) return ""; const t = new Date(ds); if (isNaN(t.getTime())) return ""; const d = (Date.now() - t.getTime()) / 1000; if (d < 60) return "just now"; if (d < 3600) return `${Math.floor(d / 60)}m ago`; if (d < 86400) return `${Math.floor(d / 3600)}h ago`; return t.toLocaleDateString(); })()}
                         </p>
                       </div>
                     ))}

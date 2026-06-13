@@ -61,6 +61,16 @@ router.post("/notifications/subscribe", async (req, res) => {
 
 // ─── Admin Routes ─────────────────────────────────────────────────────────────
 
+router.get("/admin/notifications/broadcast", authenticateAdmin as any, (req, res) => {
+  return void res.json({
+    configured: !!(vapidPublicKey && vapidPrivateKey),
+    message: vapidPublicKey && vapidPrivateKey
+      ? "Push notifications configured — ready to broadcast"
+      : "Push notifications not configured — VAPID keys missing",
+    subscriberCount: null,
+  });
+});
+
 router.post("/admin/notifications/broadcast", authenticateAdmin as any, async (req, res) => {
   const { title, body, url, icon, ctaText, ctaUrl } = req.body;
 
