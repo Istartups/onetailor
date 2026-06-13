@@ -37,11 +37,11 @@ type Step = "select_customer" | "select_record" | "customize";
 const DEFAULT_GLOBAL_NOTE = "All measurements are in the recorded unit. Please confirm before cutting.";
 
 const THEMES = [
-  { id: "dark",    label: "Classic Dark",    bg: "bg-slate-900",   text: "text-white",       border: "border-white/10",        accent: "text-amber-400",   hex: "#0f172a" },
-  { id: "light",   label: "Clean Light",     bg: "bg-white",       text: "text-slate-900",   border: "border-slate-200",       accent: "text-indigo-600",  hex: "#ffffff" },
-  { id: "gold",    label: "Gold Luxury",     bg: "bg-amber-950",   text: "text-amber-50",    border: "border-amber-700/40",    accent: "text-amber-400",   hex: "#451a03" },
-  { id: "indigo",  label: "Indigo Pro",      bg: "bg-indigo-950",  text: "text-indigo-50",   border: "border-indigo-700/40",   accent: "text-indigo-300",  hex: "#1e1b4b" },
-  { id: "emerald", label: "Emerald Fresh",   bg: "bg-emerald-950", text: "text-emerald-50",  border: "border-emerald-700/40",  accent: "text-emerald-300", hex: "#022c22" },
+  { id: "dark",    label: "Classic Dark",    bg: "bg-slate-900",   text: "text-white",       border: "border-white/10",        accent: "text-amber-400",   hex: "#0f172a", hexAccent: "#fbbf24" },
+  { id: "light",   label: "Clean Light",     bg: "bg-white",       text: "text-slate-900",   border: "border-slate-200",       accent: "text-indigo-600",  hex: "#ffffff", hexAccent: "#4f46e5" },
+  { id: "gold",    label: "Gold Luxury",     bg: "bg-amber-950",   text: "text-amber-50",    border: "border-amber-700/40",    accent: "text-amber-400",   hex: "#451a03", hexAccent: "#f59e0b" },
+  { id: "indigo",  label: "Indigo Pro",      bg: "bg-indigo-950",  text: "text-indigo-50",   border: "border-indigo-700/40",   accent: "text-indigo-300",  hex: "#1e1b4b", hexAccent: "#818cf8" },
+  { id: "emerald", label: "Emerald Fresh",   bg: "bg-emerald-950", text: "text-emerald-50",  border: "border-emerald-700/40",  accent: "text-emerald-300", hex: "#022c22", hexAccent: "#34d399" },
 ];
 
 const IMAGE_FIELDS = ["image", "styleimage", "photo", "designimage", "referenceimage"];
@@ -50,18 +50,16 @@ const IMAGE_FIELDS = ["image", "styleimage", "photo", "designimage", "referencei
 
 type CardStyleDef = {
   id: string; label: string; premium: boolean;
-  topBarColor: string; topBarHeight: number;
-  leftBarColor: string; cornerDots: boolean;
 };
 
 const CARD_STYLES: CardStyleDef[] = [
-  { id: "standard",  label: "Standard",       premium: false, topBarColor: "",                 topBarHeight: 0, leftBarColor: "",                cornerDots: false },
-  { id: "executive", label: "Executive",      premium: true,  topBarColor: "",                 topBarHeight: 0, leftBarColor: "hsl(43,82%,55%)", cornerDots: false },
-  { id: "luxury",    label: "Luxury",         premium: true,  topBarColor: "hsl(43,82%,55%)",  topBarHeight: 7, leftBarColor: "",                cornerDots: false },
-  { id: "modern",    label: "Modern",         premium: true,  topBarColor: "hsl(220,70%,60%)", topBarHeight: 3, leftBarColor: "",                cornerDots: false },
-  { id: "minimal",   label: "Minimal",        premium: true,  topBarColor: "",                 topBarHeight: 0, leftBarColor: "",                cornerDots: false },
-  { id: "fashion",   label: "Fashion Studio", premium: true,  topBarColor: "hsl(43,82%,55%)",  topBarHeight: 8, leftBarColor: "",                cornerDots: true  },
-  { id: "elegant",   label: "Elegant",        premium: true,  topBarColor: "",                 topBarHeight: 0, leftBarColor: "",                cornerDots: true  },
+  { id: "standard",  label: "Standard",       premium: false },
+  { id: "executive", label: "Executive",      premium: true },
+  { id: "luxury",    label: "Luxury",         premium: true },
+  { id: "modern",    label: "Modern",         premium: true },
+  { id: "minimal",   label: "Minimal",        premium: true },
+  { id: "fashion",   label: "Fashion Studio", premium: true },
+  { id: "elegant",   label: "Elegant",        premium: true },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -104,8 +102,6 @@ export default function MeasurementCardGenerator() {
 
   const cardRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  const cardStyleDef = CARD_STYLES.find(s => s.id === selectedCardStyle) ?? CARD_STYLES[0]!;
 
   // ── BrandKit Validation ───────────────────────────────────────────────────
   const isBrandKitComplete = useMemo(() =>
@@ -397,6 +393,10 @@ export default function MeasurementCardGenerator() {
 
   const socials = businessProfile?.socials;
 
+  // ── Address detail helpers ─────────────────────────────────────────────────
+  const addrLandmark = businessProfile?.addressDetails?.landmark || "";
+  const addrStateCountry = [businessProfile?.addressDetails?.state, businessProfile?.addressDetails?.country].filter(Boolean).join(", ");
+
   const socialLine = useMemo(() => {
     const s = businessProfile?.socials;
     return [
@@ -585,167 +585,405 @@ export default function MeasurementCardGenerator() {
 
             {/* PREVIEW CARD */}
             <div className="p-1 bg-slate-200 dark:bg-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
-              <div
-                ref={cardRef}
-                className={`w-full ${theme.bg} ${theme.text} ${cardStyleDef.id === "minimal" ? "p-12" : "p-8"} space-y-8 transition-colors relative`}
-                style={{
-                  borderLeft: cardStyleDef.leftBarColor ? `4px solid ${cardStyleDef.leftBarColor}` : undefined,
-                  paddingTop: cardStyleDef.topBarHeight > 0 ? `${cardStyleDef.topBarHeight + 32}px` : undefined,
-                }}
-              >
-                {/* BG watermark */}
-                <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.03] pointer-events-none">
-                  {appLogo && <img src={appLogo} className="w-full h-full object-contain" alt="" crossOrigin="anonymous" />}
-                </div>
+              <div ref={cardRef} className={`w-full ${theme.bg} ${theme.text} overflow-hidden`}>
 
-                {/* Card Style accent */}
-                {cardStyleDef.topBarColor && cardStyleDef.topBarHeight > 0 && (
-                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: cardStyleDef.topBarHeight, background: cardStyleDef.topBarColor }} />
-                )}
-                {cardStyleDef.cornerDots && (
-                  <>
-                    <div style={{ position: "absolute", top: 12, left: 12, width: 7, height: 7, borderRadius: "50%", background: "currentColor", opacity: 0.22 }} />
-                    <div style={{ position: "absolute", top: 12, right: 12, width: 7, height: 7, borderRadius: "50%", background: "currentColor", opacity: 0.22 }} />
-                    <div style={{ position: "absolute", bottom: 12, left: 12, width: 7, height: 7, borderRadius: "50%", background: "currentColor", opacity: 0.22 }} />
-                    <div style={{ position: "absolute", bottom: 12, right: 12, width: 7, height: 7, borderRadius: "50%", background: "currentColor", opacity: 0.22 }} />
-                  </>
-                )}
-
-                {/* ── 3-COLUMN HEADER ── */}
-                <div className={`pb-5 border-b ${theme.border}`}>
-                  <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-start">
-
-                    {/* Logo — circular for universal fit */}
-                    <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${theme.border} bg-white shrink-0 shadow-sm`}>
-                      {appLogo && <img src={appLogo} className="w-full h-full object-cover" alt="Logo" crossOrigin="anonymous" />}
+                {/* ══════════════════════════ STANDARD ══════════════════════════ */}
+                {selectedCardStyle === "standard" && (
+                  <div className="p-8 space-y-8 relative">
+                    <div className="absolute top-0 right-0 w-32 h-32 opacity-[0.03] pointer-events-none">
+                      {appLogo && <img src={appLogo} className="w-full h-full object-contain" alt="" crossOrigin="anonymous" />}
                     </div>
-
-                    {/* Business Info */}
-                    <div className="min-w-0 space-y-1">
-                      <h2 className="text-lg font-black uppercase tracking-tight leading-tight truncate">
-                        {businessProfile?.name || appName}
-                      </h2>
-                      {businessProfile?.tagline && (
-                        <p className="text-[9px] font-bold opacity-60 italic leading-tight truncate">
-                          {businessProfile.tagline}
-                        </p>
-                      )}
-
-                      {/* Phone first, then WhatsApp — both on same line */}
-                      {(businessProfile?.phone || businessProfile?.socials?.whatsapp) && (
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {businessProfile?.phone && (
-                            <span className="text-[10px] font-bold opacity-70 flex items-center gap-1">
-                              <Phone size={10} className="opacity-60 shrink-0" />
-                              {businessProfile.phone}
-                            </span>
+                    <div className={`pb-5 border-b ${theme.border}`}>
+                      <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-start">
+                        <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${theme.border} bg-white shrink-0 shadow-sm`}>
+                          {appLogo && <img src={appLogo} className="w-full h-full object-cover" alt="Logo" crossOrigin="anonymous" />}
+                        </div>
+                        <div className="min-w-0 space-y-1">
+                          <h2 className="text-lg font-black uppercase tracking-tight leading-tight truncate">{businessProfile?.name || appName}</h2>
+                          {businessProfile?.tagline && <p className="text-[9px] font-bold opacity-60 italic leading-tight truncate">{businessProfile.tagline}</p>}
+                          {(businessProfile?.phone || socials?.whatsapp) && (
+                            <div className="flex items-center gap-3 flex-wrap">
+                              {businessProfile?.phone && <span className="text-[10px] font-bold opacity-70 flex items-center gap-1"><Phone size={10} className="opacity-60 shrink-0" />{businessProfile.phone}</span>}
+                              {socials?.whatsapp && <span className="text-[10px] font-bold opacity-70 flex items-center gap-1"><MessageCircle size={10} className="opacity-60 shrink-0" />{socials.whatsapp}</span>}
+                            </div>
                           )}
-                          {businessProfile?.socials?.whatsapp && (
-                            <span className="text-[10px] font-bold opacity-70 flex items-center gap-1">
-                              <MessageCircle size={10} className="opacity-60 shrink-0" />
-                              {businessProfile.socials.whatsapp}
-                            </span>
+                          {addrLandmark && <p className="text-[10px] font-bold opacity-70 flex items-center gap-1"><MapPin size={10} className="opacity-50 shrink-0" />{addrLandmark}</p>}
+                          {addrStateCountry && <p className="text-[10px] font-bold opacity-60 ml-4">{addrStateCountry}</p>}
+                          {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[10px] font-bold opacity-70 flex items-start gap-1"><MapPin size={10} className="opacity-50 shrink-0 mt-0.5" /><span className="leading-tight">{businessProfile.address}</span></p>}
+                          {(socials?.instagram || socials?.facebook || socials?.youtube) && (
+                            <div className="flex flex-wrap gap-1 pt-0.5">
+                              {socials?.instagram && <span style={{background:"rgba(255,255,255,0.15)",borderRadius:999,padding:"2px 6px",display:"inline-flex",alignItems:"center",gap:3}}><Instagram size={8} style={{opacity:0.9}} /><span style={{fontSize:8,fontWeight:700,opacity:0.9,lineHeight:1}}>@{socials.instagram}</span></span>}
+                              {socials?.facebook && <span style={{background:"rgba(255,255,255,0.15)",borderRadius:999,padding:"2px 6px",display:"inline-flex",alignItems:"center",gap:3}}><Facebook size={8} style={{opacity:0.9}} /><span style={{fontSize:8,fontWeight:700,opacity:0.9,lineHeight:1}}>{socials.facebook}</span></span>}
+                              {socials?.youtube && <span style={{background:"rgba(255,255,255,0.15)",borderRadius:999,padding:"2px 6px",display:"inline-flex",alignItems:"center",gap:3}}><Youtube size={8} style={{opacity:0.9}} /><span style={{fontSize:8,fontWeight:700,opacity:0.9,lineHeight:1}}>{socials.youtube}</span></span>}
+                            </div>
                           )}
                         </div>
-                      )}
-                      {businessProfile?.address && (
-                        <p className="text-[10px] font-bold opacity-70 flex items-start gap-1">
-                          <MapPin size={10} className="opacity-50 shrink-0 mt-0.5" />
-                          <span className="leading-tight">{businessProfile.address}</span>
-                        </p>
-                      )}
-
-                      {/* Social icon pills — frosted backdrop works on any theme */}
-                      {(socials?.instagram || socials?.facebook || socials?.tiktok || socials?.youtube) && (
-                        <div className="flex flex-wrap gap-1 pt-0.5">
-                          {socials?.instagram && (
-                            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                              <Instagram size={8} style={{ opacity: 0.9 }} />
-                              <span style={{ fontSize: 8, fontWeight: 700, opacity: 0.9, lineHeight: 1 }}>@{socials.instagram}</span>
-                            </span>
-                          )}
-                          {socials?.facebook && (
-                            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                              <Facebook size={8} style={{ opacity: 0.9 }} />
-                              <span style={{ fontSize: 8, fontWeight: 700, opacity: 0.9, lineHeight: 1 }}>{socials.facebook}</span>
-                            </span>
-                          )}
-                          {socials?.tiktok && (
-                            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                              <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.9 }}><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
-                              <span style={{ fontSize: 8, fontWeight: 700, opacity: 0.9, lineHeight: 1 }}>@{socials.tiktok}</span>
-                            </span>
-                          )}
-                          {socials?.youtube && (
-                            <span style={{ background: "rgba(255,255,255,0.15)", borderRadius: 999, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                              <Youtube size={8} style={{ opacity: 0.9 }} />
-                              <span style={{ fontSize: 8, fontWeight: 700, opacity: 0.9, lineHeight: 1 }}>{socials.youtube}</span>
-                            </span>
-                          )}
+                        <div className="text-right shrink-0">
+                          <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Client ID</p>
+                          <p className="text-[13px] font-mono font-black mt-0.5">#{(businessProfile?.clientIdPrefix || "OT")}-{String(selectedCustomer.id).padStart(4, "0")}</p>
                         </div>
-                      )}
+                      </div>
                     </div>
-
-                    {/* Client ID */}
-                    <div className="text-right shrink-0">
-                      <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Client ID</p>
-                      <p className="text-[13px] font-mono font-black mt-0.5">
-                        #{(businessProfile?.clientIdPrefix || "OT")}-{String(selectedCustomer.id).padStart(4, "0")}
-                      </p>
+                    <div className={`py-3 border-b ${theme.border}`}>
+                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-center opacity-80">{selectedRecord.category} — {selectedRecord.label}</p>
                     </div>
-                  </div>
-                </div>
-
-                {/* Measurement title */}
-                <div className={`py-3 border-b ${theme.border}`}>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-center opacity-80">
-                    {selectedRecord.category} — {selectedRecord.label}
-                  </p>
-                </div>
-
-                {/* Client & Date */}
-                <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-0.5">
-                    <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Customer</p>
-                    <h4 className="text-base font-black leading-none">{selectedCustomer.name}</h4>
-                    <p className="text-[11px] font-bold opacity-60">{selectedCustomer.phone}</p>
-                  </div>
-                  <div className="text-right space-y-0.5">
-                    <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Date Generated</p>
-                    <p className="text-[11px] font-bold">{new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p>
-                  </div>
-                </div>
-
-                {/* Style image preview */}
-                {previewImageUrl && (
-                  <div className={`rounded-2xl overflow-hidden border ${theme.border} shadow-sm`}>
-                    <img src={previewImageUrl} alt="Style Reference" className="w-full object-cover max-h-52" crossOrigin="anonymous" />
-                    <div className={`px-3 py-1.5 border-t ${theme.border}`}>
-                      <p className="text-[9px] font-black uppercase tracking-widest opacity-40 text-center">Style Reference</p>
+                    <div className="grid grid-cols-2 gap-8">
+                      <div className="space-y-0.5">
+                        <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Customer</p>
+                        <h4 className="text-base font-black leading-none">{selectedCustomer.name}</h4>
+                        <p className="text-[11px] font-bold opacity-60">{selectedCustomer.phone}</p>
+                      </div>
+                      <div className="text-right space-y-0.5">
+                        <p className="text-[8px] opacity-40 uppercase font-black tracking-widest">Date Generated</p>
+                        <p className="text-[11px] font-bold">{new Date().toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"})}</p>
+                      </div>
+                    </div>
+                    {previewImageUrl && (
+                      <div className={`rounded-2xl overflow-hidden border ${theme.border} shadow-sm`}>
+                        <img src={previewImageUrl} alt="Style Reference" className="w-full object-cover max-h-52" crossOrigin="anonymous" />
+                        <div className={`px-3 py-1.5 border-t ${theme.border}`}><p className="text-[9px] font-black uppercase tracking-widest opacity-40 text-center">Style Reference</p></div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-x-12 gap-y-3 py-2">
+                      {entries.map(([k, v]) => (
+                        <div key={k} className={`flex justify-between items-baseline border-b ${theme.border} pb-1.5`}>
+                          <span className="text-[10px] font-bold opacity-50 uppercase tracking-tight">{k}</span>
+                          <span className="text-base font-black">{v}{getUnitSymbol(selectedRecord.unit)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className={`pt-6 border-t ${theme.border} text-center space-y-3`}>
+                      <p className="text-[10px] font-semibold leading-relaxed italic opacity-80 px-4">{customNote || DEFAULT_GLOBAL_NOTE}</p>
+                      <div className="flex flex-col items-center gap-1 pt-2">
+                        <p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-30">Generated By {businessProfile?.name || appName}</p>
+                        <p className="text-[7px] font-bold opacity-20 uppercase">{new Date().toLocaleString()}</p>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Measurements table */}
-                <div className="grid grid-cols-2 gap-x-12 gap-y-3 py-2">
-                  {entries.map(([k, v]) => (
-                    <div key={k} className={`flex justify-between items-baseline border-b ${theme.border} pb-1.5`}>
-                      <span className="text-[10px] font-bold opacity-50 uppercase tracking-tight">{k}</span>
-                      <span className="text-base font-black">{v}{getUnitSymbol(selectedRecord.unit)}</span>
+                {/* ══════════════════════════ EXECUTIVE ══════════════════════════ */}
+                {selectedCardStyle === "executive" && (
+                  <div>
+                    <div style={{height:4,background:theme.hexAccent}} />
+                    <div className="px-8 pt-5 pb-4">
+                      <div className="flex items-center gap-4">
+                        {appLogo && (
+                          <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0" style={{border:`1px solid ${theme.hexAccent}40`}}>
+                            <img src={appLogo} className="w-full h-full object-cover" alt="Logo" crossOrigin="anonymous" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-xl font-black uppercase tracking-widest leading-tight">{businessProfile?.name || appName}</h2>
+                          {businessProfile?.tagline && <p className="text-[9px] uppercase tracking-[0.2em] opacity-40 mt-0.5">{businessProfile.tagline}</p>}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[7px] opacity-30 uppercase font-black tracking-widest">Client ID</p>
+                          <p className="text-sm font-mono font-black mt-0.5" style={{color:theme.hexAccent}}>#{(businessProfile?.clientIdPrefix || "OT")}-{String(selectedCustomer.id).padStart(4, "0")}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 mt-3 pt-3 flex-wrap" style={{borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+                        {businessProfile?.phone && <span className="text-[10px] font-bold opacity-60 flex items-center gap-1"><Phone size={9} />{businessProfile.phone}</span>}
+                        {socials?.whatsapp && <span className="text-[10px] font-bold opacity-60 flex items-center gap-1"><MessageCircle size={9} />{socials.whatsapp}</span>}
+                        {addrLandmark && <span className="text-[10px] font-bold opacity-60 flex items-center gap-1"><MapPin size={9} />{addrLandmark}</span>}
+                        {addrStateCountry && <span className="text-[10px] font-bold opacity-40">{addrStateCountry}</span>}
+                        {!addrLandmark && !addrStateCountry && businessProfile?.address && <span className="text-[10px] font-bold opacity-60 flex items-center gap-1"><MapPin size={9} />{businessProfile.address}</span>}
+                      </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Footer */}
-                <div className={`pt-6 border-t ${theme.border} text-center space-y-3`}>
-                  <p className="text-[10px] font-semibold leading-relaxed italic opacity-80 px-4">
-                    {customNote || DEFAULT_GLOBAL_NOTE}
-                  </p>
-                  <div className="flex flex-col items-center gap-1 pt-2">
-                    <p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-30">Generated By {businessProfile?.name || appName}</p>
-                    <p className="text-[7px] font-bold opacity-20 uppercase">{new Date().toLocaleString()}</p>
+                    <div className="px-8 py-2.5" style={{background:"rgba(255,255,255,0.04)",borderTop:"1px solid rgba(255,255,255,0.06)",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+                      <div className="flex justify-between items-center">
+                        <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40">{selectedRecord.category} / {selectedRecord.label}</p>
+                        <p className="text-[9px] font-bold opacity-30">{new Date().toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"})}</p>
+                      </div>
+                    </div>
+                    <div className="px-8 py-3 flex justify-between items-center">
+                      <div>
+                        <p className="text-[7px] opacity-30 uppercase font-black tracking-widest">Client</p>
+                        <h4 className="text-sm font-black">{selectedCustomer.name}</h4>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[7px] opacity-30 uppercase font-black tracking-widest">Phone</p>
+                        <p className="text-[10px] font-bold opacity-50">{selectedCustomer.phone}</p>
+                      </div>
+                    </div>
+                    <div className="px-8 pb-5">
+                      {entries.map(([k, v]) => (
+                        <div key={k} className="flex justify-between items-center py-2.5" style={{borderBottom:"1px solid rgba(255,255,255,0.07)"}}>
+                          <span className="text-[10px] font-black uppercase tracking-widest opacity-40">{k}</span>
+                          <span className="text-base font-black font-mono" style={{color:theme.hexAccent}}>{v}<span className="text-[10px] opacity-40 ml-0.5">{getUnitSymbol(selectedRecord.unit)}</span></span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="px-8 py-4" style={{borderTop:`2px solid ${theme.hexAccent}22`}}>
+                      <p className="text-[9px] opacity-40 italic leading-relaxed">{customNote || DEFAULT_GLOBAL_NOTE}</p>
+                      <p className="text-[7px] opacity-15 uppercase tracking-widest mt-2">{businessProfile?.name || appName} · {new Date().toLocaleDateString()}</p>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* ══════════════════════════ LUXURY ══════════════════════════ */}
+                {selectedCardStyle === "luxury" && (
+                  <div className="p-8">
+                    <div className="flex flex-col items-center pb-5 space-y-3">
+                      {appLogo && (
+                        <div className="w-20 h-20 rounded-full overflow-hidden" style={{border:`2px solid ${theme.hexAccent}60`}}>
+                          <img src={appLogo} className="w-full h-full object-cover" alt="Logo" crossOrigin="anonymous" />
+                        </div>
+                      )}
+                      <div className="text-center space-y-1.5">
+                        <h2 className="text-xl font-black uppercase tracking-[0.15em]">{businessProfile?.name || appName}</h2>
+                        {businessProfile?.tagline && <p className="text-[10px] italic opacity-50 tracking-wide">{businessProfile.tagline}</p>}
+                      </div>
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="flex-1 h-px" style={{background:`${theme.hexAccent}40`}} />
+                        <div className="w-1.5 h-1.5 rotate-45" style={{background:theme.hexAccent}} />
+                        <div className="flex-1 h-px" style={{background:`${theme.hexAccent}40`}} />
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        {(businessProfile?.phone || socials?.whatsapp) && (
+                          <div className="flex items-center gap-4 flex-wrap justify-center">
+                            {businessProfile?.phone && <span className="text-[10px] opacity-55 flex items-center gap-1"><Phone size={9} />{businessProfile.phone}</span>}
+                            {socials?.whatsapp && <span className="text-[10px] opacity-55 flex items-center gap-1"><MessageCircle size={9} />{socials.whatsapp}</span>}
+                          </div>
+                        )}
+                        {addrLandmark && <p className="text-[10px] opacity-45 flex items-center gap-1"><MapPin size={9} />{addrLandmark}</p>}
+                        {addrStateCountry && <p className="text-[10px] opacity-35">{addrStateCountry}</p>}
+                        {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[10px] opacity-45 flex items-center gap-1"><MapPin size={9} />{businessProfile.address}</p>}
+                      </div>
+                    </div>
+                    <div className="text-center py-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">{selectedRecord.category}</p>
+                      <p className="text-sm font-black uppercase tracking-[0.15em] mt-0.5">{selectedRecord.label}</p>
+                    </div>
+                    <div className="flex justify-between py-3 mb-3" style={{borderTop:`1px solid ${theme.hexAccent}25`,borderBottom:`1px solid ${theme.hexAccent}25`}}>
+                      <div>
+                        <p className="text-[7px] opacity-30 uppercase tracking-widest">Client</p>
+                        <p className="text-sm font-black">{selectedCustomer.name}</p>
+                        <p className="text-[9px] opacity-35 font-mono">#{(businessProfile?.clientIdPrefix || "OT")}-{String(selectedCustomer.id).padStart(4, "0")}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[7px] opacity-30 uppercase tracking-widest">Date</p>
+                        <p className="text-[11px] font-bold">{new Date().toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"})}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-10 gap-y-5 py-4">
+                      {entries.map(([k, v]) => (
+                        <div key={k} className="space-y-0.5">
+                          <p className="text-[8px] font-black uppercase tracking-widest opacity-28">{k}</p>
+                          <p className="text-xl font-black" style={{color:theme.hexAccent}}>{v}<span className="text-[10px] opacity-35 ml-0.5">{getUnitSymbol(selectedRecord.unit)}</span></p>
+                          <div className="h-px w-full" style={{background:`${theme.hexAccent}20`}} />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="pt-5 flex flex-col items-center gap-3">
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="flex-1 h-px" style={{background:`${theme.hexAccent}25`}} />
+                        <div className="w-1.5 h-1.5 rotate-45" style={{background:`${theme.hexAccent}55`}} />
+                        <div className="flex-1 h-px" style={{background:`${theme.hexAccent}25`}} />
+                      </div>
+                      <p className="text-[9px] opacity-35 italic text-center px-6">{customNote || DEFAULT_GLOBAL_NOTE}</p>
+                      <p className="text-[7px] opacity-18 uppercase tracking-[0.3em]">{businessProfile?.name || appName}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ══════════════════════════ MODERN ══════════════════════════ */}
+                {selectedCardStyle === "modern" && (
+                  <div>
+                    <div className="px-8 pt-6 pb-4">
+                      <div className="flex items-start gap-3">
+                        {appLogo && (
+                          <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 mt-1" style={{border:`1px solid ${theme.hexAccent}30`}}>
+                            <img src={appLogo} className="w-full h-full object-cover" alt="Logo" crossOrigin="anonymous" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-2xl font-black uppercase leading-none">{businessProfile?.name || appName}</h2>
+                          {businessProfile?.tagline && <p className="text-[10px] opacity-35 mt-1 uppercase tracking-widest">{businessProfile.tagline}</p>}
+                          <div className="flex items-center gap-3 mt-2 flex-wrap">
+                            {businessProfile?.phone && <span className="text-[10px] opacity-45 flex items-center gap-1"><Phone size={9} />{businessProfile.phone}</span>}
+                            {socials?.whatsapp && <span className="text-[10px] opacity-45 flex items-center gap-1"><MessageCircle size={9} />{socials.whatsapp}</span>}
+                          </div>
+                          {addrLandmark && <p className="text-[10px] opacity-40 flex items-center gap-1 mt-1"><MapPin size={9} />{addrLandmark}</p>}
+                          {addrStateCountry && <p className="text-[10px] opacity-30 mt-0.5 ml-4">{addrStateCountry}</p>}
+                          {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[10px] opacity-40 flex items-center gap-1 mt-1"><MapPin size={9} />{businessProfile.address}</p>}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{height:2,background:`linear-gradient(90deg, ${theme.hexAccent}, transparent)`}} />
+                    <div className="px-8 py-3 flex justify-between items-center" style={{background:"rgba(255,255,255,0.04)"}}>
+                      <div>
+                        <p className="text-base font-black">{selectedCustomer.name}</p>
+                        <p className="text-[9px] opacity-35 uppercase tracking-widest">{selectedRecord.category} · {selectedRecord.label}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[7px] opacity-25 uppercase tracking-widest">Generated</p>
+                        <p className="text-[10px] font-bold opacity-50">{new Date().toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"})}</p>
+                      </div>
+                    </div>
+                    <div className="px-8 py-5 grid grid-cols-2 gap-x-8 gap-y-5">
+                      {entries.map(([k, v]) => (
+                        <div key={k}>
+                          <p className="text-[8px] font-black uppercase tracking-widest opacity-28">{k}</p>
+                          <p className="text-3xl font-black leading-none mt-0.5">{v}<span className="text-sm font-bold opacity-25 ml-1">{getUnitSymbol(selectedRecord.unit)}</span></p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="px-8 py-4" style={{borderTop:"1px solid rgba(255,255,255,0.07)"}}>
+                      <p className="text-[9px] opacity-30 italic">{customNote || DEFAULT_GLOBAL_NOTE}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-[7px] opacity-18 uppercase tracking-widest">{businessProfile?.name || appName}</p>
+                        <p className="text-[7px] font-mono opacity-15">#{(businessProfile?.clientIdPrefix || "OT")}-{String(selectedCustomer.id).padStart(4, "0")}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ══════════════════════════ MINIMAL ══════════════════════════ */}
+                {selectedCardStyle === "minimal" && (
+                  <div className="p-12">
+                    <div className="pb-8">
+                      <h2 className="text-2xl font-black uppercase tracking-[0.12em] leading-tight">{businessProfile?.name || appName}</h2>
+                      {businessProfile?.tagline && <p className="text-[10px] opacity-35 italic mt-1">{businessProfile.tagline}</p>}
+                      <div className="flex items-center gap-5 mt-3 flex-wrap">
+                        {businessProfile?.phone && <span className="text-[10px] opacity-35">{businessProfile.phone}</span>}
+                        {socials?.whatsapp && <span className="text-[10px] opacity-35">{socials.whatsapp}</span>}
+                        {addrLandmark && <span className="text-[10px] opacity-35">{addrLandmark}</span>}
+                        {addrStateCountry && <span className="text-[10px] opacity-25">{addrStateCountry}</span>}
+                        {!addrLandmark && !addrStateCountry && businessProfile?.address && <span className="text-[10px] opacity-35">{businessProfile.address}</span>}
+                      </div>
+                    </div>
+                    <div className="h-px w-full" style={{background:"currentColor",opacity:0.12}} />
+                    <div className="py-5">
+                      <p className="text-[9px] opacity-25 uppercase tracking-[0.3em]">{selectedRecord.category}</p>
+                      <p className="text-sm font-black uppercase tracking-widest mt-1">{selectedRecord.label}</p>
+                    </div>
+                    <div className="flex justify-between text-[10px] opacity-35 pb-6">
+                      <span>{selectedCustomer.name}</span>
+                      <span>{new Date().toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"})}</span>
+                    </div>
+                    <div className="space-y-5">
+                      {entries.map(([k, v]) => (
+                        <div key={k} className="flex justify-between items-baseline">
+                          <span className="text-[10px] uppercase tracking-[0.15em] opacity-35">{k}</span>
+                          <span className="text-lg font-black">{v}<span className="text-[10px] opacity-25 ml-0.5">{getUnitSymbol(selectedRecord.unit)}</span></span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-10" style={{borderTop:"1px solid currentColor",opacity:0.08}} />
+                    <p className="text-[8px] opacity-18 mt-3 italic">{customNote || DEFAULT_GLOBAL_NOTE}</p>
+                    <p className="text-[7px] opacity-10 uppercase tracking-widest mt-2">{businessProfile?.name || appName}</p>
+                  </div>
+                )}
+
+                {/* ══════════════════════════ FASHION STUDIO ══════════════════════════ */}
+                {selectedCardStyle === "fashion" && (
+                  <div>
+                    <div className="flex flex-col items-center pt-8 pb-5 px-8" style={{borderBottom:`1px solid ${theme.hexAccent}28`}}>
+                      {appLogo && (
+                        <div className="w-24 h-24 rounded-2xl overflow-hidden mb-4" style={{boxShadow:`0 0 0 1px ${theme.hexAccent}40`}}>
+                          <img src={appLogo} className="w-full h-full object-cover" alt="Logo" crossOrigin="anonymous" />
+                        </div>
+                      )}
+                      <h2 className="text-lg font-black uppercase tracking-[0.25em] text-center">{businessProfile?.name || appName}</h2>
+                      {businessProfile?.tagline && <p className="text-[9px] italic opacity-45 mt-1 text-center">{businessProfile.tagline}</p>}
+                      <div className="flex items-center gap-3 mt-2 flex-wrap justify-center">
+                        {businessProfile?.phone && <span className="text-[9px] opacity-45">{businessProfile.phone}</span>}
+                        {socials?.whatsapp && <span className="text-[9px] opacity-45">{socials.whatsapp}</span>}
+                      </div>
+                      {addrLandmark && <p className="text-[9px] opacity-38 mt-1 text-center">{addrLandmark}</p>}
+                      {addrStateCountry && <p className="text-[9px] opacity-28 text-center">{addrStateCountry}</p>}
+                      {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[9px] opacity-38 mt-1 text-center">{businessProfile.address}</p>}
+                    </div>
+                    <div className="px-8 py-3 flex items-center gap-3" style={{borderBottom:`1px solid ${theme.hexAccent}18`}}>
+                      <div className="w-0.5 h-6 flex-shrink-0" style={{background:theme.hexAccent}} />
+                      <div>
+                        <p className="text-[8px] opacity-30 uppercase tracking-widest">{selectedRecord.category}</p>
+                        <p className="text-sm font-black uppercase">{selectedRecord.label}</p>
+                      </div>
+                      <div className="ml-auto text-right">
+                        <p className="text-[7px] opacity-28 uppercase tracking-widest">Client</p>
+                        <p className="text-[10px] font-black">{selectedCustomer.name}</p>
+                      </div>
+                    </div>
+                    <div className="px-8 py-5 grid grid-cols-2 gap-x-8 gap-y-4">
+                      {entries.map(([k, v]) => (
+                        <div key={k} className="flex items-start gap-2">
+                          <div className="w-px min-h-[28px] flex-shrink-0 mt-1" style={{background:`${theme.hexAccent}35`}} />
+                          <div>
+                            <p className="text-[8px] uppercase tracking-widest opacity-30">{k}</p>
+                            <p className="text-xl font-black leading-none">{v}<span className="text-[9px] opacity-28 ml-0.5">{getUnitSymbol(selectedRecord.unit)}</span></p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="px-8 py-4" style={{borderTop:`1px solid ${theme.hexAccent}18`,background:`${theme.hexAccent}06`}}>
+                      <p className="text-[9px] opacity-35 italic">{customNote || DEFAULT_GLOBAL_NOTE}</p>
+                      <div className="flex justify-between mt-2">
+                        <p className="text-[7px] uppercase tracking-[0.3em] opacity-15">{businessProfile?.name || appName}</p>
+                        <p className="text-[7px] font-mono opacity-12">#{(businessProfile?.clientIdPrefix || "OT")}-{String(selectedCustomer.id).padStart(4, "0")}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ══════════════════════════ ELEGANT ══════════════════════════ */}
+                {selectedCardStyle === "elegant" && (
+                  <div className="p-8">
+                    <div className="flex items-center gap-2 mb-6">
+                      <div className="flex-1 h-px" style={{background:`${theme.hexAccent}30`}} />
+                      <span style={{color:theme.hexAccent,fontSize:9,opacity:0.65,letterSpacing:4}}>◆ ◆ ◆</span>
+                      <div className="flex-1 h-px" style={{background:`${theme.hexAccent}30`}} />
+                    </div>
+                    <div className="flex flex-col items-center text-center space-y-2 pb-5">
+                      {appLogo && (
+                        <div className="w-16 h-16 rounded-full overflow-hidden" style={{border:`1px solid ${theme.hexAccent}40`}}>
+                          <img src={appLogo} className="w-full h-full object-cover" alt="Logo" crossOrigin="anonymous" />
+                        </div>
+                      )}
+                      <h2 className="text-lg font-black uppercase tracking-[0.2em]">{businessProfile?.name || appName}</h2>
+                      {businessProfile?.tagline && <p className="text-[9px] italic opacity-45">{businessProfile.tagline}</p>}
+                      <div className="flex items-center gap-4 flex-wrap justify-center opacity-45 text-[10px]">
+                        {businessProfile?.phone && <span className="flex items-center gap-1"><Phone size={8} />{businessProfile.phone}</span>}
+                        {socials?.whatsapp && <span className="flex items-center gap-1"><MessageCircle size={8} />{socials.whatsapp}</span>}
+                      </div>
+                      {addrLandmark && <p className="text-[10px] opacity-38 flex items-center justify-center gap-1"><MapPin size={8} />{addrLandmark}</p>}
+                      {addrStateCountry && <p className="text-[10px] opacity-28">{addrStateCountry}</p>}
+                      {!addrLandmark && !addrStateCountry && businessProfile?.address && <p className="text-[10px] opacity-38 flex items-center justify-center gap-1"><MapPin size={8} />{businessProfile.address}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 my-3">
+                      <div className="flex-1 h-px" style={{background:`${theme.hexAccent}20`}} />
+                      <div className="w-1 h-1 rotate-45" style={{background:`${theme.hexAccent}60`}} />
+                      <div className="flex-1 h-px" style={{background:`${theme.hexAccent}20`}} />
+                    </div>
+                    <div className="text-center py-3">
+                      <p className="text-[9px] opacity-28 uppercase tracking-[0.25em]">{selectedRecord.category}</p>
+                      <p className="text-sm font-black uppercase tracking-[0.1em] mt-0.5">{selectedRecord.label}</p>
+                      <div className="flex justify-center gap-6 mt-2 text-[9px] opacity-35">
+                        <span>{selectedCustomer.name}</span>
+                        <span>·</span>
+                        <span>{new Date().toLocaleDateString("en-GB", {day:"2-digit",month:"short",year:"numeric"})}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-6 py-5">
+                      {entries.map(([k, v]) => (
+                        <div key={k} className="text-center space-y-0.5">
+                          <p className="text-[8px] font-black uppercase tracking-widest opacity-28">{k}</p>
+                          <p className="text-xl font-black" style={{color:theme.hexAccent}}>{v}<span className="text-[9px] opacity-35 ml-0.5">{getUnitSymbol(selectedRecord.unit)}</span></p>
+                          <div className="h-px w-8 mx-auto" style={{background:`${theme.hexAccent}30`}} />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 mt-4 mb-3">
+                      <div className="flex-1 h-px" style={{background:`${theme.hexAccent}18`}} />
+                      <div className="w-1 h-1 rotate-45" style={{background:`${theme.hexAccent}45`}} />
+                      <div className="flex-1 h-px" style={{background:`${theme.hexAccent}18`}} />
+                    </div>
+                    <p className="text-[9px] opacity-28 italic text-center px-4">{customNote || DEFAULT_GLOBAL_NOTE}</p>
+                    <p className="text-[7px] opacity-15 uppercase tracking-[0.3em] text-center mt-2">{businessProfile?.name || appName}</p>
+                  </div>
+                )}
+
               </div>
             </div>
 

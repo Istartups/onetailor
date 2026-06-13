@@ -1,0 +1,235 @@
+## NEW FEATURE STRUCTURE
+
+Current:
+
+* Theme = changes colors only
+
+New:
+
+* Theme = controls colors
+* Card Style = controls design/layout appearance
+
+Example:
+
+User chooses:
+
+Theme:
+
+* Dark Blue
+* Gold
+* Emerald
+
+Then separately chooses:
+
+Card Style:
+
+* Executive
+* Luxury
+* Modern
+* Minimal
+* Premium Business
+* Fashion Studio
+* Elegant Card
+
+So same data, different visual presentation.
+
+---
+
+## PREMIUM ONLY FEATURE
+
+Card Styles must ONLY be available to Premium users.
+
+Logic:
+
+If user is NOT premium:
+
+* Show Card Styles section locked
+* Show premium badge/icon
+* Disable interaction
+
+Example UI:
+
+CARD STYLES (Premium Only)
+
+🔒 Upgrade to Premium to unlock creative premium card designs
+
+Free users:
+
+* Can only use normal color themes
+
+Premium users:
+
+* Can access all card styles
+
+Do NOT affect existing theme system.
+
+---
+
+## CARD STYLES SHOULD BE CREATIVE DESIGNS
+
+Do NOT simply rearrange text slightly.
+
+Each style should feel visually different.
+
+Each style must have unique layout structure.
+
+Examples:
+
+1. EXECUTIVE STYLE
+
+* Clean corporate layout
+* Structured sections
+* Professional spacing
+* Premium business appearance
+
+2. LUXURY STYLE
+
+* Premium spacing
+* Elegant typography
+* Decorative separators
+* High-end fashion look
+
+3. MODERN STYLE
+
+* Contemporary card layout
+* Large bold measurement numbers
+* Stylish positioning
+* App-like clean feel
+
+4. MINIMAL STYLE
+
+* Simple whitespace design
+* Elegant clean spacing
+* Very clean professional appearance
+
+5. FASHION STUDIO STYLE
+
+* Tailor/fashion focused design
+* Editorial style layout
+* Premium boutique feel
+
+6. ELEGANT STYLE
+
+* Sophisticated premium card design
+* Balanced spacing
+* Premium visual hierarchy
+
+The user should clearly feel each card style is different.
+
+---
+
+## AUTO BRAND COLOR INTEGRATION
+
+Card Styles should automatically pull colors from Brand Kit.
+
+We already have business Brand Kit.
+
+Use brand colors automatically.
+
+Example:
+
+If Brand Kit primary color is:
+
+Gold + Black
+
+Then card style automatically adapts.
+
+If Brand Kit is:
+
+Blue + White
+
+Then design adapts.
+
+If Brand Kit is:
+
+Green + Cream
+
+Then design adapts.
+
+Goal:
+
+Every generated card should feel branded to that business automatically.
+
+Do not use hardcoded colors only.
+
+Use business Brand Kit colors dynamically.
+
+---
+
+## THEME + STYLE MUST WORK TOGETHER
+
+System must support both.
+
+Example:
+
+Theme controls:
+
+* Main color palette
+* Background colors
+* Accent colors
+
+Card Style controls:
+
+* Layout design
+* Visual arrangement
+* Decorative styling
+* Typography hierarchy
+* Borders
+* Section structure
+
+So:
+
+Theme = Color identity
+
+Style = Design identity
+
+They must work together.
+
+---
+
+## UI CHANGES
+
+Add new section below Theme selector.
+
+Section:
+
+CARD STYLES
+
+Show style preview cards.
+
+Example:
+
+[ Executive ]
+[ Luxury ]
+[ Modern ]
+[ Elegant ]
+[ Fashion Studio ]
+
+Premium users:
+
+* Can click and select
+
+Free users:
+
+* Locked state
+* Premium badge visible
+
+Selected style updates card preview instantly.
+
+---
+
+## IMPORTANT
+
+This feature is PREMIUM ONLY.
+
+Do NOT remove current color theme system.
+
+Do NOT replace existing card generator logic.
+
+Add Card Styles as an additional design layer.
+
+Each style must look genuinely different and visually attractive.
+
+Goal:
+
+Premium users should feel they are getting professionally designed branded measurement cards, not just color changes.

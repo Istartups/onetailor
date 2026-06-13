@@ -670,6 +670,16 @@ export default function Settings() {
                       />
                     </div>
                   </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Landmark</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Near City Mall" 
+                      value={brandForm.landmark} 
+                      onChange={e => setBrandForm({...brandForm, landmark: e.target.value})} 
+                      className="w-full px-4 py-3 rounded-xl bg-muted/30 border border-border outline-none focus:border-primary text-sm"
+                    />
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">State *</label>
@@ -682,25 +692,15 @@ export default function Settings() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Landmark</label>
+                      <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Country *</label>
                       <input 
                         type="text" 
-                        placeholder="e.g. Near City Mall" 
-                        value={brandForm.landmark} 
-                        onChange={e => setBrandForm({...brandForm, landmark: e.target.value})} 
+                        placeholder="e.g. Nigeria" 
+                        value={brandForm.country} 
+                        onChange={e => setBrandForm({...brandForm, country: e.target.value})} 
                         className="w-full px-4 py-3 rounded-xl bg-muted/30 border border-border outline-none focus:border-primary text-sm"
                       />
                     </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Country *</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Nigeria" 
-                      value={brandForm.country} 
-                      onChange={e => setBrandForm({...brandForm, country: e.target.value})} 
-                      className="w-full px-4 py-3 rounded-xl bg-muted/30 border border-border outline-none focus:border-primary text-sm"
-                    />
                   </div>
                 </div>
 
