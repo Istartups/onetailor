@@ -94,7 +94,7 @@ export default function PremiumDetails() {
           <div className="flex items-center justify-center gap-1 text-primary/80">
             {[...Array(5)].map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
           </div>
-          <h1 className="text-3xl font-bold text-white">⭐ Unlock OneTailor Pro</h1>
+          <h1 className="text-3xl font-bold text-white"> Unlock OneTailor Premium</h1>
           <p className="text-slate-400 text-sm">Professional tools for serious tailors.</p>
           <div className="text-4xl font-black text-primary transition-all duration-300">
             {settings ? formatPrice(effectivePrice) : "₦15,000"}

@@ -565,18 +565,50 @@ export default function MeasurementCardGenerator() {
                   <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">PRO</span>
                 )}
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+              <div className="flex gap-2.5 overflow-x-auto pb-2 no-scrollbar">
                 {CARD_STYLES.map(s => {
                   const locked = s.premium && !isPremium;
+                  const STYLE_SWATCHES: Record<string, { bg: string; accent: string }> = {
+                    standard:  { bg: "linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)", accent: "#c8a84b" },
+                    executive: { bg: "linear-gradient(135deg,#0f2027 0%,#203a43 50%,#2c5364 100%)", accent: "#64b5f6" },
+                    luxury:    { bg: "linear-gradient(135deg,#2d1b00 0%,#5c3800 100%)", accent: "#ffd700" },
+                    modern:    { bg: "linear-gradient(135deg,#6d28d9 0%,#7c3aed 50%,#4f46e5 100%)", accent: "#a78bfa" },
+                    minimal:   { bg: "linear-gradient(135deg,#f8f9fa 0%,#e9ecef 100%)", accent: "#6c757d" },
+                    fashion:   { bg: "linear-gradient(135deg,#1a0a1e 0%,#3d0a4f 100%)", accent: "#e879f9" },
+                    elegant:   { bg: "linear-gradient(135deg,#1c1c1c 0%,#2d2d2d 100%)", accent: "#d4af37" },
+                  };
+                  const swatch = STYLE_SWATCHES[s.id] || STYLE_SWATCHES.standard;
                   return (
                     <button
                       key={s.id}
                       onClick={() => !locked && setSelectedCardStyle(s.id)}
                       title={locked ? "Upgrade to Premium to unlock this style" : s.label}
-                      className={`shrink-0 relative px-4 py-2.5 rounded-xl border text-[10px] font-bold transition-all ${selectedCardStyle === s.id ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-card border-border text-muted-foreground"} ${locked ? "opacity-60" : ""}`}
+                      className={`shrink-0 relative flex flex-col items-center gap-1.5 p-2 rounded-2xl border transition-all ${selectedCardStyle === s.id ? "border-primary shadow-lg shadow-primary/20 ring-2 ring-primary/40" : "border-border"} ${locked ? "opacity-70" : "hover:border-primary/50"}`}
+                      style={{ minWidth: 68 }}
                     >
-                      {s.label}
-                      {locked && <Lock size={8} className="absolute top-1 right-1 text-muted-foreground" />}
+                      <div
+                        className="w-14 h-10 rounded-xl overflow-hidden relative"
+                        style={{ background: swatch.bg }}
+                      >
+                        <div className="absolute inset-0 flex flex-col justify-between p-1.5">
+                          <div className="flex gap-0.5">
+                            <div className="h-1 w-4 rounded-full opacity-80" style={{ background: swatch.accent }} />
+                            <div className="h-1 w-3 rounded-full opacity-40" style={{ background: swatch.accent }} />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="h-0.5 w-full rounded-full opacity-30" style={{ background: swatch.accent }} />
+                            <div className="h-0.5 w-3/4 rounded-full opacity-20" style={{ background: swatch.accent }} />
+                          </div>
+                        </div>
+                        {locked && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl">
+                            <Lock size={10} className="text-white/80" />
+                          </div>
+                        )}
+                      </div>
+                      <span className={`text-[9px] font-black text-center leading-tight ${selectedCardStyle === s.id ? "text-primary" : "text-muted-foreground"}`}>
+                        {s.label}
+                      </span>
                     </button>
                   );
                 })}

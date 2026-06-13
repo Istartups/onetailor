@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Loader2, Crown, ShieldCheck, LogIn, ChevronRight, Mail, Lock,
   Eye, EyeOff, Building2, Phone, X, RefreshCw, Upload, Check,
-  AlertCircle, MapPin, Smartphone
+  AlertCircle, MapPin, Smartphone, Copy, SendHorizonal
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 function PendingNotifySupportButton({ account }: { account: any }) {
   const adminNotificationPhone = useAppStore((s) => s.adminNotificationPhone);
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const handleNotify = () => {
     const phone = adminNotificationPhone?.replace(/\D/g, "");
@@ -20,20 +24,79 @@ function PendingNotifySupportButton({ account }: { account: any }) {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
+  const handleCopy = async () => {
+    const text = `Name: ${account?.businessName || "N/A"}\nEmail: ${account?.email || "N/A"}\nStatus: Pending Verification`;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    setCopied(true);
+    toast({ title: "Copied!", description: "Account info copied to clipboard." });
+    setTimeout(() => setCopied(false), 3000);
+  };
+
+  const handleResend = async () => {
+    if (!account?.email) return;
+    setResending(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: account.email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResent(true);
+        toast({ title: "Email Sent", description: `Status email resent to ${account.email}` });
+        setTimeout(() => setResent(false), 5000);
+      } else {
+        toast({ title: "Failed", description: data.message });
+      }
+    } catch {
+      toast({ title: "Error", description: "Could not reach server" });
+    } finally {
+      setResending(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-      <a href="/home" className="px-8 py-3 bg-secondary text-secondary-foreground rounded-xl font-bold inline-flex items-center justify-center gap-2">
-        Back to Toolkit
-      </a>
-      <button
-        onClick={handleNotify}
-        disabled={!adminNotificationPhone}
-        className="px-8 py-3 bg-green-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        title={!adminNotificationPhone ? "Support contact not configured" : "Open WhatsApp to contact support"}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.134.558 4.134 1.535 5.867L0 24l6.335-1.66A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.655-.502-5.186-1.381l-.372-.221-3.863 1.013 1.032-3.764-.242-.389A9.937 9.937 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-        Notify Support
-      </button>
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="/home" className="px-8 py-3 bg-secondary text-secondary-foreground rounded-xl font-bold inline-flex items-center justify-center gap-2">
+          Back to Toolkit
+        </a>
+        <button
+          onClick={handleNotify}
+          disabled={!adminNotificationPhone}
+          className="px-8 py-3 bg-green-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          title={!adminNotificationPhone ? "Support contact not configured" : "Open WhatsApp to contact support"}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.134.558 4.134 1.535 5.867L0 24l6.335-1.66A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.655-.502-5.186-1.381l-.372-.221-3.863 1.013 1.032-3.764-.242-.389A9.937 9.937 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          Notify Support
+        </button>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <button
+          onClick={handleCopy}
+          className="px-6 py-2.5 bg-muted text-foreground rounded-xl font-bold flex items-center justify-center gap-2 text-sm active:scale-[0.98] transition-all border border-border"
+        >
+          {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+          {copied ? "Copied!" : "Copy Account Info"}
+        </button>
+        {account?.email && (
+          <button
+            onClick={handleResend}
+            disabled={resending || resent}
+            className="px-6 py-2.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-xl font-bold flex items-center justify-center gap-2 text-sm active:scale-[0.98] transition-all disabled:opacity-60"
+          >
+            {resending ? <Loader2 size={14} className="animate-spin" /> : resent ? <Check size={14} /> : <SendHorizonal size={14} />}
+            {resending ? "Sending…" : resent ? "Email Sent!" : "Resend Verification Email"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

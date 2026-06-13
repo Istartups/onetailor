@@ -415,4 +415,33 @@ router.post("/auth/reset-password", async (req, res) => {
   }
 });
 
+// ─── Resend Verification / Pending Status Email ────────────────────────────────
+
+router.post("/auth/resend-verification", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return void res.status(400).json({ message: "Email is required" });
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase().trim())).limit(1);
+    if (!user) return void res.status(404).json({ message: "Account not found" });
+
+    await sendEmail(
+      user.email ?? email,
+      "Your Premium Request Is Being Reviewed — OneTailor",
+      `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+        <h2 style="color:#6d28d9">Your Premium Request Status</h2>
+        <p>Hi <strong>${user.businessName || user.email}</strong>,</p>
+        <p>This is a confirmation that your premium upgrade request has been received and is currently under review.</p>
+        <p>Our team will verify your payment and activate your account within 24 hours.</p>
+        <p style="color:#888;font-size:12px">If you have already been approved, please log in again to refresh your account status.</p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+        <p style="color:#888;font-size:11px">OneTailor Toolkit</p>
+      </body></html>`,
+    );
+    return void res.json({ message: "Status email resent successfully" });
+  } catch (error) {
+    console.error("[AUTH] Resend verification error:", error);
+    return void res.status(500).json({ message: "Failed to resend email" });
+  }
+});
+
 export default router;

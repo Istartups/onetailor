@@ -49,6 +49,7 @@ import {
   EyeOff,
   Send,
   CheckCircle,
+  KeyRound,
 } from "lucide-react";
 
 interface PaymentInfo {
@@ -96,6 +97,109 @@ interface PaymentInfo {
   emailFromName: string;
   emailFromAddr: string;
   resendApiKey: string;
+}
+
+function ChangePasswordCard() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast({ variant: "destructive", title: "Passwords don't match", description: "New password and confirm password must be the same." });
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast({ variant: "destructive", title: "Too short", description: "New password must be at least 8 characters." });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await authFetch("/api/admin/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: "Password Changed", description: "Your admin password has been updated successfully." });
+        setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
+      } else {
+        toast({ variant: "destructive", title: "Failed", description: data.message });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Error", description: "Could not reach server" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="rounded-3xl border-primary/20 bg-primary/5 overflow-hidden">
+      <CardContent className="p-8">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-4">
+          <KeyRound className="w-5 h-5 text-primary" /> Change Admin Password
+        </h3>
+        <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Current Password</label>
+            <div className="relative">
+              <Input
+                type={showCurrent ? "text" : "password"}
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+                required
+                className="h-12 rounded-xl bg-muted/30 pr-12"
+              />
+              <button type="button" onClick={() => setShowCurrent(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">New Password</label>
+            <div className="relative">
+              <Input
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="At least 8 characters"
+                required
+                className="h-12 rounded-xl bg-muted/30 pr-12"
+              />
+              <button type="button" onClick={() => setShowNew(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Confirm New Password</label>
+            <Input
+              type="password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              placeholder="Repeat new password"
+              required
+              className={`h-12 rounded-xl bg-muted/30 ${confirmPassword && confirmPassword !== newPassword ? "border-red-500" : ""}`}
+            />
+            {confirmPassword && confirmPassword !== newPassword && (
+              <p className="text-xs text-red-500 px-1">Passwords don't match</p>
+            )}
+          </div>
+          <Button type="submit" disabled={saving} className="h-12 px-8 rounded-2xl font-bold">
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            Update Password
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
 }
 
 function TestEmailButton() {
@@ -1126,6 +1230,9 @@ export default function Settings() {
             <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
               <ShieldAlert className="w-5 h-5 text-red-500" /> Security & Advanced Controls
             </h2>
+
+            {/* Change Admin Password */}
+            <ChangePasswordCard />
             
             <Card className="rounded-3xl border-amber-500/20 bg-amber-500/5 overflow-hidden">
               <CardContent className="p-8 space-y-6">

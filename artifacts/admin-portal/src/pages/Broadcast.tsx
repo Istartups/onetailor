@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { authFetch } from "@/lib/authFetch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,20 @@ import {
   Monitor, 
   Info,
   ExternalLink,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Users,
+  Crown,
+  Globe
 } from "lucide-react";
+
+type Segment = "all" | "premium" | "free";
+
+interface SubStats {
+  subscriberCount: number;
+  premiumCount: number;
+  freeCount: number;
+  unlinkedCount: number;
+}
 
 export default function Broadcast() {
   const [title, setTitle] = useState("");
@@ -25,9 +37,23 @@ export default function Broadcast() {
   const [promoImage, setPromoImage] = useState("");
   const [contentImage, setContentImage] = useState("");
   const [sending, setSending] = useState(false);
+  const [segment, setSegment] = useState<Segment>("all");
+  const [subStats, setSubStats] = useState<SubStats | null>(null);
   const promoImageRef = React.useRef<HTMLInputElement>(null);
   const contentImageRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    authFetch("/api/admin/notifications/broadcast")
+      .then(r => r.json())
+      .then(d => setSubStats(d))
+      .catch(() => {});
+  }, []);
+
+  const targetCount = !subStats ? null
+    : segment === "premium" ? subStats.premiumCount
+    : segment === "free" ? subStats.freeCount
+    : subStats.subscriberCount;
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +64,7 @@ export default function Broadcast() {
       const res = await authFetch("/api/admin/notifications/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, body, url, ctaText: ctaText || null, ctaUrl: ctaUrl || null, promoImage: promoImage || null, contentImage: contentImage || null }),
+        body: JSON.stringify({ title, body, url, segment, ctaText: ctaText || null, ctaUrl: ctaUrl || null, promoImage: promoImage || null, contentImage: contentImage || null }),
       });
 
       const data = await res.json();
@@ -201,7 +227,8 @@ export default function Broadcast() {
                   className="w-full h-14 rounded-2xl font-bold text-lg gap-2 mt-4"
                 >
                   {sending ? <Loader2 className="animate-spin" /> : <Send size={20} />}
-                  Send Broadcast Now
+                  {segment === "all" ? "Send to All Subscribers" : segment === "premium" ? "Send to Premium Users" : "Send to Free Users"}
+                  {targetCount !== null && ` (${targetCount})`}
                 </Button>
               </form>
             </CardContent>
@@ -209,6 +236,73 @@ export default function Broadcast() {
         </div>
 
         <div className="space-y-6">
+          {/* Subscriber Stats */}
+          <Card className="rounded-3xl border-none shadow-2xl bg-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users size={16} className="text-primary" />
+                Subscribers
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {subStats === null ? (
+                <div className="flex items-center justify-center py-4"><Loader2 size={18} className="animate-spin text-muted-foreground" /></div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-2xl bg-muted/30 p-3">
+                      <p className="text-lg font-black text-foreground">{subStats.subscriberCount}</p>
+                      <p className="text-[9px] font-bold uppercase text-muted-foreground">Total</p>
+                    </div>
+                    <div className="rounded-2xl bg-amber-500/10 p-3">
+                      <p className="text-lg font-black text-amber-500">{subStats.premiumCount}</p>
+                      <p className="text-[9px] font-bold uppercase text-amber-500/70">Premium</p>
+                    </div>
+                    <div className="rounded-2xl bg-blue-500/10 p-3">
+                      <p className="text-lg font-black text-blue-400">{subStats.freeCount}</p>
+                      <p className="text-[9px] font-bold uppercase text-blue-400/70">Free</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    {subStats.unlinkedCount > 0 && `+${subStats.unlinkedCount} anonymous devices`}
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Audience selector */}
+          <Card className="rounded-3xl border-none shadow-2xl bg-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Globe size={16} className="text-primary" />
+                Target Audience
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {(["all", "premium", "free"] as Segment[]).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSegment(s)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-sm font-bold transition-all ${segment === s ? "bg-primary border-primary text-primary-foreground" : "bg-card border-border text-muted-foreground hover:bg-muted/20"}`}
+                >
+                  {s === "all" ? <Users size={14} /> : s === "premium" ? <Crown size={14} /> : <Globe size={14} />}
+                  {s === "all" ? "All Subscribers" : s === "premium" ? "Premium Users Only" : "Free Users Only"}
+                  {subStats && (
+                    <span className={`ml-auto text-[11px] font-black px-2 py-0.5 rounded-full ${segment === s ? "bg-white/20" : "bg-muted/40"}`}>
+                      {s === "all" ? subStats.subscriberCount : s === "premium" ? subStats.premiumCount : subStats.freeCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+              {targetCount !== null && (
+                <p className="text-[10px] text-muted-foreground text-center pt-1">
+                  This broadcast will reach <strong>{targetCount}</strong> subscriber{targetCount !== 1 ? "s" : ""}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="rounded-3xl border-none shadow-2xl bg-card">
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">

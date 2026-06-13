@@ -61,18 +61,38 @@ router.post("/notifications/subscribe", async (req, res) => {
 
 // ─── Admin Routes ─────────────────────────────────────────────────────────────
 
-router.get("/admin/notifications/broadcast", authenticateAdmin as any, (req, res) => {
-  return void res.json({
-    configured: !!(vapidPublicKey && vapidPrivateKey),
-    message: vapidPublicKey && vapidPrivateKey
-      ? "Push notifications configured — ready to broadcast"
-      : "Push notifications not configured — VAPID keys missing",
-    subscriberCount: null,
-  });
+router.get("/admin/notifications/broadcast", authenticateAdmin as any, async (req, res) => {
+  try {
+    const allSubs = await db.select().from(pushSubscriptionsTable);
+    const premiumSubs = await db.select({ id: pushSubscriptionsTable.id })
+      .from(pushSubscriptionsTable)
+      .innerJoin(usersTable, eq(pushSubscriptionsTable.userId, usersTable.id))
+      .where(eq(usersTable.isPremium, true));
+    const freeSubs = await db.select({ id: pushSubscriptionsTable.id })
+      .from(pushSubscriptionsTable)
+      .innerJoin(usersTable, eq(pushSubscriptionsTable.userId, usersTable.id))
+      .where(eq(usersTable.isPremium, false));
+    const unlinkedSubs = allSubs.filter(s => !s.userId);
+    return void res.json({
+      configured: !!(vapidPublicKey && vapidPrivateKey),
+      message: vapidPublicKey && vapidPrivateKey
+        ? "Push notifications configured — ready to broadcast"
+        : "Push notifications not configured — VAPID keys missing",
+      subscriberCount: allSubs.length,
+      premiumCount: premiumSubs.length,
+      freeCount: freeSubs.length,
+      unlinkedCount: unlinkedSubs.length,
+    });
+  } catch (error) {
+    return void res.json({
+      configured: !!(vapidPublicKey && vapidPrivateKey),
+      subscriberCount: 0, premiumCount: 0, freeCount: 0, unlinkedCount: 0,
+    });
+  }
 });
 
 router.post("/admin/notifications/broadcast", authenticateAdmin as any, async (req, res) => {
-  const { title, body, url, icon, ctaText, ctaUrl } = req.body;
+  const { title, body, url, icon, ctaText, ctaUrl, segment } = req.body;
 
   if (!title || !body) {
     return void res.status(400).json({ message: "Title and body are required" });
@@ -83,7 +103,22 @@ router.post("/admin/notifications/broadcast", authenticateAdmin as any, async (r
   }
 
   try {
-    const subscriptions = await db.select().from(pushSubscriptionsTable);
+    let subscriptions: typeof pushSubscriptionsTable.$inferSelect[];
+    if (segment === "premium") {
+      const rows = await db.select({ sub: pushSubscriptionsTable })
+        .from(pushSubscriptionsTable)
+        .innerJoin(usersTable, eq(pushSubscriptionsTable.userId, usersTable.id))
+        .where(eq(usersTable.isPremium, true));
+      subscriptions = rows.map(r => r.sub);
+    } else if (segment === "free") {
+      const rows = await db.select({ sub: pushSubscriptionsTable })
+        .from(pushSubscriptionsTable)
+        .innerJoin(usersTable, eq(pushSubscriptionsTable.userId, usersTable.id))
+        .where(eq(usersTable.isPremium, false));
+      subscriptions = rows.map(r => r.sub);
+    } else {
+      subscriptions = await db.select().from(pushSubscriptionsTable);
+    }
 
     const payload = JSON.stringify({
       title, body,

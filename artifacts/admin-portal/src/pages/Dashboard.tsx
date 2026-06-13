@@ -22,9 +22,28 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import SystemHealthBanner from "@/components/SystemHealthBanner";
 
+function useHealthDot() {
+  const [status, setStatus] = useState<"loading" | "healthy" | "warning" | "error">("loading");
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const r = await fetch("/api/health");
+        if (!r.ok) { setStatus("error"); return; }
+        const d = await r.json();
+        setStatus(d.status === "healthy" ? "healthy" : d.status === "degraded" ? "warning" : "error");
+      } catch { setStatus("error"); }
+    };
+    check();
+    const id = setInterval(check, 30000);
+    return () => clearInterval(id);
+  }, []);
+  return status;
+}
+
 export default function Dashboard({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const healthStatus = useHealthDot();
 
   // Close mobile menu on route change
   useEffect(() => { setMobileMenuOpen(false); }, [location]);
@@ -78,7 +97,13 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
             <Crown size={20} style={{ color: "hsl(43,82%,55%)" }} />
             <span className="font-black text-base" style={{ color: "hsl(43,82%,55%)" }}>OneTailor</span>
           </div>
-          <p className="text-[10px] mt-0.5" style={{ color: "var(--sidebar-foreground)", opacity: 0.4 }}>Admin Portal</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <p className="text-[10px]" style={{ color: "var(--sidebar-foreground)", opacity: 0.4 }}>Admin Portal</p>
+            <span
+              title={healthStatus === "healthy" ? "System healthy" : healthStatus === "warning" ? "System degraded" : healthStatus === "error" ? "System error" : "Checking…"}
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${healthStatus === "healthy" ? "bg-emerald-500" : healthStatus === "warning" ? "bg-amber-400" : healthStatus === "error" ? "bg-red-500" : "bg-slate-400 animate-pulse"}`}
+            />
+          </div>
         </div>
 
         {/* Nav */}
@@ -121,9 +146,15 @@ export default function Dashboard({ children }: { children: React.ReactNode }) {
       {mobileMenuOpen && (
         <aside className="fixed inset-y-0 left-0 z-50 w-56 flex flex-col md:hidden" style={sidebarStyle}>
           <div className="px-5 py-5 border-b border-sidebar-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Crown size={20} style={{ color: "hsl(43,82%,55%)" }} />
-              <span className="font-black text-base" style={{ color: "hsl(43,82%,55%)" }}>OneTailor</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <Crown size={20} style={{ color: "hsl(43,82%,55%)" }} />
+                <span className="font-black text-base" style={{ color: "hsl(43,82%,55%)" }}>OneTailor</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-[10px]" style={{ color: "var(--sidebar-foreground)", opacity: 0.4 }}>Admin Portal</p>
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${healthStatus === "healthy" ? "bg-emerald-500" : healthStatus === "warning" ? "bg-amber-400" : healthStatus === "error" ? "bg-red-500" : "bg-slate-400 animate-pulse"}`} />
+              </div>
             </div>
             <button onClick={() => setMobileMenuOpen(false)}><X size={18} /></button>
           </div>

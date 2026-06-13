@@ -471,4 +471,29 @@ router.post("/admin/test-email", authenticateAdmin as any, async (req, res) => {
   }
 });
 
+// ─── Admin: Change Password ────────────────────────────────────────────────────
+
+router.post("/admin/change-password", authenticateAdmin as any, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return void res.status(400).json({ message: "Current and new password are required" });
+  }
+  if (newPassword.length < 8) {
+    return void res.status(400).json({ message: "New password must be at least 8 characters" });
+  }
+  try {
+    const [admin] = await db.select().from(adminsTable).where(eq(adminsTable.id, 1)).limit(1);
+    if (!admin) return void res.status(404).json({ message: "Admin not found" });
+    if (!bcrypt.compareSync(currentPassword, admin.passwordHash)) {
+      return void res.status(401).json({ message: "Current password is incorrect" });
+    }
+    const newHash = bcrypt.hashSync(newPassword, 10);
+    await db.update(adminsTable).set({ passwordHash: newHash }).where(eq(adminsTable.id, 1));
+    return void res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("[ADMIN] Change password error:", error);
+    return void res.status(500).json({ message: "Failed to change password" });
+  }
+});
+
 export default router;
