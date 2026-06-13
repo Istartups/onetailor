@@ -49,7 +49,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "sh -c '[ -f node_modules/.modules.yaml ] || pnpm install; node scripts/port-bridge.cjs & pnpm --filter @workspace/one-tailor run dev'"
+args = "sh -c '[ -f node_modules/.modules.yaml ] || pnpm install; pnpm --filter @workspace/one-tailor run dev'"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -77,8 +77,24 @@ localPort = 3000
 externalPort = 3000
 
 [[ports]]
+localPort = 3002
+externalPort = 3002
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
 localPort = 8081
 externalPort = 80
+
+[[ports]]
+localPort = 8082
+externalPort = 3003
 
 [[ports]]
 localPort = 25497
@@ -87,10 +103,6 @@ externalPort = 3000
 [[ports]]
 localPort = 25580
 externalPort = 3002
-
-[[ports]]
-localPort = 5000
-externalPort = 80
 
 [userenv]
 
