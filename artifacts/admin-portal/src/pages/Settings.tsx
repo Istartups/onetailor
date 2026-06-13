@@ -539,9 +539,9 @@ export default function Settings() {
 
                   <div className="border-t border-border/50 pt-6 space-y-4">
                     <h3 className="text-sm font-bold text-primary flex items-center gap-2">
-                      <Crown className="w-4 h-4 text-amber-500" /> Premium User Message
+                      <Crown className="w-4 h-4 text-amber-500" /> Premium Welcome Message
                     </h3>
-                    <p className="text-xs text-muted-foreground -mt-1">Banner shown on the PWA home screen to <strong>Premium users only</strong>. Leave blank to hide.</p>
+                    <p className="text-xs text-muted-foreground -mt-1">Banner shown once to <strong>newly activated Premium users</strong> on the PWA home screen. Leave blank to hide.</p>
                     <div className="grid grid-cols-1 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Banner Title</label>
@@ -568,14 +568,14 @@ export default function Settings() {
                     <h3 className="text-sm font-bold text-primary flex items-center gap-2">
                       <Zap className="w-4 h-4" /> Unlock OneTailor Pro Configuration
                     </h3>
-                    <p className="text-xs text-muted-foreground -mt-1">Text shown on the upgrade lock screen to <strong>Free users only</strong>.</p>
+                    <p className="text-xs text-muted-foreground -mt-1">Teaser shown on the PWA home screen to <strong>Premium users only</strong> — encouraging upgrade to the Pro plan.</p>
                     <div className="grid grid-cols-1 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Lock Screen Title</label>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-primary/60 px-1">Teaser Title</label>
                         <Input
                           value={settings.proUpgradeTitle || ""}
                           onChange={(e) => setSettings({...settings, proUpgradeTitle: e.target.value})}
-                          placeholder="e.g. Unlock Premium"
+                          placeholder="e.g. Unlock OneTailor Pro"
                           className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
                         />
                       </div>
@@ -606,7 +606,7 @@ export default function Settings() {
                           <Input 
                             value={settings.proUpgradeButtonText || ""}
                             onChange={(e) => setSettings({...settings, proUpgradeButtonText: e.target.value})}
-                            placeholder="e.g. Unlock Premium Now"
+                            placeholder="e.g. ⭐ Unlock OneTailor Pro"
                             className="h-12 rounded-xl bg-muted/30 border-border font-bold text-foreground"
                           />
                         </div>

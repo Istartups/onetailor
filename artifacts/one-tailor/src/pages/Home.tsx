@@ -373,8 +373,8 @@ export default function Home() {
       {/* Payment Status Banner */}
       <PremiumStatusBanner />
 
-      {/* Premium User Message Banner — admin-customizable, shown only to FREE users */}
-      {!isPremium && premiumUserMessage && (
+      {/* Premium Welcome Message — admin-customizable, shown only to PREMIUM users */}
+      {isPremium && premiumUserMessage && (
         <div className="mb-4 rounded-2xl p-4 flex gap-3" style={{ background: "rgba(212,160,32,0.07)", border: "1px solid rgba(212,160,32,0.22)" }}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(212,160,32,0.12)", border: "1px solid rgba(212,160,32,0.25)" }}>
             <Crown size={18} style={{ color: "hsl(43,82%,55%)" }} />
@@ -667,6 +667,30 @@ export default function Home() {
         Browse All {ALL_TOOLS.length} Tools
         <ChevronRight size={15} className="text-muted-foreground/50" />
       </button>
+
+      {/* ── Free User Teaser — shown only to users NOT on Premium (encourage upgrade) ── */}
+      {!isPremium && (
+        <div
+          onClick={() => setLocation(pendingPremiumRequest ? "/pre-unlock" : "/premium-details")}
+          className="mt-3 relative overflow-hidden p-6 rounded-[2.5rem] bg-amber-950/60 border border-amber-500/20 cursor-pointer active:scale-[0.98] transition-all group"
+        >
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-colors" />
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center border border-amber-500/30 group-hover:scale-110 transition-transform">
+              <Crown size={28} className="text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-black text-white leading-tight">
+                ⭐ {pendingPremiumRequest ? "Resume Upgrade" : "Unlock Premium"}
+              </h3>
+              <p className="text-xs text-amber-200/60 mt-1">
+                {pendingPremiumRequest ? "Finish your payment to activate Premium" : "Unlock all professional tailoring tools"}
+              </p>
+            </div>
+            <ChevronRight className="text-amber-400" />
+          </div>
+        </div>
+      )}
 
       {/* ── Pro Upgrade Teaser — shown only to Premium users (encourage Pro upgrade) ── */}
       {isPremium && proUpgradeMessage && (
