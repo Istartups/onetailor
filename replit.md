@@ -53,52 +53,51 @@ When you export this project to GitHub and import it into a new Replit:
    - `DATABASE_URL` — provision a new PostgreSQL database (Replit Database tab) and paste the connection string
    - `SESSION_SECRET` — any long random string (e.g. `openssl rand -hex 32`)
 
-2. **Install dependencies** — open the Shell tab and run `pnpm install` from the workspace root. This is required on every fresh import — workflows will fail silently with `node_modules missing` until this is done.
+2. **Press Run** — each workflow auto-detects missing `node_modules` and runs `pnpm install` automatically before starting. No manual install needed.
 
-3. **Restart all three workflows** — after install completes, restart `API Server`, `Admin Portal`, and `OneTailor PWA` from the Workflows panel. The preview will be blank until all three are running.
+3. **Wait ~60–90 seconds** on first boot (install + Vite compile). Subsequent starts take ~5 seconds.
 
-4. **Hard-refresh the preview** — wait ~5 seconds after workflows show "Running", then press Ctrl+Shift+R (Cmd+Shift+R on Mac) in the Replit preview pane.
-
-5. **Ports** — handled automatically by Replit's proxy:
+4. **Ports** — handled automatically by Replit's proxy:
    - PWA: port `5000` → default preview URL (path `/`)
    - Admin Portal: port `3002` → path `/admin-portal/`
    - API Server: port `3000` → proxied as `/api`
 
-6. **First boot** — the API server auto-migrates all tables on startup. The default admin account (`admin` / `admin123`) is created on first request if no admin exists.
+5. **First boot** — the API server auto-migrates all tables on startup. The default admin account (`admin` / `admin123`) is created on first request if no admin exists.
 
 ## FIXLIVE — App Blank / Preview Not Showing
 
-**Most common cause after a fresh import: `node_modules` are missing.** Run `pnpm install` in the Shell, then restart all workflows.
+### Normal first-boot (fresh import)
 
-### Step-by-step fix
+Each workflow command includes an auto-install guard — it runs `pnpm install` automatically if `node_modules` is missing. You should not need to do anything manually. Just press Run and wait ~60–90 seconds.
 
-1. **Install packages first** (fresh import only) — open the Shell tab and run:
-   ```
-   pnpm install
-   ```
-   Wait for `Done in Xs` before proceeding. If workflows were already started before install, they will have failed — that's expected.
+If the preview is still blank after 2 minutes:
 
-2. **Restart all three workflows** — go to the Workflows panel and restart each one:
-   - `API Server`
-   - `Admin Portal`
-   - `OneTailor PWA`
-   
-   Each must show **"Running"** with log output. A workflow showing no logs has silently exited — restart it.
+1. **Check all three workflows are "Running"** — go to the Workflows panel. Each of `API Server`, `Admin Portal`, and `OneTailor PWA` must show **"Running"** with log output. If any shows no output, click Restart on it.
 
-3. **Confirm the API server booted** — check the `API Server` workflow log for this line:
+2. **Confirm the API server booted** — check the `API Server` log for:
    ```
    🚀 Backend Server running at http://127.0.0.1:3000
    ```
-   If missing, the API server crashed — check its log for errors.
+   If missing, the API server crashed — check its log for errors (usually a missing `DATABASE_URL` secret).
 
-4. **Hard-refresh the preview** — after all three are running, wait ~5 seconds then press **Ctrl+Shift+R** (or Cmd+Shift+R on Mac) in the Replit preview pane.
+3. **Hard-refresh the preview** — press **Ctrl+Shift+R** (Cmd+Shift+R on Mac) in the Replit preview pane.
 
-5. **Check you're on the right port** — use the port selector at the top of the preview pane:
+4. **Check you're on the right port** — use the port selector at the top of the preview pane:
    - **PWA** (default preview): port `5000` — path `/`
    - **Admin Portal**: port `3002` — path `/admin-portal/`
-   - Logging in to Admin: `admin` / `admin123`
+   - Admin login: `admin` / `admin123`
 
-6. **Apps load but show no data / 500 errors** — the API Server workflow is down. Restart it and wait for the `🚀 Backend Server running` log line before refreshing the frontend.
+### Install failed / workflows still crashing
+
+If the auto-install guard failed for any reason, run this manually in the Shell tab:
+```
+pnpm install
+```
+Then restart all three workflows from the Workflows panel.
+
+### Apps load but show no data / 500 errors
+
+The API Server workflow is down. Restart it and wait for the `🚀 Backend Server running` log line before refreshing the frontend.
 
 ## Gotchas
 

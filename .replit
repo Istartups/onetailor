@@ -37,7 +37,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/api-server run dev"
+args = "sh -c '[ -f node_modules/.modules.yaml ] || pnpm install; pnpm --filter @workspace/api-server run dev'"
 waitForPort = 3000
 
 [[workflows.workflow]]
@@ -49,7 +49,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/one-tailor run dev"
+args = "sh -c '[ -f node_modules/.modules.yaml ] || pnpm install; pnpm --filter @workspace/one-tailor run dev'"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -61,7 +61,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/admin-portal run dev"
+args = "sh -c '[ -f node_modules/.modules.yaml ] || pnpm install; pnpm --filter @workspace/admin-portal run dev'"
 waitForPort = 3002
 
 [agent]
